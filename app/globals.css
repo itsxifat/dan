@@ -19,8 +19,27 @@
   }
 }
 
+@font-face {
+    font-family: 'Pristina';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Pristina'), url('../public/PRISTINA.woff') format('woff');
+    }
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* AGGRESSIVE SCROLLBAR HIDING
+  Applying to '*' ensures Next.js root wrappers also lose their scrollbars 
+*/
+* {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }
