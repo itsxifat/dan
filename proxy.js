@@ -1,29 +1,54 @@
 import { NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 
-// 1. The function MUST now be named 'proxy' instead of 'middleware'
-export function proxy(request) {
-  const path = request.nextUrl.pathname;
+const ADMIN_ROLES = ["owner", "admin", "moderator", "viewer"];
 
-  // 2. Define the routes that strictly require an Admin login
-  const isAdminRoute = path.startsWith('/dashboard') || 
-                       path.startsWith('/bookings') || 
-                       path.startsWith('/rooms');
+export async function proxy(request) {
+  const { pathname } = request.nextUrl;
 
-  // 3. Check for the NextAuth session token in the cookies
-  const token = request.cookies.get("__Secure-next-auth.session-token")?.value || 
-                request.cookies.get("next-auth.session-token")?.value;
+  // ── Admin route protection ──────────────────────────────────────────────
+  if (pathname.startsWith("/admin")) {
+    // Login and setup pages are always accessible
+    if (pathname === "/admin/login" || pathname === "/admin/setup") return NextResponse.next();
 
-  // 4. The Gatekeeper Logic
-  if (isAdminRoute && !token) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+
+    if (!token) {
+      const url = new URL("/admin/login", request.url);
+      url.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(url);
+    }
+
+    if (!ADMIN_ROLES.includes(token.role)) {
+      return NextResponse.redirect(new URL("/admin/login?error=unauthorized", request.url));
+    }
+
+    if (token.status && token.status !== "active") {
+      return NextResponse.redirect(new URL("/admin/login?error=suspended", request.url));
+    }
+
+    return NextResponse.next();
+  }
+
+  // ── Existing protected routes (simple cookie check) ────────────────────
+  const isProtected =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/bookings") ||
+    pathname.startsWith("/rooms");
+
+  const sessionToken =
+    request.cookies.get("__Secure-next-auth.session-token")?.value ||
+    request.cookies.get("next-auth.session-token")?.value;
+
+  if (isProtected && !sessionToken) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();
 }
 
-// 5. Configure the matcher to skip static files
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
+    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
   ],
 };

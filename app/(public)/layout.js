@@ -10,7 +10,7 @@ export const metadata = {
 export default function PublicLayout({ children }) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className="antialiased bg-[#fcfcfc] text-[#1a1a1a] font-sans">
+      <body className="antialiased bg-[#fcfcfc] text-[#1a1a1a] font-sans" suppressHydrationWarning>
         <AuthProvider>
           <Navbar />
           {children}

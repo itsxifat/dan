@@ -1,27 +1,46 @@
 import mongoose from "mongoose";
 
+export const ROLES = ["owner", "admin", "moderator", "viewer", "user"];
+export const ADMIN_ROLES = ["owner", "admin", "moderator", "viewer"];
+
 const UserSchema = new mongoose.Schema({
   name: {
     type: String,
     required: [true, "Please provide a name"],
+    trim: true,
   },
   email: {
     type: String,
     required: [true, "Please provide an email"],
     unique: true,
     lowercase: true,
+    trim: true,
   },
   password: {
     type: String,
-    required: false, // Optional because Google users won't have a password
+    required: false,
   },
   image: {
     type: String,
   },
   role: {
     type: String,
-    enum: ["user", "admin"],
+    enum: ROLES,
     default: "user",
+  },
+  status: {
+    type: String,
+    enum: ["active", "suspended", "banned"],
+    default: "active",
+  },
+  lastLogin: {
+    type: Date,
+    default: null,
+  },
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
   },
   createdAt: {
     type: Date,
@@ -29,5 +48,4 @@ const UserSchema = new mongoose.Schema({
   },
 });
 
-// Avoid re-compiling the model if it already exists
 export default mongoose.models.User || mongoose.model("User", UserSchema);
