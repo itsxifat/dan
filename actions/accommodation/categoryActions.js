@@ -34,7 +34,9 @@ export async function getCategoriesByProperty(propertyId) {
         }},
       ])
     : [];
-  const statsMap = Object.fromEntries(roomStats.map((r) => [r._id.toString(), r]));
+  const statsMap = Object.fromEntries(
+    roomStats.map((r) => [r._id.toString(), { total: r.total, available: r.available }])
+  );
 
   return JSON.parse(JSON.stringify(
     categories.map((c) => ({
@@ -50,7 +52,20 @@ export async function getCategoryBySlug(propertyId, slug) {
   if (!category) return null;
 
   const rooms = await Room.find({ category: category._id }).sort({ floor: 1, roomNumber: 1 }).lean();
-  return JSON.parse(JSON.stringify({ ...category, rooms }));
+
+  // Attach variant object to each room
+  const variantsMap = {};
+  if (category.variants?.length) {
+    for (const v of category.variants) {
+      variantsMap[v._id.toString()] = v;
+    }
+  }
+  const roomsWithVariants = rooms.map((r) => ({
+    ...r,
+    variant: r.variantId ? (variantsMap[r.variantId.toString()] || null) : null,
+  }));
+
+  return JSON.parse(JSON.stringify({ ...category, rooms: roomsWithVariants }));
 }
 
 export async function createCategory(propertyId, data) {

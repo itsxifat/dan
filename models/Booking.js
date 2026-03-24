@@ -34,7 +34,9 @@ const BookingSchema = new mongoose.Schema({
   // Couple booking
   isCoupleBooking:    { type: Boolean, default: false },
   coupleDocumentUrl:  { type: String, default: "" },
-  coupleDocMethod:    { type: String, enum: ["online", "desk", ""], default: "" },
+  coupleDocMethod:    { type: String, default: "" },
+  nidUrl:             { type: String, default: "" },
+  nidMethod:          { type: String, default: "upload" },
 
   specialRequests: { type: String, default: "" },
 
@@ -58,7 +60,8 @@ const BookingSchema = new mongoose.Schema({
   valId:         { type: String, default: "" },
   bankTxnId:     { type: String, default: "" },
   cardType:      { type: String, default: "" },
-  paidAmount:    { type: Number, default: 0 },
+  paidAmount:     { type: Number, default: 0 },
+  advanceAmount:  { type: Number, default: 0 },
 
   // Booking source
   bookedBy:     { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
@@ -70,7 +73,6 @@ const BookingSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-BookingSchema.index({ bookingNumber: 1 });
 BookingSchema.index({ property: 1, checkIn: 1, checkOut: 1 });
 BookingSchema.index({ room: 1, checkIn: 1, checkOut: 1 });
 BookingSchema.index({ status: 1, checkIn: 1 });

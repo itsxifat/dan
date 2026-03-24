@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import dbConnect from "@/lib/db";
 import Room from "@/models/Room";
+import RoomCategory from "@/models/RoomCategory";
 import Booking from "@/models/Booking";
 import { hasPermission } from "@/lib/permissions";
 
@@ -22,7 +23,7 @@ export async function getAllRooms({ propertyId = null, categoryId = null } = {})
   if (categoryId)  filter.category  = categoryId;
   const rooms = await Room.find(filter)
     .populate("property",  "name")
-    .populate("category",  "name pricePerNight bedType")
+    .populate("category",  "name pricePerNight bedType variants")
     .sort({ "property": 1, floor: 1, roomNumber: 1 })
     .lean();
   return JSON.parse(JSON.stringify(rooms));
@@ -52,7 +53,9 @@ export async function createRoom(data) {
   const exists = await Room.exists({ property: data.property, roomNumber: data.roomNumber });
   if (exists) throw new Error(`Room number "${data.roomNumber}" already exists in this property.`);
 
-  await Room.create({ ...data, updatedAt: new Date() });
+  const roomData = { ...data, updatedAt: new Date() };
+  if (roomData.variantId === "" || roomData.variantId === undefined) roomData.variantId = null;
+  await Room.create(roomData);
   revalidatePath("/admin/accommodation");
   return { success: true };
 }
@@ -60,7 +63,9 @@ export async function createRoom(data) {
 export async function updateRoom(roomId, data) {
   await requireAccom();
   await dbConnect();
-  await Room.findByIdAndUpdate(roomId, { ...data, updatedAt: new Date() });
+  const roomData = { ...data, updatedAt: new Date() };
+  if (roomData.variantId === "" || roomData.variantId === undefined) roomData.variantId = null;
+  await Room.findByIdAndUpdate(roomId, roomData);
   revalidatePath("/admin/accommodation");
   return { success: true };
 }
@@ -109,7 +114,11 @@ export async function checkRoomAvailability(roomId, checkIn, checkOut) {
 export async function getAvailableRooms(categoryId, checkIn, checkOut) {
   await dbConnect();
 
-  const allRooms = await Room.find({ category: categoryId, status: "available" }).lean();
+  // Exclude only admin-blocked statuses. "occupied" rooms are available if no booking conflict.
+  const allRooms = await Room.find({
+    category: categoryId,
+    status: { $nin: ["maintenance", "blocked"] },
+  }).lean();
   if (!allRooms.length) return [];
 
   const roomIds = allRooms.map((r) => r._id);
@@ -122,5 +131,20 @@ export async function getAvailableRooms(categoryId, checkIn, checkOut) {
 
   const bookedSet = new Set(bookedRoomIds.map(String));
   const available = allRooms.filter((r) => !bookedSet.has(r._id.toString()));
-  return JSON.parse(JSON.stringify(available));
+
+  // Fetch category variants and attach to rooms
+  const category = await RoomCategory.findById(categoryId).lean();
+  const variantsMap = {};
+  if (category?.variants?.length) {
+    for (const v of category.variants) {
+      variantsMap[v._id.toString()] = v;
+    }
+  }
+
+  const withVariants = available.map((r) => ({
+    ...r,
+    variant: r.variantId ? (variantsMap[r.variantId.toString()] || null) : null,
+  }));
+
+  return JSON.parse(JSON.stringify(withVariants));
 }

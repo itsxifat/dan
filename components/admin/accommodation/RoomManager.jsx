@@ -22,6 +22,11 @@ function RoomForm({ propertyId, categories, room = null, onDone }) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
   const [showImages, setShowImages] = useState(false);
+  const [variants, setVariants] = useState(() => {
+    const catId = room?.category?._id ?? room?.category ?? (categories[0]?._id ?? "");
+    const cat = categories.find((c) => c._id === catId || c._id === (typeof catId === "object" ? catId?._id : catId));
+    return cat?.variants ?? [];
+  });
 
   const [form, setForm] = useState({
     category:    room?.category?._id ?? room?.category ?? (categories[0]?._id ?? ""),
@@ -32,9 +37,24 @@ function RoomForm({ propertyId, categories, room = null, onDone }) {
     images:      room?.images      ?? [],
     description: room?.description ?? "",
     notes:       room?.notes       ?? "",
+    variantId:   room?.variantId   ?? "",
   });
 
-  const set    = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  const set    = (key) => (e) => {
+    const val = e.target.value;
+    setForm((f) => {
+      const updated = { ...f, [key]: val };
+      if (key === "category") {
+        const cat = categories.find((c) => c._id === val);
+        const newVariants = cat?.variants ?? [];
+        setVariants(newVariants);
+        if (!newVariants.find((v) => v._id === f.variantId)) {
+          updated.variantId = "";
+        }
+      }
+      return updated;
+    });
+  };
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -51,6 +71,7 @@ function RoomForm({ propertyId, categories, room = null, onDone }) {
           images:      form.images,
           description: form.description,
           notes:       form.notes,
+          variantId:   form.variantId || null,
         };
         if (isEdit) {
           await updateRoom(room._id, data);
@@ -98,6 +119,17 @@ function RoomForm({ propertyId, categories, room = null, onDone }) {
             ))}
           </select>
         </div>
+        {variants.length > 0 && (
+          <div className="col-span-2">
+            <label className={LABEL}>Room Variant</label>
+            <select className={INPUT} value={form.variantId} onChange={set("variantId")}>
+              <option value="">— No specific variant —</option>
+              {variants.map((v) => (
+                <option key={v._id} value={v._id}>{v.name} · ৳{v.pricePerNight}/night · {v.bedType}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="col-span-2">
           <label className={LABEL}>Description</label>
           <textarea

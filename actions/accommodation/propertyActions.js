@@ -42,7 +42,9 @@ export async function getProperties({ page = 1, limit = 20, type = "", search = 
         { $group: { _id: "$property", total: { $sum: 1 }, available: { $sum: { $cond: [{ $eq: ["$status", "available"] }, 1, 0] } } } },
       ])
     : [];
-  const countMap = Object.fromEntries(roomCounts.map((r) => [r._id.toString(), r]));
+  const countMap = Object.fromEntries(
+    roomCounts.map((r) => [r._id.toString(), { total: r.total, available: r.available }])
+  );
 
   return {
     properties: JSON.parse(JSON.stringify(properties)).map((p) => ({
@@ -71,7 +73,9 @@ export async function getPropertyBySlug(slug) {
       { $match: { category: { $in: catIds } } },
       { $group: { _id: "$category", total: { $sum: 1 }, available: { $sum: { $cond: [{ $eq: ["$status", "available"] }, 1, 0] } } } },
     ]);
-    const statsMap = Object.fromEntries(roomStats.map((r) => [r._id.toString(), r]));
+    const statsMap = Object.fromEntries(
+      roomStats.map((r) => [r._id.toString(), { total: r.total, available: r.available }])
+    );
 
     return JSON.parse(JSON.stringify({
       ...property,

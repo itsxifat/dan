@@ -21,6 +21,34 @@ function Field({ label, value }) {
   );
 }
 
+function DocViewer({ url, label }) {
+  if (!url) return null;
+  const isPdf = url.toLowerCase().endsWith(".pdf");
+  return (
+    <div className="space-y-2">
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 text-[12px] text-[#c05aae] hover:text-[#d870c0]
+          underline underline-offset-2 transition-colors"
+      >
+        <svg viewBox="0 0 14 14" width="12" height="12" fill="none">
+          <path d="M2 12L12 2M8 2h4v4" stroke="currentColor" strokeWidth="1.5"
+            strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        {label} ↗
+      </a>
+      {!isPdf && (
+        <a href={url} target="_blank" rel="noopener noreferrer"
+          className="block w-40 rounded-xl overflow-hidden border border-white/10 hover:border-[#7A2267]/40 transition-colors">
+          <img src={url} alt={label} className="w-full h-28 object-cover" />
+        </a>
+      )}
+    </div>
+  );
+}
+
 const STATUS_STYLE = {
   pending:     "bg-amber-400/10 text-amber-400 border-amber-400/25",
   confirmed:   "bg-blue-400/10 text-blue-400 border-blue-400/25",
@@ -77,7 +105,7 @@ export default async function BookingDetailPage({ params }) {
       </div>
 
       {/* Property & Dates */}
-      <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 grid grid-cols-2 sm:grid-cols-4 gap-5">
+      <div className="bg-white/2 border border-white/6 rounded-2xl p-6 grid grid-cols-2 sm:grid-cols-4 gap-5">
         <Field label="Property"    value={booking.property?.name} />
         <Field label="Category"    value={booking.category?.name || (booking.bookingType === "cottage" ? "Cottage" : "–")} />
         <Field label="Room"        value={booking.room?.roomNumber || "–"} />
@@ -89,7 +117,7 @@ export default async function BookingDetailPage({ params }) {
       </div>
 
       {/* Guest Info */}
-      <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 space-y-5">
+      <div className="bg-white/2 border border-white/6 rounded-2xl p-6 space-y-5">
         <h3 className="text-[11px] uppercase tracking-[0.18em] text-white/30 font-semibold">Primary Guest</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
           <Field label="Name"    value={booking.primaryGuest?.name} />
@@ -100,17 +128,23 @@ export default async function BookingDetailPage({ params }) {
           <Field label="Age"     value={booking.primaryGuest?.age} />
         </div>
 
+        {/* NID document */}
+        <div className="mt-4 pt-4 border-t border-white/5">
+          <p className="text-[9.5px] uppercase tracking-wider text-white/25 font-semibold mb-2">NID / Passport</p>
+          {booking.nidUrl ? (
+            <DocViewer url={booking.nidUrl} label="View NID" />
+          ) : (
+            <p className="text-[12px] text-amber-400">Guest will show NID at desk</p>
+          )}
+        </div>
+
         {booking.isCoupleBooking && (
-          <div className="mt-4 pt-4 border-t border-white/[0.05]">
+          <div className="mt-4 pt-4 border-t border-white/5">
             <p className="text-[11px] uppercase tracking-wider text-amber-400/60 font-semibold mb-2">Couple Booking</p>
-            <Field label="Document Method" value={booking.coupleDocMethod} />
             {booking.coupleDocumentUrl && (
               <div className="mt-2">
-                <p className="text-[9.5px] uppercase tracking-wider text-white/25 font-semibold mb-1">Document</p>
-                <a href={booking.coupleDocumentUrl} target="_blank" rel="noopener noreferrer"
-                  className="text-[12px] text-[#c05aae] hover:text-[#d870c0] underline underline-offset-2 transition-colors">
-                  View Document ↗
-                </a>
+                <p className="text-[9.5px] uppercase tracking-wider text-white/25 font-semibold mb-1">Marriage Certificate</p>
+                <DocViewer url={booking.coupleDocumentUrl} label="View Certificate" />
               </div>
             )}
           </div>
@@ -119,14 +153,14 @@ export default async function BookingDetailPage({ params }) {
 
       {/* Additional Guests */}
       {booking.guests?.length > 0 && (
-        <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 space-y-4">
+        <div className="bg-white/2 border border-white/6 rounded-2xl p-6 space-y-4">
           <h3 className="text-[11px] uppercase tracking-[0.18em] text-white/30 font-semibold">
             Additional Guests ({booking.guests.length})
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full text-[12px]">
               <thead>
-                <tr className="border-b border-white/[0.05]">
+                <tr className="border-b border-white/5">
                   {["Name", "Age", "Gender", "Type"].map((h) => (
                     <th key={h} className="pb-2 text-left text-[9.5px] uppercase tracking-wider text-white/25 font-semibold pr-6">{h}</th>
                   ))}
@@ -134,7 +168,7 @@ export default async function BookingDetailPage({ params }) {
               </thead>
               <tbody>
                 {booking.guests.map((g, i) => (
-                  <tr key={i} className="border-b border-white/[0.03]">
+                  <tr key={i} className="border-b border-white/3">
                     <td className="py-2 pr-6 text-white/60">{g.name || "–"}</td>
                     <td className="py-2 pr-6 text-white/40">{g.age}</td>
                     <td className="py-2 pr-6 text-white/40 capitalize">{g.gender}</td>
@@ -154,7 +188,7 @@ export default async function BookingDetailPage({ params }) {
 
       {/* Payment Info */}
       {(booking.valId || booking.bankTxnId) && (
-        <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6 grid grid-cols-2 sm:grid-cols-3 gap-5">
+        <div className="bg-white/2 border border-white/6 rounded-2xl p-6 grid grid-cols-2 sm:grid-cols-3 gap-5">
           <h3 className="col-span-full text-[11px] uppercase tracking-[0.18em] text-white/30 font-semibold">Payment Details</h3>
           <Field label="Transaction ID" value={booking.transactionId} />
           <Field label="Val ID"         value={booking.valId} />

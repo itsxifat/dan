@@ -23,6 +23,12 @@ function AmenityChip({ label }) {
 }
 
 function CategoryCard({ category, propertySlug }) {
+  const variants = category.variants ?? [];
+  const prices = variants.map((v) => v.pricePerNight).filter((p) => p > 0);
+  const minPrice = prices.length > 0 ? Math.min(...prices) : null;
+  const maxPrice = prices.length > 0 ? Math.max(...prices) : null;
+  const bedTypes = [...new Set(variants.map((v) => v.bedType).filter(Boolean))];
+
   return (
     <Link
       href={`/accommodation/${propertySlug}/${category.slug}`}
@@ -40,15 +46,35 @@ function CategoryCard({ category, propertySlug }) {
           <h3 className="text-[14px] font-semibold text-neutral-800 group-hover:text-[#7A2267] transition-colors">
             {category.name}
           </h3>
-          <p className="text-[13px] font-bold text-neutral-700 shrink-0">
-            ৳{category.pricePerNight?.toLocaleString()}<span className="text-[10px] font-normal text-neutral-400">/night</span>
-          </p>
+          <div className="text-right shrink-0">
+            {minPrice != null ? (
+              <>
+                <p className="text-[13px] font-bold text-neutral-700">
+                  ৳{minPrice.toLocaleString()}
+                  {maxPrice !== minPrice && <span className="font-normal text-neutral-500"> – ৳{maxPrice.toLocaleString()}</span>}
+                </p>
+                <p className="text-[10px] text-neutral-400">per night</p>
+              </>
+            ) : (
+              <p className="text-[11px] text-neutral-400">Enquire</p>
+            )}
+          </div>
         </div>
         {category.description && (
           <p className="text-[12px] text-neutral-500 line-clamp-2 mb-2">{category.description}</p>
         )}
+        {/* Variant pills */}
+        {variants.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {variants.map((v) => (
+              <span key={String(v._id)} className="text-[10px] text-[#7A2267]/70 bg-[#7A2267]/5 border border-[#7A2267]/15 px-2 py-0.5 rounded-full">
+                {v.name}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="flex flex-wrap gap-2 text-[11px] text-neutral-400">
-          {category.bedType && <span>{category.bedType} bed</span>}
+          {bedTypes.length > 0 && <span>{bedTypes.join(", ")} bed</span>}
           {category.size && <span>· {category.size}</span>}
           {category.maxAdults && <span>· Up to {category.maxAdults} adults</span>}
           {category.roomStats && (

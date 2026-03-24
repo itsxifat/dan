@@ -12,15 +12,16 @@ export default function SettingsForm({ settings }) {
   const [error, setError] = useState("");
 
   const [form, setForm] = useState({
-    maxFreeChildAge:    settings.maxFreeChildAge    ?? 5,
-    maxChildrenPerRoom: settings.maxChildrenPerRoom ?? 2,
-    maxGuestsPerRoom:   settings.maxGuestsPerRoom   ?? 4,
-    requireCoupleDoc:   settings.requireCoupleDoc   ?? true,
-    checkInTime:        settings.checkInTime        ?? "14:00",
-    checkOutTime:       settings.checkOutTime       ?? "12:00",
-    currency:           settings.currency           ?? "BDT",
-    taxPercent:         settings.taxPercent         ?? 0,
-    cancellationPolicy: settings.cancellationPolicy ?? "",
+    maxFreeChildAge:       settings.maxFreeChildAge       ?? 5,
+    maxChildrenPerRoom:    settings.maxChildrenPerRoom    ?? 2,
+    maxGuestsPerRoom:      settings.maxGuestsPerRoom      ?? 4,
+    requireCoupleDoc:      settings.requireCoupleDoc      ?? true,
+    checkInTime:           settings.checkInTime           ?? "14:00",
+    checkOutTime:          settings.checkOutTime          ?? "12:00",
+    currency:              settings.currency              ?? "BDT",
+    taxPercent:            settings.taxPercent            ?? 0,
+    advancePaymentPercent: settings.advancePaymentPercent ?? 30,
+    cancellationPolicy:    settings.cancellationPolicy    ?? "",
   });
 
   const set = (key) => (e) => { setForm((f) => ({ ...f, [key]: e.target.value })); setSaved(false); };
@@ -35,10 +36,11 @@ export default function SettingsForm({ settings }) {
       try {
         await updateSettings({
           ...form,
-          maxFreeChildAge:    Number(form.maxFreeChildAge),
-          maxChildrenPerRoom: Number(form.maxChildrenPerRoom),
-          maxGuestsPerRoom:   Number(form.maxGuestsPerRoom),
-          taxPercent:         Number(form.taxPercent),
+          maxFreeChildAge:       Number(form.maxFreeChildAge),
+          maxChildrenPerRoom:    Number(form.maxChildrenPerRoom),
+          maxGuestsPerRoom:      Number(form.maxGuestsPerRoom),
+          taxPercent:            Number(form.taxPercent),
+          advancePaymentPercent: Number(form.advancePaymentPercent),
         });
         setSaved(true);
       } catch (err) {
@@ -113,6 +115,12 @@ export default function SettingsForm({ settings }) {
             <input type="number" className={INPUT} value={form.taxPercent}
               onChange={setNum("taxPercent")} min="0" max="100" step="0.01" />
             <p className="mt-1 text-[10px] text-white/20">Applied on top of the base price. Set to 0 for no tax.</p>
+          </div>
+          <div>
+            <label className={LABEL}>Advance Payment (%)</label>
+            <input type="number" className={INPUT} value={form.advancePaymentPercent}
+              onChange={setNum("advancePaymentPercent")} min="0" max="100" />
+            <p className="mt-1 text-[10px] text-white/20">Percentage of total charged as online advance. Remaining paid at check-in.</p>
           </div>
         </div>
       </div>

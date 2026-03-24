@@ -49,7 +49,7 @@ export async function createPendingBooking(bookingData) {
     propertyId, categoryId, roomId, bookingType,
     checkIn, checkOut, nights, primaryGuest, guests,
     isCoupleBooking, coupleDocumentUrl, coupleDocMethod,
-    specialRequests, basePrice, paymentMethod,
+    nidUrl, nidMethod, specialRequests, basePrice, paymentMethod,
   } = bookingData;
 
   const taxPercent = settings.taxPercent ?? 0;
@@ -81,6 +81,8 @@ export async function createPendingBooking(bookingData) {
     isCoupleBooking: !!isCoupleBooking,
     coupleDocumentUrl: coupleDocumentUrl || "",
     coupleDocMethod:   coupleDocMethod   || "",
+    nidUrl:            nidUrl            || "",
+    nidMethod:         nidMethod         || "upload",
     specialRequests:   specialRequests   || "",
     basePrice,
     subtotal,
@@ -178,7 +180,7 @@ export async function updateBookingStatus(bookingId, status) {
   const booking = await Booking.findByIdAndUpdate(
     bookingId,
     { status, updatedAt: new Date() },
-    { new: true }
+    { returnDocument: "after" }
   );
 
   // If cancelled — free up room if it was set to occupied

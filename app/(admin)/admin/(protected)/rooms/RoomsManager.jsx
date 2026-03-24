@@ -25,7 +25,7 @@ const STATUS_COLOR = {
   blocked:     "text-red-400 bg-red-400/10 border-red-400/25",
 };
 
-const BED_TYPES = ["Single", "Double", "Twin", "King", "Queen", "Bunk", "Sofa Bed"];
+const BED_TYPES = ["Single", "Double", "Twin", "King", "Queen", "Triple", "Bunk", "Sofa Bed"];
 
 const INPUT = "w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-[12.5px] text-white placeholder-white/20 focus:outline-none focus:border-[#7A2267]/60 transition-all duration-200";
 const LABEL = "block text-[10px] uppercase tracking-wider text-white/35 font-semibold mb-1.5";
@@ -49,24 +49,43 @@ function RoomForm({ properties, allCategories, room = null, onDone }) {
   const [selectedProp, setSelectedProp] = useState(defaultPropId);
   const initCats = getCats(defaultPropId);
 
+  const initCatId = room?.category?._id ?? room?.category ?? (initCats[0]?._id ?? "");
+  const initVariants = allCategories.find((c) => String(c._id) === String(initCatId))?.variants ?? [];
+
   const [form, setForm] = useState({
-    property:    defaultPropId,
-    category:    room?.category?._id ?? room?.category ?? (initCats[0]?._id ?? ""),
-    roomNumber:  room?.roomNumber  ?? "",
-    floor:       String(room?.floor ?? 1),
-    status:      room?.status      ?? "available",
-    coverImage:  room?.coverImage  ?? "",
-    images:      room?.images      ?? [],
-    description: room?.description ?? "",
-    notes:       room?.notes       ?? "",
+    property:      defaultPropId,
+    category:      initCatId,
+    variantId:     room?.variantId     ?? "",
+    pricePerNight: room?.pricePerNight ?? 0,
+    roomNumber:    room?.roomNumber    ?? "",
+    floor:         String(room?.floor ?? 1),
+    block:         room?.block         ?? "",
+    row:           room?.row           ?? "",
+    facing:        room?.facing        ?? "",
+    status:        room?.status        ?? "available",
+    coverImage:    room?.coverImage    ?? "",
+    images:        room?.images        ?? [],
+    description:   room?.description   ?? "",
+    notes:         room?.notes         ?? "",
   });
+
+  const [categoryVariants, setCategoryVariants] = useState(initVariants);
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
   function handlePropertySelect(pid) {
     setSelectedProp(pid);
     const cats = getCats(pid);
-    setForm((f) => ({ ...f, property: pid, category: cats[0]?._id ?? "" }));
+    const firstCatId = cats[0]?._id ?? "";
+    const variants = allCategories.find((c) => String(c._id) === String(firstCatId))?.variants ?? [];
+    setCategoryVariants(variants);
+    setForm((f) => ({ ...f, property: pid, category: firstCatId, variantId: "" }));
+  }
+
+  function handleCategorySelect(catId) {
+    const variants = allCategories.find((c) => String(c._id) === String(catId))?.variants ?? [];
+    setCategoryVariants(variants);
+    setForm((f) => ({ ...f, category: catId, variantId: "" }));
   }
 
   function handleSubmit(e) {
@@ -76,15 +95,20 @@ function RoomForm({ properties, allCategories, room = null, onDone }) {
     startTransition(async () => {
       try {
         const data = {
-          property:    form.property,
-          category:    form.category,
-          roomNumber:  form.roomNumber,
-          floor:       Number(form.floor),
-          status:      form.status,
-          coverImage:  form.coverImage,
-          images:      form.images,
-          description: form.description,
-          notes:       form.notes,
+          property:      form.property,
+          category:      form.category,
+          variantId:     form.variantId || null,
+          pricePerNight: Number(form.pricePerNight) || 0,
+          roomNumber:    form.roomNumber,
+          floor:         Number(form.floor),
+          block:         form.block,
+          row:           form.row,
+          facing:        form.facing,
+          status:        form.status,
+          coverImage:    form.coverImage,
+          images:        form.images,
+          description:   form.description,
+          notes:         form.notes,
         };
         isEdit ? await updateRoom(room._id, data) : await createRoom(data);
         onDone();
@@ -99,7 +123,9 @@ function RoomForm({ properties, allCategories, room = null, onDone }) {
   const catOptions  = currentCats.map((c) => ({
     value: c._id,
     label: c.name,
-    sub: c.bedType ? `${c.bedType} · ৳${c.pricePerNight?.toLocaleString()}` : undefined,
+    sub: c.variants?.length > 0
+      ? `${c.variants.length} type${c.variants.length > 1 ? "s" : ""}`
+      : undefined,
   }));
 
   return (
@@ -134,10 +160,45 @@ function RoomForm({ properties, allCategories, room = null, onDone }) {
             <AdminSelect
               options={catOptions}
               value={form.category}
-              onChange={(v) => setForm((f) => ({ ...f, category: v }))}
+              onChange={handleCategorySelect}
               placeholder="Select category…"
             />
           )}
+        </div>
+
+        {/* Variant — shown only if category has variants */}
+        {categoryVariants.length > 0 && (
+          <div className="col-span-2">
+            <label className={LABEL}>Room Type / Variant</label>
+            <AdminSelect
+              options={[
+                { value: "", label: "No variant (use category default)" },
+                ...categoryVariants.map((v) => ({
+                  value: String(v._id),
+                  label: `${v.name} — ${v.bedType} · ৳${Number(v.pricePerNight).toLocaleString()}/night`,
+                })),
+              ]}
+              value={form.variantId}
+              onChange={(v) => setForm((f) => ({ ...f, variantId: v }))}
+            />
+            {form.variantId && (() => {
+              const v = categoryVariants.find((x) => String(x._id) === form.variantId);
+              return v ? (
+                <p className="text-[10.5px] text-white/30 mt-1.5 flex gap-3">
+                  <span>{v.bedType} bed</span>
+                  {v.maxAdults > 0 && <span>· max {v.maxAdults} adults</span>}
+                  {v.maxChildren > 0 && <span>· {v.maxChildren} children</span>}
+                </p>
+              ) : null;
+            })()}
+          </div>
+        )}
+
+        {/* Price Override */}
+        <div className="col-span-2 sm:col-span-1">
+          <label className={LABEL}>Room Price Override (BDT)</label>
+          <input type="number" className={INPUT} value={form.pricePerNight} onChange={set("pricePerNight")} min="0" placeholder="0 = use variant price" />
+          <p className="text-[10px] text-white/20 mt-1">Leave 0 to inherit from variant. Set a custom price for this specific room only.</p>
         </div>
 
         {/* Room number */}
@@ -150,6 +211,24 @@ function RoomForm({ properties, allCategories, room = null, onDone }) {
         <div>
           <label className={LABEL}>Floor</label>
           <input type="number" className={INPUT} value={form.floor} onChange={set("floor")} min="1" />
+        </div>
+
+        {/* Block */}
+        <div>
+          <label className={LABEL}>Block / Wing</label>
+          <input className={INPUT} value={form.block} onChange={set("block")} placeholder="e.g. Block A, North Wing" />
+        </div>
+
+        {/* Row */}
+        <div>
+          <label className={LABEL}>Row / Corridor</label>
+          <input className={INPUT} value={form.row} onChange={set("row")} placeholder="e.g. Row 1, Corridor A" />
+        </div>
+
+        {/* Facing */}
+        <div className="col-span-2">
+          <label className={LABEL}>Facing / View</label>
+          <input className={INPUT} value={form.facing} onChange={set("facing")} placeholder="e.g. Garden, Street, Opposite Block, Pool View" />
         </div>
 
         {/* Status */}
@@ -230,6 +309,8 @@ function RoomForm({ properties, allCategories, room = null, onDone }) {
 // Category Form (inline within Categories tab)
 // ═══════════════════════════════════════════════════════
 
+const BLANK_VARIANT = { name: "", bedType: "Double", pricePerNight: 0, maxAdults: 2, maxChildren: 0 };
+
 function CategoryForm({ propertyId, category = null, onDone }) {
   const isEdit = !!category;
   const [isPending, startTransition] = useTransition();
@@ -249,22 +330,79 @@ function CategoryForm({ propertyId, category = null, onDone }) {
     sortOrder:     category?.sortOrder     ?? 0,
   });
 
+  // ── Variants state ──────────────────────────────────────────────────────────
+  const [variants, setVariants]       = useState(category?.variants ?? []);
+
+  // Auto-sync price and bedTypes from variants when they change
+  const variantBedTypes = [...new Set(variants.map((v) => v.bedType).filter(Boolean))];
+  const variantMinPrice = variants.length > 0 ? Math.min(...variants.map((v) => Number(v.pricePerNight) || 0)) : null;
+  const variantMaxPrice = variants.length > 0 ? Math.max(...variants.map((v) => Number(v.pricePerNight) || 0)) : null;
+
+  const [editingVIdx, setEditingVIdx] = useState(null); // index being edited, or "new"
+  const [vForm, setVForm]             = useState(BLANK_VARIANT);
+  const [vError, setVError]           = useState("");
+
+  function openAddVariant() {
+    setVForm(BLANK_VARIANT);
+    setVError("");
+    setEditingVIdx("new");
+  }
+
+  function openEditVariant(idx) {
+    const v = variants[idx];
+    setVForm({
+      name:          v.name,
+      bedType:       v.bedType,
+      pricePerNight: v.pricePerNight,
+      maxAdults:     v.maxAdults ?? 2,
+      maxChildren:   v.maxChildren ?? 0,
+    });
+    setVError("");
+    setEditingVIdx(idx);
+  }
+
+  function saveVariant() {
+    if (!vForm.name.trim())            { setVError("Variant name is required."); return; }
+    if (!vForm.pricePerNight || vForm.pricePerNight < 0) { setVError("Price must be ≥ 0."); return; }
+    setVError("");
+    if (editingVIdx === "new") {
+      setVariants((prev) => [...prev, { ...vForm, pricePerNight: Number(vForm.pricePerNight), maxAdults: Number(vForm.maxAdults), maxChildren: Number(vForm.maxChildren) }]);
+    } else {
+      setVariants((prev) => prev.map((v, i) => i === editingVIdx
+        ? { ...vForm, pricePerNight: Number(vForm.pricePerNight), maxAdults: Number(vForm.maxAdults), maxChildren: Number(vForm.maxChildren) }
+        : v
+      ));
+    }
+    setEditingVIdx(null);
+  }
+
+  function removeVariant(idx) {
+    setVariants((prev) => prev.filter((_, i) => i !== idx));
+    if (editingVIdx === idx) setEditingVIdx(null);
+  }
+
+  // ── Form helpers ────────────────────────────────────────────────────────────
   const set    = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const setNum = (key) => (e) => setForm((f) => ({ ...f, [key]: Number(e.target.value) }));
-
   const bedOpts = BED_TYPES.map((b) => ({ value: b, label: b }));
 
   function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    if (variants.length === 0) {
+      setError("At least one room type/variant is required. Add a variant with bed type and price.");
+      return;
+    }
     startTransition(async () => {
       try {
         const data = {
           ...form,
-          pricePerNight: Number(form.pricePerNight),
+          pricePerNight: variantMinPrice ?? 0,
+          bedType:       "",
           maxAdults:     Number(form.maxAdults),
           maxChildren:   Number(form.maxChildren),
           sortOrder:     Number(form.sortOrder),
+          variants,
         };
         isEdit ? await updateCategory(category._id, data) : await createCategory(propertyId, data);
         onDone();
@@ -284,16 +422,26 @@ function CategoryForm({ propertyId, category = null, onDone }) {
       <div className="grid grid-cols-2 gap-4">
         <div className="col-span-2">
           <label className={LABEL}>Category Name *</label>
-          <input className={INPUT} value={form.name} onChange={set("name")} placeholder="e.g. Deluxe Double" required />
+          <input className={INPUT} value={form.name} onChange={set("name")} placeholder="e.g. Deluxe" required />
         </div>
-        <div>
-          <label className={LABEL}>Price / Night (BDT) *</label>
-          <input type="number" className={INPUT} value={form.pricePerNight} onChange={setNum("pricePerNight")} min="0" required />
-        </div>
-        <div>
-          <label className={LABEL}>Bed Type</label>
-          <AdminSelect options={bedOpts} value={form.bedType}
-            onChange={(v) => setForm((f) => ({ ...f, bedType: v }))} />
+        <div className="col-span-2 bg-[#7A2267]/5 border border-[#7A2267]/20 rounded-xl px-4 py-3 space-y-1.5">
+          <p className="text-[10px] uppercase tracking-wider text-[#c05aae]/60 font-semibold">Pricing &amp; Bed Types — from variants</p>
+          {variants.length > 0 ? (
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-[13px] font-bold text-white/75">
+                ৳{variantMinPrice?.toLocaleString()}
+                {variantMaxPrice !== variantMinPrice && ` – ৳${variantMaxPrice?.toLocaleString()}`}
+                <span className="text-[10px] font-normal text-white/35 ml-1">/night</span>
+              </span>
+              {variantBedTypes.map((b) => (
+                <span key={b} className="text-[10.5px] text-[#c05aae]/70 bg-[#7A2267]/10 border border-[#7A2267]/20 px-2 py-0.5 rounded-full">
+                  {b}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[11px] text-amber-400/70">⚠ Add at least one room type/variant below — price and bed type are required.</p>
+          )}
         </div>
         <div>
           <label className={LABEL}>Max Adults</label>
@@ -326,6 +474,88 @@ function CategoryForm({ propertyId, category = null, onDone }) {
             onChange={set("description")} placeholder="Describe this category…" />
         </div>
       </div>
+
+      {/* ── Variants Section ──────────────────────────────────────────────── */}
+      <div className="border border-white/8 rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 bg-white/[0.02]">
+          <div>
+            <p className="text-[11px] uppercase tracking-wider text-white/40 font-semibold">Room Types / Variants</p>
+            <p className="text-[10px] text-white/20 mt-0.5">
+              Add different bed types &amp; prices within this category (e.g. Single, Twin, Couple)
+            </p>
+          </div>
+          {editingVIdx === null && (
+            <button type="button" onClick={openAddVariant}
+              className="flex items-center gap-1.5 text-[11px] text-[#c05aae] hover:text-white
+                transition-colors border border-[#7A2267]/30 hover:border-[#7A2267]/60 rounded-lg px-3 py-1.5">
+              <svg viewBox="0 0 12 12" width="10" height="10" fill="none">
+                <path d="M6 1v10M1 6h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+              Add Type
+            </button>
+          )}
+        </div>
+
+        <div className="divide-y divide-white/5">
+          {/* Existing variants */}
+          {variants.map((v, i) => (
+            editingVIdx === i ? (
+              <VariantEditRow
+                key={i}
+                vForm={vForm}
+                setVForm={setVForm}
+                vError={vError}
+                bedOpts={bedOpts}
+                onSave={saveVariant}
+                onCancel={() => setEditingVIdx(null)}
+              />
+            ) : (
+              <div key={i} className="flex items-center justify-between px-4 py-3 hover:bg-white/[0.015] transition-colors">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-6 h-6 rounded-lg bg-[#7A2267]/15 border border-[#7A2267]/20 flex items-center justify-center shrink-0">
+                    <span className="text-[9px] font-bold text-[#c05aae]">{i + 1}</span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[12.5px] font-semibold text-white/75 leading-none">{v.name}</p>
+                    <div className="flex gap-3 mt-0.5 flex-wrap">
+                      <span className="text-[10.5px] text-white/35">{v.bedType} bed</span>
+                      <span className="text-[10.5px] text-[#c05aae]/70 font-semibold">৳{Number(v.pricePerNight).toLocaleString()}/night</span>
+                      {v.maxAdults > 0 && <span className="text-[10.5px] text-white/25">{v.maxAdults} adults</span>}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <button type="button" onClick={() => openEditVariant(i)}
+                    className="text-[10.5px] text-white/30 hover:text-white/65 transition-colors">Edit</button>
+                  <span className="text-white/15">·</span>
+                  <button type="button" onClick={() => removeVariant(i)}
+                    className="text-[10.5px] text-red-400/40 hover:text-red-400 transition-colors">Remove</button>
+                </div>
+              </div>
+            )
+          ))}
+
+          {/* Add new variant form */}
+          {editingVIdx === "new" && (
+            <VariantEditRow
+              vForm={vForm}
+              setVForm={setVForm}
+              vError={vError}
+              bedOpts={bedOpts}
+              onSave={saveVariant}
+              onCancel={() => setEditingVIdx(null)}
+              isNew
+            />
+          )}
+
+          {variants.length === 0 && editingVIdx === null && (
+            <div className="px-4 py-4 text-center text-[11px] text-amber-400/50">
+              No room types yet — add at least one variant with a bed type and price to save this category.
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="flex items-center gap-2">
         <button type="submit" disabled={isPending}
           className="px-5 py-2 rounded-xl bg-[#7A2267] text-white text-[12px] font-semibold
@@ -338,6 +568,54 @@ function CategoryForm({ propertyId, category = null, onDone }) {
         </button>
       </div>
     </form>
+  );
+}
+
+// ── Variant inline edit row ──────────────────────────────────────────────────
+
+function VariantEditRow({ vForm, setVForm, vError, bedOpts, onSave, onCancel, isNew = false }) {
+  const sv = (key) => (e) => setVForm((f) => ({ ...f, [key]: e.target.value }));
+  return (
+    <div className="px-4 py-4 bg-[#7A2267]/5 border-t border-[#7A2267]/15 space-y-3">
+      <p className="text-[10px] uppercase tracking-wider text-[#c05aae]/50 font-semibold">
+        {isNew ? "New Room Type" : "Edit Room Type"}
+      </p>
+      {vError && <p className="text-[11px] text-red-400">{vError}</p>}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="col-span-2 sm:col-span-1">
+          <label className={LABEL}>Type Name *</label>
+          <input className={INPUT} value={vForm.name} onChange={sv("name")} placeholder="e.g. Twin Room" />
+        </div>
+        <div>
+          <label className={LABEL}>Bed Type</label>
+          <AdminSelect options={bedOpts} value={vForm.bedType}
+            onChange={(v) => setVForm((f) => ({ ...f, bedType: v }))} />
+        </div>
+        <div>
+          <label className={LABEL}>Price / Night *</label>
+          <input type="number" className={INPUT} value={vForm.pricePerNight} onChange={sv("pricePerNight")} min="0" />
+        </div>
+        <div>
+          <label className={LABEL}>Max Adults</label>
+          <input type="number" className={INPUT} value={vForm.maxAdults} onChange={sv("maxAdults")} min="1" />
+        </div>
+        <div>
+          <label className={LABEL}>Max Children</label>
+          <input type="number" className={INPUT} value={vForm.maxChildren} onChange={sv("maxChildren")} min="0" />
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <button type="button" onClick={onSave}
+          className="px-4 py-1.5 rounded-lg bg-[#7A2267] text-white text-[11.5px] font-semibold
+            hover:bg-[#8e2878] transition-colors">
+          {isNew ? "Add" : "Update"}
+        </button>
+        <button type="button" onClick={onCancel}
+          className="text-[11.5px] text-white/30 hover:text-white/60 transition-colors">
+          Cancel
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -485,11 +763,25 @@ function CategoriesTab({ properties, initialCategories, initialPropertyId }) {
                             </span>
                           )}
                         </div>
-                        <div className="flex gap-4 mt-1 flex-wrap">
+                        <div className="flex gap-3 mt-1 flex-wrap items-center">
                           <span className="text-[11px] text-white/35">৳{cat.pricePerNight?.toLocaleString()}/night</span>
                           <span className="text-[11px] text-white/25">{cat.bedType}</span>
                           {cat.size && <span className="text-[11px] text-white/25">{cat.size}</span>}
+                          {cat.variants?.length > 0 && (
+                            <span className="text-[10px] text-[#c05aae]/60 bg-[#7A2267]/10 border border-[#7A2267]/20 px-2 py-0.5 rounded-full">
+                              {cat.variants.length} type{cat.variants.length !== 1 ? "s" : ""}
+                            </span>
+                          )}
                         </div>
+                        {cat.variants?.length > 0 && (
+                          <div className="flex gap-2 mt-1.5 flex-wrap">
+                            {cat.variants.map((v, i) => (
+                              <span key={i} className="text-[10px] text-white/30 bg-white/4 border border-white/8 px-2 py-0.5 rounded-full">
+                                {v.name} · {v.bedType} · ৳{Number(v.pricePerNight).toLocaleString()}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -678,7 +970,17 @@ function RoomsTab({ initialRooms, properties, allCategories, filterPropertyId, f
                         </div>
                       </td>
                       <td className="px-4 py-3 text-white/40">{room.property?.name ?? "—"}</td>
-                      <td className="px-4 py-3 text-white/40">{room.category?.name ?? "—"}</td>
+                      <td className="px-4 py-3">
+                        <span className="text-white/40">{room.category?.name ?? "—"}</span>
+                        {room.variantId && room.category?.variants?.length > 0 && (() => {
+                          const v = room.category.variants.find((x) => String(x._id) === String(room.variantId));
+                          return v ? (
+                            <span className="ml-1.5 text-[10px] text-[#c05aae]/60 bg-[#7A2267]/10 border border-[#7A2267]/20 px-1.5 py-0.5 rounded-full">
+                              {v.name}
+                            </span>
+                          ) : null;
+                        })()}
+                      </td>
                       <td className="px-4 py-3 text-white/35">{room.floor}</td>
                       <td className="px-4 py-3">
                         {canWrite ? (

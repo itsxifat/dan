@@ -3,6 +3,7 @@ import Link from "next/link";
 import dbConnect from "@/lib/db";
 import Property from "@/models/Property";
 import { getCategoryBySlug } from "@/actions/accommodation/categoryActions";
+import CategoryRoomsGrid from "./CategoryRoomsGrid";
 
 export async function generateMetadata({ params }) {
   const { slug, categorySlug } = await params;
@@ -18,13 +19,6 @@ export async function generateMetadata({ params }) {
 }
 
 export const dynamic = "force-dynamic";
-
-const ROOM_STATUS_DOT = {
-  available:   "bg-emerald-500",
-  occupied:    "bg-amber-400",
-  maintenance: "bg-orange-400",
-  blocked:     "bg-red-400",
-};
 
 export default async function CategoryPage({ params }) {
   const { slug, categorySlug } = await params;
@@ -73,17 +67,27 @@ export default async function CategoryPage({ params }) {
                     <p className="text-[13.5px] text-neutral-500 mt-2 leading-relaxed">{category.description}</p>
                   )}
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="text-[22px] font-bold text-neutral-800">
-                    ৳{category.pricePerNight?.toLocaleString()}
-                  </p>
-                  <p className="text-[11px] text-neutral-400">per night</p>
-                </div>
+                {category.variants?.length > 0 && (() => {
+                  const prices = category.variants.map((v) => v.pricePerNight).filter(Boolean);
+                  const min = Math.min(...prices);
+                  const max = Math.max(...prices);
+                  return (
+                    <div className="text-right shrink-0">
+                      <p className="text-[22px] font-bold text-neutral-800">
+                        ৳{min.toLocaleString()}
+                        {max !== min && <span className="text-[15px] font-normal text-neutral-500"> – ৳{max.toLocaleString()}</span>}
+                      </p>
+                      <p className="text-[11px] text-neutral-400">per night</p>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-3 border-t border-neutral-100">
                 {[
-                  { label: "Bed Type",    value: category.bedType },
+                  { label: "Bed Type", value: category.variants?.length > 0
+                      ? [...new Set(category.variants.map((v) => v.bedType).filter(Boolean))].join(", ")
+                      : null },
                   { label: "Room Size",   value: category.size },
                   { label: "Max Adults",  value: category.maxAdults },
                   { label: "Floor Range", value: category.floorRange },
@@ -95,6 +99,30 @@ export default async function CategoryPage({ params }) {
                 ))}
               </div>
             </div>
+
+            {/* Variants pricing table */}
+            {category.variants?.length > 0 && (
+              <div>
+                <h3 className="text-[15px] font-bold text-neutral-800 mb-3">Room Types &amp; Pricing</h3>
+                <div className="space-y-2">
+                  {category.variants.map((v) => (
+                    <div key={v._id} className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl border border-neutral-100">
+                      <div>
+                        <p className="text-[13px] font-semibold text-neutral-800">{v.name}</p>
+                        <div className="flex gap-2 mt-0.5">
+                          <span className="text-[10.5px] text-neutral-500">{v.bedType} bed</span>
+                          {v.maxAdults && <span className="text-[10.5px] text-neutral-500">· {v.maxAdults} adults</span>}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[15px] font-bold text-neutral-800">৳{v.pricePerNight.toLocaleString()}</p>
+                        <p className="text-[10px] text-neutral-400">per night</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Amenities */}
             {category.amenities?.length > 0 && (
@@ -108,51 +136,30 @@ export default async function CategoryPage({ params }) {
               </div>
             )}
 
-            {/* Room availability list */}
-            <div>
-              <h3 className="text-[15px] font-bold text-neutral-800 mb-4">
-                Room Availability
-                <span className="ml-2 text-[12px] font-normal text-neutral-400">
-                  {availableRooms.length} of {category.rooms?.length ?? 0} available
-                </span>
-              </h3>
-              {category.rooms?.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {category.rooms.map((room) => (
-                    <div
-                      key={room._id}
-                      className={`p-3 rounded-xl border text-center transition-all duration-200
-                        ${room.status === "available"
-                          ? "bg-white border-neutral-200 hover:border-[#7A2267]/30 hover:shadow-sm"
-                          : "bg-neutral-50 border-neutral-100 opacity-60"
-                        }`}
-                    >
-                      <div className="flex items-center justify-center gap-1.5 mb-1">
-                        <div className={`w-1.5 h-1.5 rounded-full ${ROOM_STATUS_DOT[room.status]}`} />
-                        <span className="text-[13px] font-semibold text-neutral-700 font-mono">{room.roomNumber}</span>
-                      </div>
-                      <p className="text-[10.5px] text-neutral-400">Floor {room.floor}</p>
-                      <p className={`text-[10px] uppercase tracking-wide mt-0.5 font-medium
-                        ${room.status === "available" ? "text-emerald-600" : "text-neutral-400"}`}>
-                        {room.status}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[13px] text-neutral-400">No rooms configured yet.</p>
-              )}
-            </div>
+            {/* Room Availability */}
+            {category.rooms?.length > 0 ? (
+              <CategoryRoomsGrid rooms={category.rooms} category={category} />
+            ) : (
+              <p className="text-[13px] text-neutral-400">No rooms configured yet.</p>
+            )}
           </div>
 
           {/* Sidebar CTA */}
           <div>
             <div className="bg-white border border-neutral-100 rounded-2xl p-6 shadow-sm space-y-4 sticky top-24">
               <div className="text-center">
-                <p className="text-[28px] font-bold text-neutral-800">
-                  ৳{category.pricePerNight?.toLocaleString()}
-                  <span className="text-[13px] font-normal text-neutral-400">/night</span>
-                </p>
+                {category.variants?.length > 0 && (() => {
+                  const prices = category.variants.map((v) => v.pricePerNight).filter(Boolean);
+                  const min = Math.min(...prices);
+                  const max = Math.max(...prices);
+                  return (
+                    <p className="text-[28px] font-bold text-neutral-800">
+                      ৳{min.toLocaleString()}
+                      {max !== min && <span className="text-[13px] font-normal text-neutral-400"> – ৳{max.toLocaleString()}</span>}
+                      <span className="text-[13px] font-normal text-neutral-400">/night</span>
+                    </p>
+                  );
+                })()}
                 {availableRooms.length > 0 ? (
                   <p className="text-[12px] text-emerald-600 mt-1">{availableRooms.length} room{availableRooms.length !== 1 ? "s" : ""} available</p>
                 ) : (
@@ -174,9 +181,14 @@ export default async function CategoryPage({ params }) {
                 <div className="flex justify-between">
                   <span>Category</span><span className="font-medium text-neutral-700">{category.name}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Bed Type</span><span className="font-medium text-neutral-700">{category.bedType}</span>
-                </div>
+                {category.variants?.length > 0 && (
+                  <div className="flex justify-between">
+                    <span>Bed Types</span>
+                    <span className="font-medium text-neutral-700">
+                      {[...new Set(category.variants.map((v) => v.bedType).filter(Boolean))].join(", ")}
+                    </span>
+                  </div>
+                )}
                 {category.maxAdults && (
                   <div className="flex justify-between">
                     <span>Max Adults</span><span className="font-medium text-neutral-700">{category.maxAdults}</span>

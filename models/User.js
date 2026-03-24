@@ -33,6 +33,14 @@ const UserSchema = new mongoose.Schema({
     enum: ["active", "suspended", "banned"],
     default: "active",
   },
+  phone: {
+    type: String,
+    default: "",
+  },
+  address: {
+    type: String,
+    default: "",
+  },
   lastLogin: {
     type: Date,
     default: null,

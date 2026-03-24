@@ -8,14 +8,22 @@ const RoomCategorySchema = new mongoose.Schema({
   coverImage:    { type: String, default: "" },
   images:        [{ type: String }],
   amenities:     [{ type: String }],
-  pricePerNight: { type: Number, required: true, default: 0 },
+  pricePerNight: { type: Number, default: 0 },
   maxAdults:     { type: Number, default: 2 },
   maxChildren:   { type: Number, default: 1 },
   bedType:       {
     type: String,
-    enum: ["Single", "Double", "Twin", "King", "Queen", "Bunk", "Sofa Bed"],
-    default: "Double",
+    enum: ["", "Single", "Double", "Twin", "King", "Queen", "Bunk", "Sofa Bed"],
+    default: "",
   },
+  variants: [{
+    name:          { type: String, required: true, trim: true },
+    bedType:       { type: String, enum: ["Single","Double","Twin","King","Queen","Bunk","Sofa Bed","Triple"], default: "Double" },
+    pricePerNight: { type: Number, required: true, default: 0 },
+    maxAdults:     { type: Number, default: 2 },
+    maxChildren:   { type: Number, default: 0 },
+    description:   { type: String, default: "" },
+  }],
   size:          { type: String, default: "" },   // e.g. "350 sq ft"
   floorRange:    { type: String, default: "" },   // e.g. "3rd–5th Floor"
   isActive:      { type: Boolean, default: true },

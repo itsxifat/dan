@@ -9,6 +9,9 @@ import {
 import ImageUpload from "@/components/ui/ImageUpload";
 
 const BED_TYPES = ["Single", "Double", "Twin", "King", "Queen", "Bunk", "Sofa Bed"];
+const VARIANT_BED_TYPES = ["Single", "Double", "Twin", "King", "Queen", "Bunk", "Sofa Bed", "Triple"];
+
+const BLANK_VARIANT = { name: "", bedType: "Double", pricePerNight: 0, maxAdults: 2, maxChildren: 0, description: "" };
 
 const INPUT = "w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-[12.5px] text-white placeholder-white/20 focus:outline-none focus:border-[#7A2267]/60 transition-all duration-200";
 const LABEL = "block text-[10px] uppercase tracking-wider text-white/35 font-semibold mb-1.5";
@@ -17,6 +20,10 @@ function CategoryForm({ propertyId, category = null, onDone }) {
   const isEdit = !!category;
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
+  const [variants, setVariants] = useState(category?.variants ?? []);
+  const [showVariantForm, setShowVariantForm] = useState(false);
+  const [editingVariantIdx, setEditingVariantIdx] = useState(null);
+  const [variantForm, setVariantForm] = useState(BLANK_VARIANT);
 
   const [form, setForm] = useState({
     name:         category?.name          ?? "",
@@ -46,6 +53,12 @@ function CategoryForm({ propertyId, category = null, onDone }) {
           maxAdults:     Number(form.maxAdults),
           maxChildren:   Number(form.maxChildren),
           sortOrder:     Number(form.sortOrder),
+          variants:      variants.map((v) => ({
+            ...v,
+            pricePerNight: Number(v.pricePerNight),
+            maxAdults:     Number(v.maxAdults),
+            maxChildren:   Number(v.maxChildren),
+          })),
         };
         if (isEdit) {
           await updateCategory(category._id, data);
@@ -114,6 +127,137 @@ function CategoryForm({ propertyId, category = null, onDone }) {
           <textarea className={`${INPUT} resize-none`} rows={3} value={form.description} onChange={set("description")} placeholder="Describe this category..." />
         </div>
       </div>
+      {/* Variants Manager */}
+      <div className="border border-white/[0.08] rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+          <p className="text-[10px] uppercase tracking-wider text-white/35 font-semibold">Room Variants</p>
+          <button type="button" onClick={() => { setVariantForm(BLANK_VARIANT); setEditingVariantIdx(null); setShowVariantForm((v) => !v); }}
+            className="text-[11px] text-[#c05aae]/70 hover:text-[#c05aae] transition-colors duration-200">
+            + Add Variant
+          </button>
+        </div>
+
+        {variants.length > 0 && (
+          <div className="divide-y divide-white/[0.04]">
+            {variants.map((v, i) => (
+              <div key={i} className="flex items-center justify-between px-4 py-2.5 bg-white/[0.02]">
+                {editingVariantIdx === i ? (
+                  <div className="w-full space-y-3 py-1">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={LABEL}>Name *</label>
+                        <input className={INPUT} value={variantForm.name} onChange={(e) => setVariantForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Twin Sharing" />
+                      </div>
+                      <div>
+                        <label className={LABEL}>Bed Type</label>
+                        <select className={INPUT} value={variantForm.bedType} onChange={(e) => setVariantForm((f) => ({ ...f, bedType: e.target.value }))}>
+                          {VARIANT_BED_TYPES.map((b) => <option key={b} value={b}>{b}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className={LABEL}>Price / Night (BDT) *</label>
+                        <input type="number" className={INPUT} value={variantForm.pricePerNight} onChange={(e) => setVariantForm((f) => ({ ...f, pricePerNight: e.target.value }))} min="0" />
+                      </div>
+                      <div>
+                        <label className={LABEL}>Max Adults</label>
+                        <input type="number" className={INPUT} value={variantForm.maxAdults} onChange={(e) => setVariantForm((f) => ({ ...f, maxAdults: e.target.value }))} min="1" />
+                      </div>
+                      <div>
+                        <label className={LABEL}>Max Children</label>
+                        <input type="number" className={INPUT} value={variantForm.maxChildren} onChange={(e) => setVariantForm((f) => ({ ...f, maxChildren: e.target.value }))} min="0" />
+                      </div>
+                      <div>
+                        <label className={LABEL}>Description</label>
+                        <input className={INPUT} value={variantForm.description} onChange={(e) => setVariantForm((f) => ({ ...f, description: e.target.value }))} placeholder="Optional" />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => { setVariants((prev) => prev.map((x, j) => j === i ? { ...x, ...variantForm } : x)); setEditingVariantIdx(null); }}
+                        className="px-4 py-1.5 rounded-lg bg-[#7A2267] text-white text-[11px] font-semibold hover:bg-[#8e2878] transition-colors">
+                        Save
+                      </button>
+                      <button type="button" onClick={() => setEditingVariantIdx(null)}
+                        className="px-3 py-1.5 text-[11px] text-white/30 hover:text-white/60 transition-colors">
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-[12px] text-white/70 font-medium">{v.name}</span>
+                      <span className="text-[11px] text-white/30 ml-2">৳{Number(v.pricePerNight).toLocaleString()}/night</span>
+                      <span className="text-[11px] text-white/25 ml-2">{v.bedType} bed</span>
+                      <span className="text-[11px] text-white/25 ml-2">{v.maxAdults} adults</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button type="button" onClick={() => { setVariantForm({ ...v }); setEditingVariantIdx(i); setShowVariantForm(false); }}
+                        className="text-[10.5px] text-white/30 hover:text-white/65 px-2 py-1 rounded-lg border border-white/[0.07] hover:border-white/15 transition-all duration-200">
+                        Edit
+                      </button>
+                      <button type="button" onClick={() => setVariants((prev) => prev.filter((_, j) => j !== i))}
+                        className="text-[10.5px] text-red-400/50 hover:text-red-400 transition-colors duration-200">
+                        ×
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {showVariantForm && (
+          <div className="px-4 py-3 border-t border-white/[0.06] space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={LABEL}>Name *</label>
+                <input className={INPUT} value={variantForm.name} onChange={(e) => setVariantForm((f) => ({ ...f, name: e.target.value }))} placeholder="e.g. Twin Sharing" />
+              </div>
+              <div>
+                <label className={LABEL}>Bed Type</label>
+                <select className={INPUT} value={variantForm.bedType} onChange={(e) => setVariantForm((f) => ({ ...f, bedType: e.target.value }))}>
+                  {VARIANT_BED_TYPES.map((b) => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={LABEL}>Price / Night (BDT) *</label>
+                <input type="number" className={INPUT} value={variantForm.pricePerNight} onChange={(e) => setVariantForm((f) => ({ ...f, pricePerNight: e.target.value }))} min="0" />
+              </div>
+              <div>
+                <label className={LABEL}>Max Adults</label>
+                <input type="number" className={INPUT} value={variantForm.maxAdults} onChange={(e) => setVariantForm((f) => ({ ...f, maxAdults: e.target.value }))} min="1" />
+              </div>
+              <div>
+                <label className={LABEL}>Max Children</label>
+                <input type="number" className={INPUT} value={variantForm.maxChildren} onChange={(e) => setVariantForm((f) => ({ ...f, maxChildren: e.target.value }))} min="0" />
+              </div>
+              <div>
+                <label className={LABEL}>Description</label>
+                <input className={INPUT} value={variantForm.description} onChange={(e) => setVariantForm((f) => ({ ...f, description: e.target.value }))} placeholder="Optional" />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button type="button"
+                onClick={() => { if (!variantForm.name.trim()) return; setVariants((prev) => [...prev, { ...variantForm }]); setVariantForm(BLANK_VARIANT); setShowVariantForm(false); }}
+                className="px-4 py-1.5 rounded-lg bg-[#7A2267] text-white text-[11px] font-semibold hover:bg-[#8e2878] transition-colors">
+                Add
+              </button>
+              <button type="button" onClick={() => setShowVariantForm(false)}
+                className="px-3 py-1.5 text-[11px] text-white/30 hover:text-white/60 transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {variants.length === 0 && !showVariantForm && (
+          <p className="px-4 py-3 text-[11px] text-white/20">
+            No variants. Add variants to support different bed types &amp; prices within this category.
+          </p>
+        )}
+      </div>
+
       <div className="flex items-center gap-2 pt-1">
         <button
           type="submit"

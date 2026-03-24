@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Booking from "@/models/Booking";
+import Settings from "@/models/Settings";
 
 export async function POST(req) {
   try {
@@ -20,7 +21,14 @@ export async function POST(req) {
     }
 
     const tran_id = `DAN-${booking._id}-${Date.now()}`;
-    await Booking.findByIdAndUpdate(bookingId, { transactionId: tran_id, updatedAt: new Date() });
+    const settings = await Settings.findOne().lean();
+    const advancePct = settings?.advancePaymentPercent ?? 30;
+    const advanceAmount = Math.ceil((booking.totalAmount * advancePct) / 100);
+    await Booking.findByIdAndUpdate(bookingId, {
+      transactionId: tran_id,
+      advanceAmount,
+      updatedAt: new Date(),
+    });
 
     const isLive = process.env.SSLCOMMERZ_IS_LIVE === "true";
     const sslUrl = isLive
@@ -35,7 +43,7 @@ export async function POST(req) {
     const params = new URLSearchParams({
       store_id:         process.env.SSLCOMMERZ_STORE_ID,
       store_passwd:     process.env.SSLCOMMERZ_STORE_PASSWORD,
-      total_amount:     booking.totalAmount.toString(),
+      total_amount:     advanceAmount.toString(),
       currency:         "BDT",
       tran_id,
       success_url:      `${base}/api/ssl/success`,
