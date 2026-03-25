@@ -92,6 +92,8 @@ export default function PropertyEditTabs({ property, categories, roomsByCategory
         {tab === "Categories" && (
           <CategoryManager
             propertyId={property._id}
+            blocks={property.blocks || []}
+            propertySupportsDayLong={property.supportsDayLong ?? false}
             initialCategories={categories}
           />
         )}
@@ -100,6 +102,7 @@ export default function PropertyEditTabs({ property, categories, roomsByCategory
           <RoomManager
             propertyId={property._id}
             categories={categories}
+            blocks={property.blocks || []}
             initialRooms={allRooms}
             onNeedCategories={() => setTab("Categories")}
           />

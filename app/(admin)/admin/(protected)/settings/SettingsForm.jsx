@@ -12,16 +12,18 @@ export default function SettingsForm({ settings }) {
   const [error, setError] = useState("");
 
   const [form, setForm] = useState({
-    maxFreeChildAge:       settings.maxFreeChildAge       ?? 5,
-    maxChildrenPerRoom:    settings.maxChildrenPerRoom    ?? 2,
-    maxGuestsPerRoom:      settings.maxGuestsPerRoom      ?? 4,
-    requireCoupleDoc:      settings.requireCoupleDoc      ?? true,
-    checkInTime:           settings.checkInTime           ?? "14:00",
-    checkOutTime:          settings.checkOutTime          ?? "12:00",
-    currency:              settings.currency              ?? "BDT",
-    taxPercent:            settings.taxPercent            ?? 0,
-    advancePaymentPercent: settings.advancePaymentPercent ?? 30,
-    cancellationPolicy:    settings.cancellationPolicy    ?? "",
+    maxFreeChildAge:       settings.maxFreeChildAge        ?? 5,
+    maxChildrenPerRoom:    settings.maxChildrenPerRoom     ?? 2,
+    maxGuestsPerRoom:      settings.maxGuestsPerRoom       ?? 4,
+    requireCoupleDoc:      settings.requireCoupleDoc       ?? true,
+    checkInTime:           settings.checkInTime            ?? "14:00",
+    checkOutTime:          settings.checkOutTime           ?? "11:00",
+    dayLongCheckInTime:    settings.dayLongCheckInTime     ?? "09:00",
+    dayLongCheckOutTime:   settings.dayLongCheckOutTime    ?? "18:00",
+    currency:              settings.currency               ?? "BDT",
+    taxPercent:            settings.taxPercent             ?? 0,
+    advancePaymentPercent: settings.advancePaymentPercent  ?? 30,
+    cancellationPolicy:    settings.cancellationPolicy     ?? "",
   });
 
   const set = (key) => (e) => { setForm((f) => ({ ...f, [key]: e.target.value })); setSaved(false); };
@@ -99,12 +101,20 @@ export default function SettingsForm({ settings }) {
         <h3 className="text-[11px] uppercase tracking-[0.18em] text-white/30 font-semibold">Times & Currency</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
-            <label className={LABEL}>Check-in Time</label>
+            <label className={LABEL}>Night Stay — Check-in Time</label>
             <input type="time" className={INPUT} value={form.checkInTime} onChange={set("checkInTime")} />
           </div>
           <div>
-            <label className={LABEL}>Check-out Time</label>
+            <label className={LABEL}>Night Stay — Check-out Time</label>
             <input type="time" className={INPUT} value={form.checkOutTime} onChange={set("checkOutTime")} />
+          </div>
+          <div>
+            <label className={LABEL}>Day Long — Check-in Time</label>
+            <input type="time" className={INPUT} value={form.dayLongCheckInTime} onChange={set("dayLongCheckInTime")} />
+          </div>
+          <div>
+            <label className={LABEL}>Day Long — Check-out Time</label>
+            <input type="time" className={INPUT} value={form.dayLongCheckOutTime} onChange={set("dayLongCheckOutTime")} />
           </div>
           <div>
             <label className={LABEL}>Currency</label>

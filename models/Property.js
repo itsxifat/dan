@@ -14,6 +14,8 @@ const PropertySchema = new mongoose.Schema({
 
   // Building-specific
   totalFloors:   { type: Number, default: 0 },
+  blocks:        { type: [String], default: [] },  // named blocks/wings within the building
+  supportsDayLong: { type: Boolean, default: false }, // whether day-long bookings are allowed
 
   // Cottage-specific
   maxGuests:     { type: Number, default: 2 },

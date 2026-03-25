@@ -5,13 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Cormorant_Garamond, Inter } from "next/font/google";
+import { Cormorant_Garamond, Montserrat } from "next/font/google";
 import { motion, AnimatePresence } from "framer-motion";
 
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"], weight: ["300", "400", "500", "600"], style: ["normal", "italic"],
-});
-const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600"] });
+const cormorant  = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400", "500"], style: ["normal", "italic"] });
+const montserrat = Montserrat({ subsets: ["latin"], weight: ["300", "400", "500", "600"] });
 
 const EASE = [0.16, 1, 0.3, 1];
 
@@ -23,13 +21,11 @@ const navLinks = [
   { name: "Contact",       href: "/contact" },
 ];
 
-const DARK_HERO_ROUTES = ["/", "/accommodation", "/facilities", "/gallery", "/booking"];
-
 export default function Navbar() {
-  const [scrolled, setScrolled]     = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [dropdownOpen, setDropdown] = useState(false);
-  const pathname  = usePathname();
+  const [scrolled,     setScrolled]     = useState(false);
+  const [mobileOpen,   setMobileOpen]   = useState(false);
+  const [dropdownOpen, setDropdown]     = useState(false);
+  const pathname = usePathname();
   const { data: session, status } = useSession();
   const dropRef = useRef(null);
 
@@ -38,7 +34,7 @@ export default function Navbar() {
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 50);
+    const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
@@ -62,79 +58,66 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const isDarkHero = DARK_HERO_ROUTES.some(
-    (r) => r === "/" ? pathname === "/" : pathname.startsWith(r)
-  );
-
-  // Scrolled: always warm white, dark text
-  // At top on dark hero: transparent, white text
-  // At top on light pages: transparent, dark text
-  const useDarkText = scrolled || (!scrolled && !isDarkHero);
-
   return (
     <>
+      {/* ── Desktop / sticky header ── */}
       <motion.header
-        initial={{ y: -24, opacity: 0 }}
+        initial={{ y: -16, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, ease: EASE, delay: 0.05 }}
-        className={`fixed top-0 inset-x-0 z-[100] transition-all duration-500 ease-out ${inter.className}`}
+        transition={{ duration: 0.65, ease: EASE }}
+        className={`sticky top-0 inset-x-0 z-[100] ${montserrat.className}`}
       >
         {/* Background */}
+        <div className={`absolute inset-0 transition-all duration-500
+          ${scrolled
+            ? "bg-white shadow-[0_1px_0_rgba(0,0,0,0.05),0_2px_20px_rgba(0,0,0,0.06)]"
+            : "bg-white/88 backdrop-blur-md"
+          }`}
+        />
+        {/* Purple hairline — only on scroll */}
         <div
-          className={`absolute inset-0 transition-all duration-500
-            ${scrolled
-              ? "bg-[#FEFCFA]/96 backdrop-blur-xl border-b border-[#1C1C1C]/[0.07] shadow-[0_1px_24px_rgba(0,0,0,0.06)]"
-              : "bg-transparent"
-            }`}
+          className={`absolute bottom-0 inset-x-0 h-px transition-opacity duration-500
+            ${scrolled ? "opacity-100" : "opacity-0"}`}
+          style={{ background: "linear-gradient(to right, transparent, rgba(122,34,103,0.22), transparent)" }}
         />
 
-        <div className="relative max-w-[1380px] mx-auto px-5 sm:px-8 lg:px-14">
-          <div className="flex items-center justify-between h-16 sm:h-[76px]">
+        <div className="relative max-w-[1400px] mx-auto px-5 sm:px-8 lg:px-14">
+          <div className="flex items-center justify-between h-[60px] sm:h-[68px]">
 
             {/* Logo */}
             <Link href="/" className="shrink-0 group">
               <Image
                 src="/logo.png"
                 alt="Dhali's Amber Nivaas"
-                width={118}
-                height={38}
-                className={`object-contain transition-all duration-400
-                  ${useDarkText
-                    ? "brightness-0 opacity-85 group-hover:opacity-100"
-                    : "brightness-0 invert opacity-85 group-hover:opacity-100"
-                  }`}
+                width={90}
+                height={26}
+                className="object-contain opacity-80 group-hover:opacity-100 transition-opacity duration-300"
                 priority
               />
             </Link>
 
-            {/* Desktop Nav */}
-            <nav className="hidden lg:flex items-center gap-8 xl:gap-10">
+            {/* Desktop nav links */}
+            <nav className="hidden lg:flex items-center gap-7 xl:gap-9">
               {navLinks.map((link) => {
                 const isActive = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`relative group text-[10.5px] tracking-[0.15em] uppercase font-medium
-                      transition-colors duration-300 py-1
-                      ${isActive
-                        ? useDarkText ? "text-[#7A2267]" : "text-white"
-                        : useDarkText
-                          ? "text-[#6B6B6B] hover:text-[#1C1C1C]"
-                          : "text-white/50 hover:text-white"
-                      }`}
+                    className={`relative group text-[10px] tracking-[0.14em] uppercase font-medium
+                      transition-colors duration-200 py-1
+                      ${isActive ? "text-[#7A2267]" : "text-[#555] hover:text-[#1a1a1a]"}`}
                   >
                     {link.name}
                     <span className="absolute -bottom-0.5 inset-x-0 flex justify-center">
                       {isActive ? (
                         <motion.span
                           layoutId="navLine"
-                          className={`h-px w-full rounded-full ${useDarkText ? "bg-[#7A2267]/60" : "bg-white/50"}`}
-                          transition={{ duration: 0.35, ease: EASE }}
+                          className="h-px w-full rounded-full bg-[#7A2267]/45"
+                          transition={{ duration: 0.3, ease: EASE }}
                         />
                       ) : (
-                        <span className={`h-px w-0 group-hover:w-full rounded-full transition-all duration-300
-                          ${useDarkText ? "bg-[#1C1C1C]/20" : "bg-white/25"}`} />
+                        <span className="h-px w-0 group-hover:w-full rounded-full transition-all duration-300 bg-[#1a1a1a]/12" />
                       )}
                     </span>
                   </Link>
@@ -142,30 +125,27 @@ export default function Navbar() {
               })}
             </nav>
 
-            {/* Desktop Right */}
-            <div className="hidden lg:flex items-center gap-5 xl:gap-6">
-              {/* Auth */}
+            {/* Desktop right: auth + reserve */}
+            <div className="hidden lg:flex items-center gap-4 xl:gap-5">
               {status === "loading" ? (
-                <div className="w-7 h-7 rounded-full bg-black/10 animate-pulse" />
+                <div className="w-7 h-7 rounded-full bg-[#f0f0f0] animate-pulse" />
               ) : session?.user ? (
                 <div ref={dropRef} className="relative">
                   <button
                     onClick={() => setDropdown((v) => !v)}
-                    className="flex items-center gap-2.5 focus:outline-none group"
+                    className="flex items-center gap-2 focus:outline-none group"
                   >
                     <Image
                       src={session.user.image ||
                         `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.name)}&background=7A2267&color=fff`}
-                      alt="Profile"
-                      width={30}
-                      height={30}
-                      className={`rounded-full object-cover border transition-all duration-200
-                        ${useDarkText ? "border-black/15 group-hover:border-black/30" : "border-white/25 group-hover:border-white/50"}`}
+                      alt="Profile" width={28} height={28}
+                      className="rounded-full object-cover border border-[#e0e0e0] group-hover:border-[#7A2267]/30 transition-colors duration-200"
                     />
                     <motion.svg
-                      animate={{ rotate: dropdownOpen ? 180 : 0 }} transition={{ duration: 0.2 }}
-                      viewBox="0 0 10 6" width="8" height="8" fill="none"
-                      className={useDarkText ? "text-[#9B8B7E]" : "text-white/35"}
+                      animate={{ rotate: dropdownOpen ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                      viewBox="0 0 10 6" width="7" height="7" fill="none"
+                      className="text-[#aaa]"
                     >
                       <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.5"
                         strokeLinecap="round" strokeLinejoin="round" />
@@ -175,30 +155,29 @@ export default function Navbar() {
                   <AnimatePresence>
                     {dropdownOpen && (
                       <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.97 }}
+                        initial={{ opacity: 0, y: 8, scale: 0.97 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 5, scale: 0.97 }}
-                        transition={{ duration: 0.2, ease: EASE }}
-                        className="absolute right-0 top-[calc(100%+14px)] min-w-[210px]
-                          bg-[#FEFCFA]/98 backdrop-blur-2xl border border-[#E8E0D8]
-                          rounded-2xl shadow-[0_16px_48px_rgba(0,0,0,0.12)] overflow-hidden"
+                        exit={{ opacity: 0, y: 4, scale: 0.97 }}
+                        transition={{ duration: 0.18, ease: EASE }}
+                        className="absolute right-0 top-[calc(100%+12px)] min-w-[200px]
+                          bg-white border border-[#ebebeb] rounded-xl
+                          shadow-[0_8px_32px_rgba(0,0,0,0.09)] overflow-hidden"
                       >
-                        <div className="px-4 py-3.5 border-b border-[#F0EBE6]">
-                          <p className="text-[9px] text-[#C4B5A8] uppercase tracking-widest mb-0.5">Signed in as</p>
-                          <p className="text-[12.5px] text-[#1C1C1C] font-medium truncate">{session.user.name}</p>
-                          <p className="text-[10.5px] text-[#9B8B7E] truncate mt-0.5">{session.user.email}</p>
+                        <div className="px-4 py-3 border-b border-[#f2f2f2]">
+                          <p className="text-[8px] text-[#bbb] uppercase tracking-widest mb-0.5">Signed in as</p>
+                          <p className="text-[12px] text-[#1a1a1a] font-semibold truncate">{session.user.name}</p>
+                          <p className="text-[10px] text-[#888] truncate mt-0.5">{session.user.email}</p>
                         </div>
-                        <div className="py-1.5">
+                        <div className="py-1">
                           <Link href="/account" onClick={() => setDropdown(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-[10.5px] uppercase tracking-widest
-                              text-[#6B6B6B] hover:text-[#1C1C1C] hover:bg-[#F7F4F0] transition-all duration-200">
+                            className="flex items-center px-4 py-2.5 text-[10px] uppercase tracking-wider
+                              text-[#555] hover:text-[#1a1a1a] hover:bg-[#fafafa] transition-colors duration-150">
                             My Account
                           </Link>
                           <button
                             onClick={() => { signOut({ callbackUrl: "/" }); setDropdown(false); }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-[10.5px] uppercase
-                              tracking-widest text-red-400/70 hover:text-red-500 hover:bg-red-50/60
-                              transition-all duration-200">
+                            className="w-full flex items-center px-4 py-2.5 text-left text-[10px] uppercase
+                              tracking-wider text-red-400 hover:text-red-500 hover:bg-red-50/40 transition-colors duration-150">
                             Sign Out
                           </button>
                         </div>
@@ -208,158 +187,178 @@ export default function Navbar() {
                 </div>
               ) : (
                 <Link href="/login"
-                  className={`text-[10.5px] tracking-[0.16em] uppercase font-medium transition-colors duration-300
-                    ${useDarkText ? "text-[#6B6B6B] hover:text-[#1C1C1C]" : "text-white/45 hover:text-white"}`}>
+                  className="text-[10px] tracking-[0.14em] uppercase font-medium text-[#666] hover:text-[#1a1a1a] transition-colors duration-200">
                   Login
                 </Link>
               )}
 
-              {/* Book Now */}
               <Link
                 href="/booking"
-                className={`group relative flex items-center gap-2.5 overflow-hidden
-                  px-5 py-2.5 rounded-full text-[10px] uppercase tracking-[0.18em] font-semibold
+                className="group flex items-center gap-2 px-4 py-2 rounded-full
+                  text-[9.5px] uppercase tracking-[0.18em] font-semibold
+                  bg-[#7A2267] text-white hover:bg-[#8a256f]
                   transition-all duration-300
-                  ${useDarkText
-                    ? "bg-[#7A2267] text-white hover:bg-[#8e2878] shadow-[0_4px_16px_rgba(122,34,103,0.25)]"
-                    : "bg-white/12 text-white border border-white/25 hover:bg-white hover:text-[#1C1C1C] backdrop-blur-sm"
-                  }`}
+                  shadow-[0_2px_12px_rgba(122,34,103,0.22)]
+                  hover:shadow-[0_4px_18px_rgba(122,34,103,0.35)]"
               >
                 <span>Reserve</span>
-                <svg viewBox="0 0 10 10" width="8" height="8" fill="none"
+                <svg viewBox="0 0 10 10" width="7" height="7" fill="none"
                   className="transition-transform duration-300 group-hover:translate-x-0.5">
-                  <path d="M1 5h7M5 2l3 3-3 3" stroke="currentColor" strokeWidth="1.4"
+                  <path d="M1 5h7M5 2l3 3-3 3" stroke="currentColor" strokeWidth="1.5"
                     strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </Link>
             </div>
 
-            {/* Mobile Toggle */}
+            {/* Mobile hamburger */}
             <button
               onClick={() => setMobileOpen((v) => !v)}
-              className={`lg:hidden relative z-[110] w-9 h-9 flex items-center justify-center focus:outline-none
-                ${mobileOpen ? "text-white" : useDarkText ? "text-[#1C1C1C]" : "text-white"}`}
+              className="lg:hidden relative z-[110] flex flex-col items-end justify-center gap-[5px] w-8 h-8 focus:outline-none"
               aria-label="Toggle menu"
             >
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" overflow="visible">
-                <motion.line
-                  x1="3" y1="7" x2="21" y2="7"
-                  animate={mobileOpen ? { x1: 5, y1: 5, x2: 19, y2: 19 } : { x1: 3, y1: 7, x2: 21, y2: 7 }}
-                  stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
-                  transition={{ duration: 0.3 }}
-                />
-                <motion.line
-                  x1="3" y1="17" x2="14" y2="17"
-                  animate={mobileOpen ? { x1: 19, y1: 5, x2: 5, y2: 19 } : { x1: 3, y1: 17, x2: 14, y2: 17 }}
-                  stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
-                  transition={{ duration: 0.3 }}
-                />
-              </svg>
+              <motion.span
+                animate={mobileOpen ? { rotate: 45, y: 5, width: "20px" } : { rotate: 0, y: 0, width: "20px" }}
+                transition={{ duration: 0.25 }}
+                className="block h-px rounded-full bg-[#333] origin-center"
+                style={{ width: 20 }}
+              />
+              <motion.span
+                animate={mobileOpen ? { opacity: 0, x: 6 } : { opacity: 1, x: 0 }}
+                transition={{ duration: 0.18 }}
+                className="block h-px rounded-full bg-[#333]"
+                style={{ width: 14 }}
+              />
+              <motion.span
+                animate={mobileOpen ? { rotate: -45, y: -5, width: "20px" } : { rotate: 0, y: 0, width: "20px" }}
+                transition={{ duration: 0.25 }}
+                className="block h-px rounded-full bg-[#333] origin-center"
+                style={{ width: 20 }}
+              />
             </button>
           </div>
         </div>
       </motion.header>
 
-      {/* Mobile Fullscreen */}
+      {/* ── Mobile fullscreen menu ── */}
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
-            key="mobile"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.22 }}
-            className={`fixed inset-0 z-[99] flex flex-col ${inter.className}`}
+            key="mobile-menu"
+            initial={{ x: "100%", opacity: 0.6 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: "100%", opacity: 0.6 }}
+            transition={{ duration: 0.38, ease: EASE }}
+            className={`fixed inset-0 z-[99] flex flex-col bg-white ${montserrat.className}`}
           >
-            <div className="absolute inset-0 bg-[#FEFCFA]/98 backdrop-blur-2xl" />
-            <div className="absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-[#7A2267]/40 to-transparent" />
-
-            <div className="relative flex flex-col h-full">
-              <div className="h-16 sm:h-[76px] shrink-0" />
-
-              <nav className="flex-1 flex flex-col justify-center px-8 sm:px-12">
-                <div className="space-y-0">
-                  {navLinks.map((link, i) => {
-                    const isActive = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
-                    return (
-                      <motion.div key={link.href}
-                        initial={{ opacity: 0, x: -16 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.05 + 0.06, duration: 0.4, ease: EASE }}
-                      >
-                        <Link href={link.href}
-                          className="group flex items-center justify-between py-4 sm:py-5 border-b border-[#E8E0D8]">
-                          <div className="flex items-center gap-4">
-                            <span className={`w-0.75 h-5 rounded-full transition-all duration-300
-                              ${isActive ? "bg-[#7A2267] opacity-100" : "opacity-0"}`} />
-                            <span className={`font-light text-[2rem] sm:text-[2.3rem] tracking-tight leading-none
-                              transition-colors duration-300
-                              ${isActive ? "text-[#1C1C1C]" : "text-[#C4B5A8] group-hover:text-[#6B6B6B]"}`}
-                              style={cormorant.style}
-                            >
-                              {link.name}
-                            </span>
-                          </div>
-                          <svg viewBox="0 0 14 14" width="12" height="12" fill="none"
-                            className={`shrink-0 transition-all duration-300 group-hover:translate-x-0.5
-                              ${isActive ? "text-[#7A2267]/50" : "text-[#D4C9BE] group-hover:text-[#9B8B7E]"}`}>
-                            <path d="M1 7h11M7 2l5 5-5 5" stroke="currentColor" strokeWidth="1.3"
-                              strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        </Link>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              </nav>
-
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35, duration: 0.4, ease: EASE }}
-                className="px-8 sm:px-12 pb-10 sm:pb-14 shrink-0 space-y-4"
+            {/* Mobile header bar */}
+            <div className="h-[60px] sm:h-[68px] shrink-0 flex items-center justify-between
+              px-5 sm:px-8 border-b border-[#f0f0f0]">
+              <Image
+                src="/logo.png" alt="Dhali's Amber Nivaas"
+                width={82} height={24}
+                className="object-contain opacity-75"
+              />
+              <button
+                onClick={() => setMobileOpen(false)}
+                className="w-8 h-8 flex items-center justify-center text-[#aaa] hover:text-[#333] transition-colors duration-200"
               >
-                <div className="h-px bg-[#E8E0D8]" />
-                {session?.user ? (
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <Image
-                        src={session.user.image ||
-                          `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.name)}&background=7A2267&color=fff`}
-                        alt="Profile" width={32} height={32}
-                        className="rounded-full object-cover border border-[#E8E0D8] shrink-0"
-                      />
-                      <div className="min-w-0">
-                        <p className="text-[12px] text-[#1C1C1C] font-medium truncate">{session.user.name}</p>
-                        <p className="text-[10px] text-[#9B8B7E] truncate">{session.user.email}</p>
-                      </div>
-                    </div>
-                    <button onClick={() => signOut({ callbackUrl: "/" })}
-                      className="shrink-0 text-[10px] uppercase tracking-widest text-red-400/70 hover:text-red-500 transition-colors">
-                      Sign out
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-4">
-                    <span className="text-[10px] text-[#C4B5A8] uppercase tracking-widest">Not signed in</span>
-                    <Link href="/login"
-                      className="text-[10px] uppercase tracking-widest text-[#7A2267] hover:underline transition-colors">
-                      Login
-                    </Link>
-                  </div>
-                )}
-                <Link href="/booking"
-                  className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl
-                    bg-[#7A2267] text-white text-[10.5px] uppercase tracking-[0.22em] font-semibold
-                    hover:bg-[#8e2878] transition-colors duration-300 shadow-[0_4px_20px_rgba(122,34,103,0.25)]">
-                  Reserve Your Stay
-                  <svg viewBox="0 0 10 10" width="9" height="9" fill="none">
-                    <path d="M1 5h7M5 2l3 3-3 3" stroke="currentColor" strokeWidth="1.4"
-                      strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </Link>
-              </motion.div>
+                <svg viewBox="0 0 20 20" width="16" height="16" fill="none"
+                  stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                  <path d="M4 4l12 12M16 4L4 16" />
+                </svg>
+              </button>
             </div>
+
+            {/* Nav links */}
+            <nav className="flex-1 overflow-y-auto px-6 sm:px-10 pt-4">
+              {navLinks.map((link, i) => {
+                const isActive = link.href === "/" ? pathname === "/" : pathname.startsWith(link.href);
+                return (
+                  <motion.div
+                    key={link.href}
+                    initial={{ opacity: 0, x: 24 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.04 + 0.04, duration: 0.35, ease: EASE }}
+                  >
+                    <Link
+                      href={link.href}
+                      className="group flex items-center justify-between py-4 border-b border-[#f4f4f4]"
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <span className={`w-0.5 h-[18px] rounded-full transition-all duration-300
+                          ${isActive ? "bg-[#7A2267]" : "bg-transparent group-hover:bg-[#7A2267]/25"}`} />
+                        <span
+                          className={`text-[1.6rem] sm:text-[1.85rem] font-light tracking-tight leading-none
+                            transition-colors duration-200
+                            ${isActive ? "text-[#1a1a1a]" : "text-[#ccc] group-hover:text-[#666]"}`}
+                          style={cormorant.style}
+                        >
+                          {link.name}
+                        </span>
+                      </div>
+                      <svg viewBox="0 0 16 16" width="11" height="11" fill="none"
+                        className={`shrink-0 transition-all duration-300 group-hover:translate-x-0.5
+                          ${isActive ? "text-[#7A2267]/45" : "text-[#ddd] group-hover:text-[#aaa]"}`}>
+                        <path d="M2 8h11M8 3l5 5-5 5" stroke="currentColor" strokeWidth="1.4"
+                          strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </nav>
+
+            {/* Bottom: auth + CTA */}
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.26, duration: 0.38, ease: EASE }}
+              className="shrink-0 px-6 sm:px-10 pt-4 pb-8 sm:pb-12 space-y-3 border-t border-[#f0f0f0]"
+            >
+              {session?.user ? (
+                <div className="flex items-center justify-between py-1">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Image
+                      src={session.user.image ||
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.name)}&background=7A2267&color=fff`}
+                      alt="Profile" width={30} height={30}
+                      className="rounded-full object-cover border border-[#e8e8e8] shrink-0"
+                    />
+                    <div className="min-w-0">
+                      <p className="text-[11.5px] text-[#1a1a1a] font-medium truncate">{session.user.name}</p>
+                      <p className="text-[9.5px] text-[#999] truncate">{session.user.email}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => signOut({ callbackUrl: "/" })}
+                    className="shrink-0 text-[9px] uppercase tracking-wider text-red-400 hover:text-red-500 transition-colors duration-200">
+                    Sign out
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between py-1">
+                  <span className="text-[9.5px] text-[#ccc] uppercase tracking-wider">Not signed in</span>
+                  <Link href="/login"
+                    className="text-[9.5px] uppercase tracking-wider font-medium text-[#7A2267] hover:underline">
+                    Login →
+                  </Link>
+                </div>
+              )}
+
+              <Link
+                href="/booking"
+                className="flex items-center justify-center gap-2.5 w-full py-3.5 rounded-xl
+                  bg-[#7A2267] text-white text-[10px] uppercase tracking-[0.2em] font-semibold
+                  hover:bg-[#8a256f] transition-colors duration-300
+                  shadow-[0_4px_18px_rgba(122,34,103,0.2)]"
+              >
+                Reserve Your Stay
+                <svg viewBox="0 0 10 10" width="8" height="8" fill="none">
+                  <path d="M1 5h7M5 2l3 3-3 3" stroke="currentColor" strokeWidth="1.5"
+                    strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </Link>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

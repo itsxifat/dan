@@ -12,7 +12,7 @@ export async function getAccountData(userId) {
   await dbConnect();
 
   const user = await User.findById(userId)
-    .select("name email image phone address role createdAt")
+    .select("name email image phone address role createdAt password")
     .lean();
   if (!user) throw new Error("User not found.");
 
@@ -20,22 +20,28 @@ export async function getAccountData(userId) {
     .populate("property", "name location coverImage")
     .populate("category", "name")
     .populate("room", "roomNumber floor")
+    .populate("roomBookings.room", "roomNumber floor")
+    .populate("roomBookings.category", "name")
     .sort({ createdAt: -1 })
-    .limit(10)
     .lean();
 
   const allBookings = await Booking.find({ bookedBy: userId })
-    .select("totalAmount paidAmount status")
+    .select("totalAmount paidAmount bookingMode status")
     .lean();
 
-  const totalBookings = allBookings.length;
-  const totalSpent = allBookings.reduce((sum, b) => sum + (b.paidAmount || 0), 0);
+  const totalBookings   = allBookings.length;
+  const totalSpent      = allBookings.reduce((sum, b) => sum + (b.paidAmount || 0), 0);
+  const nightStayCount  = allBookings.filter((b) => b.bookingMode !== "day_long").length;
+  const dayLongCount    = allBookings.filter((b) => b.bookingMode === "day_long").length;
+
+  const hasPassword = !!user.password;
+  delete user.password;
 
   return JSON.parse(
     JSON.stringify({
-      user,
+      user: { ...user, hasPassword },
       bookings,
-      stats: { totalBookings, totalSpent },
+      stats: { totalBookings, totalSpent, nightStayCount, dayLongCount },
     })
   );
 }

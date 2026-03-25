@@ -48,15 +48,25 @@ export default async function AccountPage() {
 
       {/* Stats bar */}
       <div className="bg-white border-b border-[#EDE5F0]">
-        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-8">
-          <div className="text-center">
-            <p className="text-[1.5rem] font-bold text-[#7A2267]">{data.stats.totalBookings}</p>
-            <p className="text-[10px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold">Bookings</p>
+        <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-6 sm:gap-10 overflow-x-auto">
+          <div className="text-center shrink-0">
+            <p className="text-[1.4rem] font-bold text-[#7A2267]">{data.stats.totalBookings}</p>
+            <p className="text-[10px] uppercase tracking-[0.12em] text-[#9B8BAB] font-semibold">Total</p>
           </div>
-          <div className="w-px h-10 bg-[#EDE5F0]" />
-          <div className="text-center">
-            <p className="text-[1.5rem] font-bold text-[#7A2267]">৳{data.stats.totalSpent.toLocaleString()}</p>
-            <p className="text-[10px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold">Total Spent</p>
+          <div className="w-px h-8 bg-[#EDE5F0] shrink-0" />
+          <div className="text-center shrink-0">
+            <p className="text-[1.4rem] font-bold text-[#7A2267]">{data.stats.nightStayCount}</p>
+            <p className="text-[10px] uppercase tracking-[0.12em] text-[#9B8BAB] font-semibold">Night Stay</p>
+          </div>
+          <div className="w-px h-8 bg-[#EDE5F0] shrink-0" />
+          <div className="text-center shrink-0">
+            <p className="text-[1.4rem] font-bold text-amber-500">{data.stats.dayLongCount}</p>
+            <p className="text-[10px] uppercase tracking-[0.12em] text-[#9B8BAB] font-semibold">Day Long</p>
+          </div>
+          <div className="w-px h-8 bg-[#EDE5F0] shrink-0" />
+          <div className="text-center shrink-0">
+            <p className="text-[1.4rem] font-bold text-[#7A2267]">৳{data.stats.totalSpent.toLocaleString()}</p>
+            <p className="text-[10px] uppercase tracking-[0.12em] text-[#9B8BAB] font-semibold">Total Spent</p>
           </div>
         </div>
       </div>

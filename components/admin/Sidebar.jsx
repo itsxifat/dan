@@ -106,6 +106,18 @@ const NAV = [
           </svg>
         ),
       },
+      {
+        label: "Day Long Packages",
+        href: "/admin/daylong-packages",
+        permission: "accommodation.write",
+        Icon: ({ active }) => (
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
+            <circle cx="9" cy="9" r="7" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.08" : "0"} />
+            <path d="M9 5v4l2.5 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ),
+      },
     ],
   },
   {

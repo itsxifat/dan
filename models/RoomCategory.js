@@ -9,6 +9,7 @@ const RoomCategorySchema = new mongoose.Schema({
   images:        [{ type: String }],
   amenities:     [{ type: String }],
   pricePerNight: { type: Number, default: 0 },
+  pricePerDay:   { type: Number, default: 0 },  // Day-long package price
   maxAdults:     { type: Number, default: 2 },
   maxChildren:   { type: Number, default: 1 },
   bedType:       {
@@ -16,16 +17,24 @@ const RoomCategorySchema = new mongoose.Schema({
     enum: ["", "Single", "Double", "Twin", "King", "Queen", "Bunk", "Sofa Bed"],
     default: "",
   },
+  // Optional: scoped to a specific building block (empty = property-wide)
+  block: { type: String, default: "" },
+
+  // Day-long package support
+  supportsDayLong: { type: Boolean, default: false },
+
   variants: [{
-    name:          { type: String, required: true, trim: true },
-    bedType:       { type: String, enum: ["Single","Double","Twin","King","Queen","Bunk","Sofa Bed","Triple"], default: "Double" },
-    pricePerNight: { type: Number, required: true, default: 0 },
-    maxAdults:     { type: Number, default: 2 },
-    maxChildren:   { type: Number, default: 0 },
-    description:   { type: String, default: "" },
+    name:            { type: String, required: true, trim: true },
+    bedType:         { type: String, enum: ["Single","Double","Twin","King","Queen","Bunk","Sofa Bed","Triple"], default: "Double" },
+    pricePerNight:   { type: Number, required: true, default: 0 },
+    supportsDayLong: { type: Boolean, default: false },  // variant-level day-long opt-in
+    pricePerDay:     { type: Number, default: 0 },       // variant day-long price
+    maxAdults:       { type: Number, default: 2 },
+    maxChildren:     { type: Number, default: 0 },
+    description:     { type: String, default: "" },
   }],
-  size:          { type: String, default: "" },   // e.g. "350 sq ft"
-  floorRange:    { type: String, default: "" },   // e.g. "3rd–5th Floor"
+  size:          { type: String, default: "" },
+  floorRange:    { type: String, default: "" },
   isActive:      { type: Boolean, default: true },
   sortOrder:     { type: Number, default: 0 },
   createdAt:     { type: Date, default: Date.now },
@@ -34,7 +43,7 @@ const RoomCategorySchema = new mongoose.Schema({
 
 RoomCategorySchema.index({ property: 1, slug: 1 }, { unique: true });
 
-// Delete stale cached model in dev so schema changes are picked up on hot-reload
+// Clear cached model in dev so schema changes are hot-reloaded
 if (process.env.NODE_ENV !== "production" && mongoose.models.RoomCategory) {
   delete mongoose.models.RoomCategory;
 }

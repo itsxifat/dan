@@ -6,27 +6,73 @@ import { revalidatePath } from "next/cache";
 import dbConnect from "@/lib/db";
 import Booking from "@/models/Booking";
 import Room from "@/models/Room";
+import RoomCategory from "@/models/RoomCategory";
 import Settings from "@/models/Settings";
+import BookingLock from "@/models/BookingLock";
 import { hasPermission } from "@/lib/permissions";
 
-/** Check availability and return pricing for a property/room+dates combo */
-export async function checkAvailability({ propertyId, categoryId, roomId, checkIn, checkOut }) {
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Resolve the effective price for a room.
+ * Priority: room.pricePerNight > variant.pricePerNight > category.pricePerNight
+ */
+function resolveNightPrice(room, category) {
+  if (room.pricePerNight > 0) return room.pricePerNight;
+  if (room.variantId && category?.variants?.length) {
+    const v = category.variants.find(
+      (x) => x._id.toString() === room.variantId.toString()
+    );
+    if (v?.pricePerNight > 0) return v.pricePerNight;
+  }
+  return category?.pricePerNight ?? 0;
+}
+
+function resolveDayPrice(room, category) {
+  if (room.pricePerDay > 0) return room.pricePerDay;
+  if (room.variantId && category?.variants?.length) {
+    const v = category.variants.find(
+      (x) => x._id.toString() === room.variantId.toString()
+    );
+    if (v?.pricePerDay > 0) return v.pricePerDay;
+  }
+  return category?.pricePerDay ?? 0;
+}
+
+// ─── Check Availability ───────────────────────────────────────────────────────
+
+export async function checkAvailability({ roomId, propertyId, checkIn, checkOut, bookingMode }) {
   await dbConnect();
 
   const checkInDate  = new Date(checkIn);
   const checkOutDate = new Date(checkOut);
-  const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
 
-  if (nights < 1) throw new Error("Check-out must be after check-in.");
+  if (checkOutDate <= checkInDate) throw new Error("Check-out must be after check-in.");
+
+  const nights = bookingMode === "day_long"
+    ? 0
+    : Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
 
   if (roomId) {
-    const conflict = await Booking.exists({
-      room: roomId,
+    const booked = await Booking.exists({
+      $or: [
+        { room: roomId },
+        { "roomBookings.room": roomId },
+      ],
       status: { $nin: ["cancelled", "no_show"] },
       checkIn:  { $lt: checkOutDate },
       checkOut: { $gt: checkInDate },
     });
-    return { available: !conflict, nights };
+
+    // Check active locks
+    const locked = await BookingLock.exists({
+      roomId,
+      checkIn:  { $lt: checkOutDate },
+      checkOut: { $gt: checkInDate },
+      expiresAt: { $gt: new Date() },
+    });
+
+    return { available: !booked && !locked, nights };
   }
 
   // Cottage
@@ -40,67 +86,232 @@ export async function checkAvailability({ propertyId, categoryId, roomId, checkI
   return { available: !conflict, nights };
 }
 
-/** Creates a pending booking before payment */
+/**
+ * Get available rooms for a property+category+dates combo,
+ * filtered for day-long support if needed.
+ */
+export async function getAvailableRoomsForBooking({
+  propertyId,
+  categoryId,
+  checkIn,
+  checkOut,
+  bookingMode = "night_stay",
+}) {
+  await dbConnect();
+
+  const checkInDate  = new Date(checkIn);
+  const checkOutDate = new Date(checkOut);
+
+  const category = await RoomCategory.findById(categoryId).lean();
+  if (!category) return [];
+
+  // All rooms in this category
+  const query = { property: propertyId, category: categoryId, status: "available" };
+  const allRooms = await Room.find(query).lean();
+
+  // Booked room IDs in this date range
+  const activeBookings = await Booking.find({
+    $or: [
+      { room: { $in: allRooms.map((r) => r._id) } },
+      { "roomBookings.room": { $in: allRooms.map((r) => r._id) } },
+    ],
+    status: { $nin: ["cancelled", "no_show"] },
+    checkIn:  { $lt: checkOutDate },
+    checkOut: { $gt: checkInDate },
+  }).select("room roomBookings").lean();
+
+  const bookedRoomIds = new Set();
+  for (const b of activeBookings) {
+    if (b.room) bookedRoomIds.add(b.room.toString());
+    for (const rb of (b.roomBookings || [])) {
+      if (rb.room) bookedRoomIds.add(rb.room.toString());
+    }
+  }
+
+  // Locked room IDs
+  const now = new Date();
+  const locks = await BookingLock.find({
+    roomId: { $in: allRooms.map((r) => r._id) },
+    checkIn:  { $lt: checkOutDate },
+    checkOut: { $gt: checkInDate },
+    expiresAt: { $gt: now },
+  }).lean();
+  const lockedRoomIds = new Set(locks.map((l) => l.roomId.toString()));
+
+  const available = allRooms.filter((room) => {
+    if (bookedRoomIds.has(room._id.toString())) return false;
+    if (lockedRoomIds.has(room._id.toString())) return false;
+
+    // Day-long filter
+    if (bookingMode === "day_long") {
+      // room.dayLongSupported: null = inherit from category, true/false = override
+      const roomDayLong = room.dayLongSupported === null || room.dayLongSupported === undefined
+        ? category.supportsDayLong
+        : room.dayLongSupported;
+      if (!roomDayLong) return false;
+    }
+
+    return true;
+  });
+
+  // Attach resolved price and variant data
+  return available.map((room) => ({
+    ...room,
+    _id: room._id.toString(),
+    property: room.property.toString(),
+    category: room.category.toString(),
+    resolvedNightPrice: resolveNightPrice(room, category),
+    resolvedDayPrice:   resolveDayPrice(room, category),
+    maxAdults:   category.maxAdults   ?? 2,
+    maxChildren: category.maxChildren ?? 0,
+    categoryName: category.name,
+    bedType:      category.bedType ?? "",
+  }));
+}
+
+// ─── Create Pending Booking ───────────────────────────────────────────────────
+
 export async function createPendingBooking(bookingData) {
   await dbConnect();
 
+  const session  = await getServerSession(authOptions);
   const settings = await Settings.findOne().lean() || {};
+
   const {
-    propertyId, categoryId, roomId, bookingType,
-    checkIn, checkOut, nights, primaryGuest, guests,
-    isCoupleBooking, coupleDocumentUrl, coupleDocMethod,
-    nidUrl, nidMethod, specialRequests, basePrice, paymentMethod,
+    bookingMode,        // "night_stay" | "day_long"
+    propertyId,
+    bookingType,        // "room" | "cottage"
+    roomBookings,       // [{ roomId, categoryId, guests: [...] }]
+    cottageRoomId,      // for cottage bookings
+    categoryId,         // for cottage
+    dayLongPackageId,
+    checkIn,
+    checkOut,
+    nights,
+    primaryGuest,
+    nidUrl,
+    nidMethod,
+    specialRequests,
+    paymentMethod,
+    advancePercent,
   } = bookingData;
 
-  const taxPercent = settings.taxPercent ?? 0;
-  const subtotal   = basePrice * nights;
-  const taxes      = Math.round((subtotal * taxPercent) / 100);
+  const taxPercent   = settings.taxPercent ?? 0;
+  const maxFreeChildAge = settings.maxFreeChildAge ?? 5;
+
+  // ── Resolve pricing and guests ──────────────────────────────────────────────
+  let basePrice = 0;
+  const resolvedRoomBookings = [];
+  const allGuestsList = [];
+
+  if (bookingType === "room" && roomBookings?.length > 0) {
+    for (const rb of roomBookings) {
+      const room     = await Room.findById(rb.roomId).lean();
+      const category = await RoomCategory.findById(rb.categoryId).lean();
+      if (!room || !category) throw new Error("Invalid room or category.");
+
+      const nightPrice = resolveNightPrice(room, category);
+      const dayPrice   = resolveDayPrice(room, category);
+      const price      = bookingMode === "day_long" ? dayPrice : nightPrice;
+      basePrice += price;
+
+      const classifiedGuests = (rb.guests || []).map((g) => ({
+        ...g,
+        type: g.age <= maxFreeChildAge ? "child" : "adult",
+      }));
+
+      // Detect couple room
+      const hasOppositeGender = (() => {
+        const adults = classifiedGuests.filter((g) => g.type === "adult");
+        const hasMale   = adults.some((g) => g.gender === "male");
+        const hasFemale = adults.some((g) => g.gender === "female");
+        return hasMale && hasFemale;
+      })();
+
+      resolvedRoomBookings.push({
+        room:              rb.roomId,
+        category:          rb.categoryId,
+        pricePerNight:     nightPrice,
+        pricePerDay:       dayPrice,
+        guests:            classifiedGuests,
+        isCoupleRoom:      hasOppositeGender && (settings.requireCoupleDoc ?? true),
+        coupleDocumentUrl: rb.coupleDocumentUrl || "",
+        coupleDocMethod:   rb.coupleDocMethod   || "",
+      });
+
+      allGuestsList.push(...classifiedGuests);
+    }
+  }
+
+  // Cottage price (backwards compat)
+  if (bookingType === "cottage") {
+    const cottageProp = await (await import("@/models/Property")).default
+      .findById(propertyId).lean();
+    basePrice = cottageProp?.pricePerNight ?? 0;
+  }
+
+  // Add day long package price if selected (package price is always per-day, not multiplied by nights)
+  let packagePrice = 0;
+  if (dayLongPackageId) {
+    const DayLongPackage = (await import("@/models/DayLongPackage")).default;
+    const pkg = await DayLongPackage.findById(dayLongPackageId).lean();
+    packagePrice = pkg?.price ?? 0;
+  }
+
+  const multiplier  = bookingMode === "day_long" ? 1 : (nights || 1);
+  const subtotal    = basePrice * multiplier + packagePrice;
+  const taxes       = Math.round((subtotal * taxPercent) / 100);
   const totalAmount = subtotal + taxes;
+
+  const advancePct = advancePercent ?? (paymentMethod === "pay_at_desk" ? 0 : (settings.advancePaymentPercent ?? 100));
+  const advanceAmt = Math.round((totalAmount * advancePct) / 100);
+  const remaining  = totalAmount - advanceAmt;
 
   const bookingNumber = `DAN-${Date.now()}`;
 
-  // Classify guests as adult/child
-  const maxFreeChildAge = settings.maxFreeChildAge ?? 5;
-  const classifiedGuests = guests.map((g) => ({
-    ...g,
-    type: g.age <= maxFreeChildAge ? "child" : "adult",
-  }));
-
   const booking = await Booking.create({
     bookingNumber,
-    property:  propertyId,
-    category:  categoryId  || null,
-    room:      roomId      || null,
+    bookingMode: bookingMode || "night_stay",
+    property:    propertyId,
     bookingType,
+    roomBookings: resolvedRoomBookings,
+    category:     categoryId || null,
+    room:         cottageRoomId || null,
+    dayLongPackage: dayLongPackageId || null,
     checkIn:   new Date(checkIn),
     checkOut:  new Date(checkOut),
-    nights,
+    nights:    nights ?? 0,
     primaryGuest,
-    guests: classifiedGuests,
-    totalGuests: guests.length,
-    isCoupleBooking: !!isCoupleBooking,
-    coupleDocumentUrl: coupleDocumentUrl || "",
-    coupleDocMethod:   coupleDocMethod   || "",
-    nidUrl:            nidUrl            || "",
-    nidMethod:         nidMethod         || "upload",
-    specialRequests:   specialRequests   || "",
+    allGuests:   allGuestsList,
+    totalGuests: allGuestsList.length,
+    nidUrl:       nidUrl    || "",
+    nidMethod:    nidMethod || "upload",
+    specialRequests: specialRequests || "",
     basePrice,
     subtotal,
     taxes,
     totalAmount,
+    advancePercent: advancePct,
+    advanceAmount:  advanceAmt,
+    paidAmount:     0,
+    remainingAmount: remaining,
     paymentMethod,
     paymentStatus: "unpaid",
-    status: "pending",
-    bookedBy: null, // filled in if session exists
+    status:    "pending",
+    bookedBy:  session?.user?.id || null,
   });
 
   return {
     success: true,
-    bookingId: booking._id.toString(),
+    bookingId:     booking._id.toString(),
     bookingNumber,
     totalAmount,
+    advanceAmount: advanceAmt,
+    remainingAmount: remaining,
   };
 }
+
+// ─── Admin: Confirm Pay-at-Desk ───────────────────────────────────────────────
 
 export async function confirmPayAtDesk(bookingId) {
   await dbConnect();
@@ -112,7 +323,9 @@ export async function confirmPayAtDesk(bookingId) {
   return { success: true };
 }
 
-export async function getAdminBookings({ page = 1, limit = 15, status = "", search = "", propertyId = "" } = {}) {
+// ─── Admin: List Bookings ─────────────────────────────────────────────────────
+
+export async function getAdminBookings({ page = 1, limit = 15, status = "", search = "", propertyId = "", bookingMode = "" } = {}) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.role || !hasPermission(session.user.role, "bookings.read")) {
     throw new Error("Unauthorized");
@@ -121,8 +334,9 @@ export async function getAdminBookings({ page = 1, limit = 15, status = "", sear
   await dbConnect();
 
   const query = {};
-  if (status) query.status = status;
-  if (propertyId) query.property = propertyId;
+  if (status)      query.status = status;
+  if (propertyId)  query.property = propertyId;
+  if (bookingMode) query.bookingMode = bookingMode;
   if (search) query.$or = [
     { bookingNumber: { $regex: search, $options: "i" } },
     { "primaryGuest.name":  { $regex: search, $options: "i" } },
@@ -138,6 +352,7 @@ export async function getAdminBookings({ page = 1, limit = 15, status = "", sear
       .populate("property", "name type")
       .populate("category", "name")
       .populate("room", "roomNumber floor")
+      .populate("roomBookings.room", "roomNumber floor")
       .lean(),
     Booking.countDocuments(query),
   ]);
@@ -161,6 +376,8 @@ export async function getBookingById(bookingId) {
     .populate("property", "name type location")
     .populate("category", "name pricePerNight bedType")
     .populate("room", "roomNumber floor")
+    .populate("roomBookings.room", "roomNumber floor")
+    .populate("roomBookings.category", "name")
     .lean();
 
   return booking ? JSON.parse(JSON.stringify(booking)) : null;
@@ -183,17 +400,21 @@ export async function updateBookingStatus(bookingId, status) {
     { returnDocument: "after" }
   );
 
-  // If cancelled — free up room if it was set to occupied
-  if (status === "cancelled" && booking?.room) {
-    await Room.findByIdAndUpdate(booking.room, { status: "available" });
-  }
-  // If checked in — mark room as occupied
-  if (status === "checked_in" && booking?.room) {
-    await Room.findByIdAndUpdate(booking.room, { status: "occupied" });
-  }
-  // If checked out — mark room as available
-  if (status === "checked_out" && booking?.room) {
-    await Room.findByIdAndUpdate(booking.room, { status: "available" });
+  const roomIds = [
+    ...(booking?.room ? [booking.room] : []),
+    ...(booking?.roomBookings?.map((rb) => rb.room) || []),
+  ];
+
+  if (roomIds.length > 0) {
+    if (status === "cancelled") {
+      await Room.updateMany({ _id: { $in: roomIds } }, { status: "available" });
+    }
+    if (status === "checked_in") {
+      await Room.updateMany({ _id: { $in: roomIds } }, { status: "occupied" });
+    }
+    if (status === "checked_out") {
+      await Room.updateMany({ _id: { $in: roomIds } }, { status: "available" });
+    }
   }
 
   revalidatePath("/admin/bookings");
@@ -217,7 +438,6 @@ export async function getUnviewedBookingCount() {
   if (!session?.user?.role || !hasPermission(session.user.role, "bookings.read")) return 0;
 
   await dbConnect();
-  // Count bookings created in last 24 hours with pending status
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
   return Booking.countDocuments({ status: "pending", createdAt: { $gte: since } });
 }

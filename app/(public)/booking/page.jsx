@@ -12,8 +12,10 @@ export default async function BookingPage({ searchParams }) {
   const settings = await getSettings();
 
   const preselect = {
-    propertyId: params?.property ?? null,
-    categoryId: params?.category ?? null,
+    propertyId: params?.property  ?? null,
+    categoryId: params?.category  ?? null,
+    checkIn:    params?.checkIn   ?? null,
+    checkOut:   params?.checkOut  ?? null,
   };
 
   return (

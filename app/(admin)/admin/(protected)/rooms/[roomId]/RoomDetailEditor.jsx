@@ -31,6 +31,16 @@ export default function RoomDetailEditor({ room }) {
   const [videos,         setVideos]         = useState(room.videos      || []);
   const [extraAmenities, setExtraAmenities] = useState(room.extraAmenities || []);
 
+  // Pricing overrides
+  const [pricePerNight,   setPricePerNight]   = useState(room.pricePerNight ?? 0);
+  const [pricePerDay,     setPricePerDay]     = useState(room.pricePerDay   ?? 0);
+  // Day-long override: null = inherit from category, true = supported, false = not supported
+  const [dayLongOverride, setDayLongOverride] = useState(
+    room.dayLongSupported === null || room.dayLongSupported === undefined
+      ? "inherit"
+      : room.dayLongSupported ? "yes" : "no"
+  );
+
   // Facility editing
   const [newFacName, setNewFacName] = useState("");
   const [newFacIcon, setNewFacIcon] = useState("");
@@ -104,6 +114,9 @@ export default function RoomDetailEditor({ room }) {
           facilities,
           videos,
           extraAmenities,
+          pricePerNight:    Number(pricePerNight),
+          pricePerDay:      Number(pricePerDay),
+          dayLongSupported: dayLongOverride === "inherit" ? null : dayLongOverride === "yes",
         });
         setSaved(true);
       } catch (err) {
@@ -120,6 +133,36 @@ export default function RoomDetailEditor({ room }) {
             {error}
           </div>
         )}
+
+        {/* Pricing Overrides */}
+        <div className="bg-white/2 border border-white/6 rounded-2xl p-6 space-y-4">
+          <h3 className="text-[11px] uppercase tracking-[0.18em] text-white/30 font-semibold">
+            Pricing Overrides <OptionalBadge />
+          </h3>
+          <SectionHint>Leave as 0 to inherit the price from the room category / variant.</SectionHint>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={LABEL}>Override Price / Night (BDT)</label>
+              <input type="number" className={INPUT} value={pricePerNight} min="0"
+                onChange={(e) => { setPricePerNight(e.target.value); setSaved(false); }} />
+            </div>
+            <div>
+              <label className={LABEL}>Override Price / Day (BDT)</label>
+              <input type="number" className={INPUT} value={pricePerDay} min="0"
+                onChange={(e) => { setPricePerDay(e.target.value); setSaved(false); }} />
+            </div>
+          </div>
+          <div>
+            <label className={LABEL}>Day Long Support</label>
+            <select className={INPUT} value={dayLongOverride}
+              onChange={(e) => { setDayLongOverride(e.target.value); setSaved(false); }}>
+              <option value="inherit">Inherit from category</option>
+              <option value="yes">Supported (override: yes)</option>
+              <option value="no">Not supported (override: no)</option>
+            </select>
+            <SectionHint>Override the category setting for this specific room only.</SectionHint>
+          </div>
+        </div>
 
         {/* Description — optional */}
         <div className="bg-white/2 border border-white/6 rounded-2xl p-6">

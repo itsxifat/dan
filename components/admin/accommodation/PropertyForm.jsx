@@ -33,6 +33,8 @@ export default function PropertyForm({ property = null }) {
     coverImage:   property?.coverImage   ?? "",
     images:       property?.images ?? [],
     amenities:    property?.amenities    ?? [],
+    blocks:         property?.blocks         ?? [],
+    supportsDayLong: property?.supportsDayLong ?? false,
     totalFloors:  property?.totalFloors  ?? 5,
     maxGuests:    property?.maxGuests    ?? 4,
     pricePerNight:property?.pricePerNight?? 0,
@@ -40,6 +42,7 @@ export default function PropertyForm({ property = null }) {
     isFeatured:   property?.isFeatured   ?? false,
     sortOrder:    property?.sortOrder    ?? 0,
   });
+  const [blockInput, setBlockInput] = useState("");
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const setNum = (key) => (e) => setForm((f) => ({ ...f, [key]: Number(e.target.value) }));
@@ -71,7 +74,7 @@ export default function PropertyForm({ property = null }) {
       try {
         if (isEdit) {
           await updateProperty(property._id, data);
-          router.push(`/admin/accommodation/${property._id}`);
+          router.refresh();
         } else {
           const result = await createProperty(data);
           router.push(`/admin/accommodation/${result.id}`);
@@ -151,6 +154,82 @@ export default function PropertyForm({ property = null }) {
             <div>
               <label className={LABEL}>Total Floors</label>
               <input type="number" className={INPUT} value={form.totalFloors} onChange={setNum("totalFloors")} min="1" />
+            </div>
+          )}
+
+          {form.type === "building" && (
+            <div className="sm:col-span-2">
+              <label className={LABEL}>Building Blocks / Wings</label>
+              <p className="text-[10px] text-white/25 mb-2">
+                If your property has separate blocks or wings (e.g. "Block A", "North Wing"), add them here. Rooms can then be assigned to a specific block.
+              </p>
+              {/* Existing blocks as removable tags */}
+              {form.blocks.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {form.blocks.map((b) => (
+                    <span key={b} className="inline-flex items-center gap-1.5 text-[11.5px] font-medium
+                      bg-[#7A2267]/15 border border-[#7A2267]/30 text-[#c05aae] px-3 py-1 rounded-full">
+                      {b}
+                      <button
+                        type="button"
+                        onClick={() => setForm((f) => ({ ...f, blocks: f.blocks.filter((x) => x !== b) }))}
+                        className="text-[#c05aae]/60 hover:text-[#c05aae] transition-colors leading-none"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input
+                  className={`${INPUT} flex-1`}
+                  value={blockInput}
+                  onChange={(e) => setBlockInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const val = blockInput.trim();
+                      if (val && !form.blocks.includes(val)) {
+                        setForm((f) => ({ ...f, blocks: [...f.blocks, val] }));
+                        setBlockInput("");
+                      }
+                    }
+                  }}
+                  placeholder='e.g. "Block A" then press Enter'
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const val = blockInput.trim();
+                    if (val && !form.blocks.includes(val)) {
+                      setForm((f) => ({ ...f, blocks: [...f.blocks, val] }));
+                      setBlockInput("");
+                    }
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-white/6 border border-white/10 text-[12px]
+                    text-white/50 hover:text-white hover:bg-white/10 transition-all duration-200 shrink-0"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          )}
+
+          {form.type === "building" && (
+            <div className="sm:col-span-2">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <div className="relative shrink-0">
+                  <input type="checkbox" className="sr-only" checked={form.supportsDayLong}
+                    onChange={(e) => setForm((f) => ({ ...f, supportsDayLong: e.target.checked }))} />
+                  <div className={`w-10 h-6 rounded-full transition-colors duration-200 ${form.supportsDayLong ? "bg-[#7A2267]" : "bg-white/10"}`} />
+                  <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-all duration-200 ${form.supportsDayLong ? "translate-x-4" : "translate-x-0"}`} />
+                </div>
+                <div>
+                  <p className="text-[13px] font-medium text-white/70">Day Long Bookings Supported</p>
+                  <p className="text-[10.5px] text-white/25 mt-0.5">Allow guests to book a full-day stay (without overnight) at this property.</p>
+                </div>
+              </label>
             </div>
           )}
 

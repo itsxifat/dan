@@ -31,10 +31,11 @@ function Row({ label, value, bold = false, large = false }) {
 }
 
 const PAYMENT_STATUS_LABELS = {
-  unpaid:   { text: "Unpaid",   color: "text-amber-700 bg-amber-50 border-amber-200" },
-  paid:     { text: "Paid",     color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
-  refunded: { text: "Refunded", color: "text-blue-700 bg-blue-50 border-blue-200" },
-  failed:   { text: "Failed",   color: "text-red-700 bg-red-50 border-red-200" },
+  unpaid:   { text: "Unpaid",           color: "text-amber-700 bg-amber-50 border-amber-200" },
+  partial:  { text: "Partially Paid",   color: "text-orange-700 bg-orange-50 border-orange-200" },
+  paid:     { text: "Paid",             color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
+  refunded: { text: "Refunded",         color: "text-blue-700 bg-blue-50 border-blue-200" },
+  failed:   { text: "Failed",           color: "text-red-700 bg-red-50 border-red-200" },
 };
 
 const BOOKING_STATUS_LABELS = {
@@ -56,6 +57,8 @@ export default async function InvoicePage({ params }) {
     .populate("property", "name location")
     .populate("category", "name")
     .populate("room", "roomNumber floor")
+    .populate("roomBookings.room", "roomNumber floor")
+    .populate("roomBookings.category", "name")
     .lean();
 
   if (!booking) notFound();
@@ -67,8 +70,10 @@ export default async function InvoicePage({ params }) {
   }
 
   const b = JSON.parse(JSON.stringify(booking));
-  const pStatus = PAYMENT_STATUS_LABELS[b.paymentStatus] || PAYMENT_STATUS_LABELS.unpaid;
+  const pStatus    = PAYMENT_STATUS_LABELS[b.paymentStatus] || PAYMENT_STATUS_LABELS.unpaid;
   const balanceDue = Math.max(0, (b.totalAmount || 0) - (b.paidAmount || 0));
+  const isDayLong  = b.bookingMode === "day_long";
+  const isMultiRoom = b.roomBookings?.length > 0;
 
   return (
     <div className="min-h-screen bg-[#F7F4F0] print:bg-white py-10 px-4">
@@ -119,11 +124,25 @@ export default async function InvoicePage({ params }) {
               <div>
                 <p className="text-[9px] uppercase tracking-[0.2em] text-[#B8A4C2] font-semibold mb-3">Booking Details</p>
                 <p className="text-[12.5px] text-[#1C1C1C] font-medium">{b.property?.name}</p>
-                {b.category && <p className="text-[12px] text-[#9B8BAB]">{b.category.name}</p>}
-                {b.room && (
-                  <p className="text-[12px] text-[#9B8BAB]">
-                    Room #{b.room.roomNumber} · Floor {b.room.floor}
-                  </p>
+                <p className="text-[11px] font-semibold text-[#9B8BAB] uppercase tracking-wide mt-0.5">
+                  {isDayLong ? "☀ Day Long" : "🌙 Night Stay"}
+                </p>
+                {isMultiRoom ? (
+                  b.roomBookings.map((rb, i) => (
+                    <p key={i} className="text-[12px] text-[#9B8BAB]">
+                      {rb.room?.roomNumber ? `Room #${rb.room.roomNumber}` : `Room ${i + 1}`}
+                      {rb.category?.name ? ` · ${rb.category.name}` : ""}
+                    </p>
+                  ))
+                ) : (
+                  <>
+                    {b.category && <p className="text-[12px] text-[#9B8BAB]">{b.category.name}</p>}
+                    {b.room && (
+                      <p className="text-[12px] text-[#9B8BAB]">
+                        Room #{b.room.roomNumber} · Floor {b.room.floor}
+                      </p>
+                    )}
+                  </>
                 )}
                 <p className="text-[11px] text-[#9B8BAB] mt-1.5">
                   Status:{" "}
@@ -134,32 +153,58 @@ export default async function InvoicePage({ params }) {
 
             {/* Stay dates */}
             <div className="bg-[#F7F4F0] rounded-xl px-5 py-4">
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-[9px] uppercase tracking-[0.15em] text-[#B8A4C2] font-semibold mb-1">Check-in</p>
-                  <p className="text-[13px] font-semibold text-[#1C1C1C]">{fmtDate(b.checkIn)}</p>
+              {isDayLong ? (
+                <div className="text-center">
+                  <p className="text-[9px] uppercase tracking-[0.15em] text-[#B8A4C2] font-semibold mb-1">Date</p>
+                  <p className="text-[14px] font-semibold text-[#1C1C1C]">{fmtDate(b.checkIn)}</p>
+                  <p className="text-[11px] text-[#9B8BAB] mt-0.5">Day Long Package</p>
                 </div>
-                <div className="border-x border-[#EDE5F0]">
-                  <p className="text-[9px] uppercase tracking-[0.15em] text-[#B8A4C2] font-semibold mb-1">Duration</p>
-                  <p className="text-[13px] font-semibold text-[#7A2267]">
-                    {b.nights} night{b.nights !== 1 ? "s" : ""}
-                  </p>
+              ) : (
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-[9px] uppercase tracking-[0.15em] text-[#B8A4C2] font-semibold mb-1">Check-in</p>
+                    <p className="text-[13px] font-semibold text-[#1C1C1C]">{fmtDate(b.checkIn)}</p>
+                  </div>
+                  <div className="border-x border-[#EDE5F0]">
+                    <p className="text-[9px] uppercase tracking-[0.15em] text-[#B8A4C2] font-semibold mb-1">Duration</p>
+                    <p className="text-[13px] font-semibold text-[#7A2267]">
+                      {b.nights} night{b.nights !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] uppercase tracking-[0.15em] text-[#B8A4C2] font-semibold mb-1">Check-out</p>
+                    <p className="text-[13px] font-semibold text-[#1C1C1C]">{fmtDate(b.checkOut)}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[9px] uppercase tracking-[0.15em] text-[#B8A4C2] font-semibold mb-1">Check-out</p>
-                  <p className="text-[13px] font-semibold text-[#1C1C1C]">{fmtDate(b.checkOut)}</p>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Price breakdown */}
             <div>
               <p className="text-[9px] uppercase tracking-[0.2em] text-[#B8A4C2] font-semibold mb-3">Price Breakdown</p>
               <div className="space-y-0">
-                <Row
-                  label={`${b.nights} night${b.nights !== 1 ? "s" : ""} × ৳${(b.basePrice || 0).toLocaleString()}`}
-                  value={`৳${(b.subtotal || 0).toLocaleString()}`}
-                />
+                {isMultiRoom ? (
+                  b.roomBookings.map((rb, i) => {
+                    const price = isDayLong ? (rb.pricePerDay || 0) : (rb.pricePerNight || 0);
+                    return (
+                      <Row
+                        key={i}
+                        label={`${rb.room?.roomNumber ? `Room #${rb.room.roomNumber}` : `Room ${i + 1}`}${rb.category?.name ? ` (${rb.category.name})` : ""} × ${isDayLong ? "1 day" : `${b.nights}N`}`}
+                        value={`৳${(price * (isDayLong ? 1 : b.nights)).toLocaleString()}`}
+                      />
+                    );
+                  })
+                ) : (
+                  <Row
+                    label={isDayLong
+                      ? `Day Long × ৳${(b.basePrice || 0).toLocaleString()}`
+                      : `${b.nights} night${b.nights !== 1 ? "s" : ""} × ৳${(b.basePrice || 0).toLocaleString()}`}
+                    value={`৳${(b.subtotal || 0).toLocaleString()}`}
+                  />
+                )}
+                {isMultiRoom && b.subtotal && (
+                  <Row label="Subtotal" value={`৳${(b.subtotal || 0).toLocaleString()}`} />
+                )}
                 {b.taxes > 0 && (
                   <Row label="Taxes & Fees" value={`৳${b.taxes.toLocaleString()}`} />
                 )}
@@ -167,10 +212,10 @@ export default async function InvoicePage({ params }) {
                 {b.advanceAmount > 0 && (
                   <Row label="Advance Paid (online)" value={`৳${b.advanceAmount.toLocaleString()}`} />
                 )}
-                {b.paidAmount > 0 && (
+                {b.paidAmount > 0 && b.paidAmount !== b.advanceAmount && (
                   <Row label="Amount Paid" value={`৳${b.paidAmount.toLocaleString()}`} />
                 )}
-                <Row label="Balance Due at Check-in" value={`৳${balanceDue.toLocaleString()}`} bold large={balanceDue > 0} />
+                <Row label="Balance Due at Property" value={`৳${balanceDue.toLocaleString()}`} bold large={balanceDue > 0} />
               </div>
             </div>
 
@@ -179,7 +224,9 @@ export default async function InvoicePage({ params }) {
               <div>
                 <p className="text-[9px] uppercase tracking-[0.2em] text-[#B8A4C2] font-semibold mb-1">Payment Method</p>
                 <p className="text-[13px] font-medium text-[#1C1C1C]">
-                  {b.paymentMethod === "sslcommerz" ? "Online (SSLCommerz)" : "Pay at Desk"}
+                  {b.paymentMethod === "sslcommerz" ? "Online (SSLCommerz)"
+                    : b.paymentMethod === "partial" ? "Partial Online + Desk"
+                    : "Pay at Desk"}
                 </p>
                 {b.transactionId && (
                   <p className="text-[11px] text-[#9B8BAB] font-mono mt-0.5">{b.transactionId}</p>

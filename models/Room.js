@@ -18,10 +18,17 @@ const RoomSchema = new mongoose.Schema({
   videos:         { type: [String], default: [] },
   extraAmenities: { type: [String], default: [] },
   variantId:      { type: mongoose.Schema.Types.ObjectId, default: null },
-  pricePerNight:  { type: Number, default: 0 },    // 0 = inherit from variant/category
-  block:          { type: String, default: "" },   // e.g. "Block A", "North Wing"
-  row:            { type: String, default: "" },   // e.g. "Row 1", "Corridor A"
-  facing:         { type: String, default: "" },   // e.g. "Garden", "Street", "Opposite Block"
+
+  // Price overrides — 0 = inherit from variant/category
+  pricePerNight:  { type: Number, default: 0 },
+  pricePerDay:    { type: Number, default: 0 },  // Day-long override price
+
+  // Day-long exception: null = inherit from category, true/false = explicit override
+  dayLongSupported: { type: Boolean, default: null },
+
+  block:          { type: String, default: "" },
+  row:            { type: String, default: "" },
+  facing:         { type: String, default: "" },
   avgRating:      { type: Number, default: 0 },
   reviewCount:    { type: Number, default: 0 },
   createdAt:      { type: Date, default: Date.now },

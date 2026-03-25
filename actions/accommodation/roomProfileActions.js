@@ -33,6 +33,9 @@ export async function updateRoomProfile({
   description,
   coverImage,
   images,
+  pricePerNight,
+  pricePerDay,
+  dayLongSupported,
 }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.role || !hasPermission(session.user.role, "accommodation.write")) {
@@ -43,12 +46,15 @@ export async function updateRoomProfile({
   await dbConnect();
 
   await Room.findByIdAndUpdate(roomId, {
-    ...(facilities      !== undefined && { facilities }),
-    ...(videos          !== undefined && { videos }),
-    ...(extraAmenities  !== undefined && { extraAmenities }),
-    ...(description     !== undefined && { description }),
-    ...(coverImage      !== undefined && { coverImage }),
-    ...(images          !== undefined && { images }),
+    ...(facilities       !== undefined && { facilities }),
+    ...(videos           !== undefined && { videos }),
+    ...(extraAmenities   !== undefined && { extraAmenities }),
+    ...(description      !== undefined && { description }),
+    ...(coverImage       !== undefined && { coverImage }),
+    ...(images           !== undefined && { images }),
+    ...(pricePerNight    !== undefined && { pricePerNight: Number(pricePerNight) }),
+    ...(pricePerDay      !== undefined && { pricePerDay: Number(pricePerDay) }),
+    ...(dayLongSupported !== undefined && { dayLongSupported }),
     updatedAt: new Date(),
   });
 

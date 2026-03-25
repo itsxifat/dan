@@ -117,6 +117,7 @@ export async function updateProperty(propertyId, data) {
   revalidatePath("/accommodation");
   revalidatePath(`/accommodation/${data.slug || ""}`);
   revalidatePath("/admin/accommodation");
+  revalidatePath(`/admin/accommodation/${propertyId}`);
   return { success: true };
 }
 
