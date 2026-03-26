@@ -15,8 +15,10 @@ const EASE = [0.16, 1, 0.3, 1];
 
 const navLinks = [
   { name: "Home",          href: "/" },
+  { name: "About",         href: "/about" },
   { name: "Accommodation", href: "/accommodation" },
   { name: "Facilities",    href: "/facilities" },
+  { name: "Corporate",     href: "/corporate" },
   { name: "Gallery",       href: "/gallery" },
   { name: "Contact",       href: "/contact" },
 ];

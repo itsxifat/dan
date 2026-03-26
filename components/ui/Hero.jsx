@@ -5,11 +5,11 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Playfair_Display, Montserrat, Cormorant_Garamond } from "next/font/google";
+import { Cormorant, DM_Sans, Cormorant_Garamond } from "next/font/google";
 
-const playfair   = Playfair_Display({ subsets: ["latin"], weight: ["400", "500", "600"] });
-const montserrat = Montserrat({ subsets: ["latin"], weight: ["300", "400", "500", "600"] });
-const cormorant  = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400", "500"], style: ["italic"] });
+const cinzel    = Cormorant({ subsets: ["latin"], weight: ["300", "400", "500", "600"], style: ["normal", "italic"] });
+const dmSans    = DM_Sans({ subsets: ["latin"], weight: ["300", "400", "500", "600"] });
+const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400", "500"], style: ["italic"] });
 
 // ─── Date Utilities ────────────────────────────────────────────────────────────
 function todayDate() {
@@ -227,7 +227,7 @@ function PremiumCalendar({ checkIn, checkOut, onCheckIn, onCheckOut, anchorEl, o
               </svg>
             </button>
             <div className="text-center">
-              <span className={`text-[14px] font-semibold text-white tracking-wide ${playfair.className}`}>
+              <span className={`text-[14px] font-semibold text-white tracking-wide ${cinzel.className}`}>
                 {MONTH_NAMES[viewMonth]}
               </span>
               <span className="text-[12px] text-white/40 ml-2">{viewYear}</span>
@@ -344,7 +344,7 @@ function PremiumCalendar({ checkIn, checkOut, onCheckIn, onCheckOut, anchorEl, o
 function Counter({ label, value, min, max, onChange }) {
   return (
     <div>
-      <label className={`block text-[8px] sm:text-[9px] tracking-[0.18em] uppercase text-[#9B8BAB] font-semibold mb-1.5 ${montserrat.className}`}>
+      <label className={`block text-[8px] sm:text-[9px] tracking-[0.18em] uppercase text-[#9B8BAB] font-semibold mb-1.5 ${dmSans.className}`}>
         {label}
       </label>
       <div className="flex items-center bg-[#F8F4FA] border border-[#E4DAE8] rounded-xl overflow-hidden">
@@ -355,15 +355,15 @@ function Counter({ label, value, min, max, onChange }) {
           className={`w-10 h-[42px] flex items-center justify-center text-xl font-light
             text-[#7A2267] hover:bg-[#7A2267]/10 active:bg-[#7A2267]/20
             disabled:text-[#D4CAD8] disabled:cursor-not-allowed
-            transition-colors duration-150 shrink-0 select-none ${montserrat.className}`}
+            transition-colors duration-150 shrink-0 select-none ${dmSans.className}`}
         >
           −
         </button>
         <div className="flex-1 text-center py-1">
-          <span className={`block text-[14px] font-semibold text-[#1a1410] leading-none ${montserrat.className}`}>
+          <span className={`block text-[14px] font-semibold text-[#1a1410] leading-none ${dmSans.className}`}>
             {value}
           </span>
-          <span className={`block text-[8px] text-[#B0A0B8] uppercase tracking-wider leading-none mt-0.5 ${montserrat.className}`}>
+          <span className={`block text-[8px] text-[#B0A0B8] uppercase tracking-wider leading-none mt-0.5 ${dmSans.className}`}>
             {label === "Adults"
               ? value === 1 ? "adult" : "adults"
               : value === 0 ? "none" : value === 1 ? "child" : "children"}
@@ -376,7 +376,7 @@ function Counter({ label, value, min, max, onChange }) {
           className={`w-10 h-[42px] flex items-center justify-center text-xl font-light
             text-[#7A2267] hover:bg-[#7A2267]/10 active:bg-[#7A2267]/20
             disabled:text-[#D4CAD8] disabled:cursor-not-allowed
-            transition-colors duration-150 shrink-0 select-none ${montserrat.className}`}
+            transition-colors duration-150 shrink-0 select-none ${dmSans.className}`}
         >
           +
         </button>
@@ -479,7 +479,7 @@ export default function Hero() {
           <div className="mb-4 sm:mb-6 lg:mb-7">
             <motion.div variants={fadeUp}
               className={`text-[2.15rem] sm:text-[3.2rem] lg:text-[3.6rem] xl:text-[4.2rem]
-                text-white leading-[1.08] tracking-[-0.01em] font-normal ${playfair.className}`}>
+                text-white leading-[1.08] tracking-[-0.01em] font-normal ${cinzel.className}`}>
               Where there&apos;s unity,
             </motion.div>
             <motion.div variants={fadeUp}
@@ -494,7 +494,7 @@ export default function Hero() {
           {/* Subtitle */}
           <motion.div variants={fadeUp} className="flex items-center gap-3 justify-center lg:justify-start">
             <div className="w-6 h-px bg-[#7A2267]/60 hidden lg:block shrink-0" />
-            <p className={`text-[11px] sm:text-[13px] text-white/50 leading-relaxed font-light ${montserrat.className}`}>
+            <p className={`text-[11px] sm:text-[13px] text-white/50 leading-relaxed font-light ${dmSans.className}`}>
               Serenity &amp; world-class hospitality, tailored for you.
             </p>
           </motion.div>
@@ -510,7 +510,7 @@ export default function Hero() {
             pb-6 sm:pb-8 lg:pb-0"
         >
           <div className={`w-full lg:max-w-[360px] bg-white rounded-2xl overflow-hidden
-            shadow-[0_20px_60px_rgba(0,0,0,0.25),0_0_0_1px_rgba(0,0,0,0.05)] ${montserrat.className}`}>
+            shadow-[0_20px_60px_rgba(0,0,0,0.25),0_0_0_1px_rgba(0,0,0,0.05)] ${dmSans.className}`}>
 
             {/* Purple top accent */}
             <div className="h-[3px] bg-[#7A2267]" />
@@ -519,7 +519,7 @@ export default function Hero() {
 
               {/* Minimal header */}
               <div className="flex items-center justify-between mb-4">
-                <h3 className={`text-[13px] font-semibold text-[#1a1410] tracking-wide ${playfair.className}`}>
+                <h3 className={`text-[13px] font-semibold text-[#1a1410] tracking-wide ${cinzel.className}`}>
                   Reserve Your Stay
                 </h3>
                 <AnimatePresence>
@@ -530,7 +530,7 @@ export default function Hero() {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.85 }}
                       transition={{ duration: 0.2 }}
-                      className={`text-[11px] font-semibold text-[#7A2267] bg-[#7A2267]/8 px-2.5 py-1 rounded-full ${montserrat.className}`}
+                      className={`text-[11px] font-semibold text-[#7A2267] bg-[#7A2267]/8 px-2.5 py-1 rounded-full ${dmSans.className}`}
                     >
                       {nights} {nights === 1 ? "night" : "nights"}
                     </motion.span>

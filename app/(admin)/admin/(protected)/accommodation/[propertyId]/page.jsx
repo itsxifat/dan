@@ -44,12 +44,15 @@ export default async function PropertyEditPage({ params }) {
     });
   }
 
+  const serialisedCategories   = JSON.parse(JSON.stringify(categories));
+  const serialisedRoomsByCategory = JSON.parse(JSON.stringify(roomsByCategory));
+
   return (
     <div className="p-6 lg:p-8">
       <PropertyEditTabs
         property={serialised}
-        categories={categories}
-        roomsByCategory={roomsByCategory}
+        categories={serialisedCategories}
+        roomsByCategory={serialisedRoomsByCategory}
         canWrite={canWrite}
       />
     </div>

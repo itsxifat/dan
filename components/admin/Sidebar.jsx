@@ -77,21 +77,6 @@ const NAV = [
         ),
       },
       {
-        label: "Rooms",
-        href: "/admin/rooms",
-        permission: "accommodation.read",
-        Icon: ({ active }) => (
-          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
-            <rect x="1.5" y="5" width="15" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"
-              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.08" : "0"} />
-            <path d="M1.5 9.5h15" stroke="currentColor" strokeWidth="1.2" />
-            <path d="M6.5 5V3M11.5 5V3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-            <path d="M5.5 12.5h2M10.5 12.5h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"
-              opacity={active ? "1" : "0.6"} />
-          </svg>
-        ),
-      },
-      {
         label: "Bookings",
         href: "/admin/bookings",
         permission: "bookings.read",
@@ -115,6 +100,82 @@ const NAV = [
             <circle cx="9" cy="9" r="7" stroke="currentColor" strokeWidth="1.3"
               fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.08" : "0"} />
             <path d="M9 5v4l2.5 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ),
+      },
+    ],
+  },
+  {
+    group: "Corporate",
+    items: [
+      {
+        label: "Visit Requests",
+        href: "/admin/corporate/visits",
+        permission: "corporate.read",
+        Icon: ({ active }) => (
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
+            <rect x="2" y="2" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.08" : "0"} />
+            <path d="M5 6h8M5 9h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"
+              opacity={active ? "1" : "0.6"} />
+            <circle cx="13" cy="13" r="3" fill={active ? "currentColor" : "none"}
+              fillOpacity={active ? "0.25" : "0"} stroke="currentColor" strokeWidth="1.2" />
+            <path d="M12 13h2M13 12v2" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+          </svg>
+        ),
+      },
+      {
+        label: "Events Gallery",
+        href: "/admin/corporate/events",
+        permission: "corporate.write",
+        Icon: ({ active }) => (
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
+            <rect x="1.5" y="3.5" width="15" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.08" : "0"} />
+            <circle cx="5.5" cy="7.5" r="1.2" stroke="currentColor" strokeWidth="1.1"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.3" : "0"} />
+            <path d="M1.5 12.5l3.5-3 2.5 2 2-1.5 4 3.5" stroke="currentColor" strokeWidth="1.2"
+              strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ),
+      },
+    ],
+  },
+  {
+    group: "Dining",
+    items: [
+      {
+        label: "Menu Manager",
+        href: "/admin/dining",
+        permission: "dining.read",
+        Icon: ({ active }) => (
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
+            <path d="M3 2v6a3 3 0 0 0 3 3v5M6 2v6M9 2v6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"
+              opacity={active ? "1" : "0.8"} />
+            <path d="M13 2c0 0 0 7-1.5 7.5V16" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.1" : "0"} />
+          </svg>
+        ),
+      },
+    ],
+  },
+  {
+    group: "Content",
+    items: [
+      {
+        label: "Gallery",
+        href: "/admin/gallery",
+        permission: "settings.write",
+        Icon: ({ active }) => (
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
+            <rect x="1.5" y="1.5" width="6.5" height="6.5" rx="1.3" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.18" : "0"} />
+            <rect x="10" y="1.5" width="6.5" height="6.5" rx="1.3" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.18" : "0"} />
+            <rect x="1.5" y="10" width="6.5" height="6.5" rx="1.3" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.18" : "0"} />
+            <rect x="10" y="10" width="6.5" height="6.5" rx="1.3" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.18" : "0"} />
           </svg>
         ),
       },
