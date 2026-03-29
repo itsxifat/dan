@@ -10,12 +10,13 @@ import DiningSection from "../../components/sections/DiningSection";
 import CtaSection from "../../components/sections/CtaSection";
 import FooterSection from "../../components/sections/FooterSection";
 import { getProperties } from "@/actions/accommodation/propertyActions";
-import { getPublishedGalleryPhotos } from "@/actions/gallery/galleryActions";
+import { getPublishedGalleryPhotos, getGalleryCategories } from "@/actions/gallery/galleryActions";
 
 export default async function Home() {
-  const [{ properties }, galleryPhotos] = await Promise.all([
+  const [{ properties }, galleryPhotos, galleryCategories] = await Promise.all([
     getProperties({ onlyActive: true, limit: 6 }),
     getPublishedGalleryPhotos({ limit: 24 }),
+    getGalleryCategories(),
   ]);
 
   return (
@@ -24,7 +25,10 @@ export default async function Home() {
       <AboutSection />
       <RoomsSection properties={properties} />
       <ExperienceSection />
-      <GallerySection photos={galleryPhotos} />
+      <GallerySection
+        photos={galleryPhotos}
+        categories={galleryCategories.map((c) => c.name)}
+      />
       <TestimonialsSection />
       <PackagesSection />
       <CorporateSection />

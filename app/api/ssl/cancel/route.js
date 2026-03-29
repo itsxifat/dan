@@ -10,7 +10,12 @@ export async function POST(req) {
 
     if (tran_id) {
       await dbConnect();
-      const booking = await Booking.findOne({ transactionId: tran_id });
+      // Delete the pending booking — user cancelled so it was never confirmed
+      const booking = await Booking.findOneAndDelete({
+        transactionId: tran_id,
+        paymentStatus: { $ne: "paid" },
+      });
+
       if (booking) {
         return NextResponse.redirect(
           new URL(`/booking/cancel?ref=${booking.bookingNumber}`, process.env.NEXT_PUBLIC_BASE_URL)

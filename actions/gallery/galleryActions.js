@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import dbConnect from "@/lib/db";
 import GalleryPhoto from "@/models/GalleryPhoto";
+import GalleryCategory from "@/models/GalleryCategory";
 import { hasPermission } from "@/lib/permissions";
 
 async function requireAdmin() {
@@ -14,11 +15,38 @@ async function requireAdmin() {
   }
 }
 
+// ── Categories ────────────────────────────────────────────────────────────────
+export async function getGalleryCategories() {
+  await dbConnect();
+  const cats = await GalleryCategory.find({}).sort({ name: 1 }).lean();
+  return JSON.parse(JSON.stringify(cats));
+}
+
+export async function createGalleryCategory(name) {
+  await requireAdmin();
+  await dbConnect();
+  const trimmed = name?.trim();
+  if (!trimmed) return { success: false, error: "Name is required." };
+  const exists = await GalleryCategory.findOne({ name: trimmed });
+  if (exists) return { success: false, error: "Category already exists." };
+  const cat = await GalleryCategory.create({ name: trimmed });
+  revalidatePath("/");
+  return { success: true, category: JSON.parse(JSON.stringify(cat)) };
+}
+
+export async function deleteGalleryCategory(id) {
+  await requireAdmin();
+  await dbConnect();
+  await GalleryCategory.findByIdAndDelete(id);
+  revalidatePath("/");
+  return { success: true };
+}
+
 // ── Public ────────────────────────────────────────────────────────────────────
-export async function getPublishedGalleryPhotos({ limit = 24 } = {}) {
+export async function getPublishedGalleryPhotos({ limit = 100 } = {}) {
   await dbConnect();
   const photos = await GalleryPhoto.find({ isPublished: true })
-    .sort({ sortOrder: 1, createdAt: -1 })
+    .sort({ placement: 1, category: 1, sortOrder: 1, createdAt: -1 })
     .limit(limit)
     .lean();
   return JSON.parse(JSON.stringify(photos));
@@ -30,7 +58,9 @@ export async function getAllGalleryPhotos({ page = 1, limit = 48 } = {}) {
   await dbConnect();
   const skip = (page - 1) * limit;
   const [photos, total] = await Promise.all([
-    GalleryPhoto.find({}).sort({ category: 1, sortOrder: 1, createdAt: -1 }).skip(skip).limit(limit).lean(),
+    GalleryPhoto.find({})
+      .sort({ placement: 1, category: 1, sortOrder: 1, createdAt: -1 })
+      .skip(skip).limit(limit).lean(),
     GalleryPhoto.countDocuments(),
   ]);
   return {
@@ -49,6 +79,8 @@ export async function createGalleryPhoto(data) {
     image:       data.image,
     altText:     data.altText || "",
     category:    data.category || "General",
+    imageSize:   data.imageSize || "square",
+    placement:   data.placement || "none",
     isPublished: data.isPublished ?? true,
     sortOrder:   Number(data.sortOrder) || 0,
   });
@@ -64,6 +96,8 @@ export async function updateGalleryPhoto(id, data) {
     image:       data.image,
     altText:     data.altText || "",
     category:    data.category || "General",
+    imageSize:   data.imageSize || "square",
+    placement:   data.placement || "none",
     isPublished: data.isPublished ?? true,
     sortOrder:   Number(data.sortOrder) || 0,
   });

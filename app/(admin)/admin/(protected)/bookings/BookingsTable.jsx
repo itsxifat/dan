@@ -16,6 +16,7 @@ const STATUS_STYLE = {
 
 const PAYMENT_STYLE = {
   paid:     "text-emerald-400",
+  partial:  "text-blue-400",
   unpaid:   "text-amber-400",
   failed:   "text-red-400",
   refunded: "text-white/40",

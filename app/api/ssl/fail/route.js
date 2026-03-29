@@ -10,11 +10,11 @@ export async function POST(req) {
 
     if (tran_id) {
       await dbConnect();
-      const booking = await Booking.findOneAndUpdate(
-        { transactionId: tran_id, paymentStatus: { $ne: "paid" } },
-        { paymentStatus: "failed", updatedAt: new Date() },
-        { new: true }
-      );
+      // Delete the pending booking — payment failed so it was never real
+      const booking = await Booking.findOneAndDelete({
+        transactionId: tran_id,
+        paymentStatus: { $ne: "paid" },
+      });
 
       if (booking) {
         return NextResponse.redirect(

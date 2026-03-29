@@ -59,9 +59,10 @@ const STATUS_STYLE = {
 };
 
 const PAYMENT_COLOR = {
-  paid: "text-emerald-400",
-  unpaid: "text-amber-400",
-  failed: "text-red-400",
+  paid:     "text-emerald-400",
+  partial:  "text-blue-400",
+  unpaid:   "text-amber-400",
+  failed:   "text-red-400",
   refunded: "text-white/40",
 };
 
@@ -194,7 +195,10 @@ export default async function BookingDetailPage({ params }) {
           <Field label="Val ID"         value={booking.valId} />
           <Field label="Bank Txn ID"    value={booking.bankTxnId} />
           <Field label="Card Type"      value={booking.cardType} />
-          <Field label="Paid Amount"    value={booking.paidAmount ? `৳${booking.paidAmount?.toLocaleString()}` : null} />
+          <Field label="Paid Amount"      value={booking.paidAmount ? `৳${booking.paidAmount?.toLocaleString()}` : null} />
+          {booking.paymentStatus === "partial" && booking.remainingAmount > 0 && (
+            <Field label="Due at Check-in" value={`৳${booking.remainingAmount.toLocaleString()}`} />
+          )}
         </div>
       )}
 

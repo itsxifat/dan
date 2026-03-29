@@ -33,19 +33,21 @@ export async function POST(req) {
     const validation = await validateTransaction(val_id);
 
     if (validation.status === "VALID" || validation.status === "VALIDATED") {
-      // Idempotent update — only update if not already paid
-      await Booking.findOneAndUpdate(
-        { transactionId: tran_id, paymentStatus: { $ne: "paid" } },
-        {
-          paymentStatus: "paid",
-          status:        "confirmed",
-          valId:         val_id,
-          bankTxnId:     bank_tran_id,
-          cardType:      card_type,
-          paidAmount:    parseFloat(amount || "0"),
-          updatedAt:     new Date(),
-        }
-      );
+      const paid = parseFloat(amount || "0");
+      const booking = await Booking.findOne({ transactionId: tran_id });
+      if (booking && booking.paymentStatus !== "paid") {
+        const isPartial = booking.advancePercent < 100;
+        await Booking.findByIdAndUpdate(booking._id, {
+          paymentStatus:   isPartial ? "partial" : "paid",
+          status:          "confirmed",
+          valId:           val_id,
+          bankTxnId:       bank_tran_id,
+          cardType:        card_type,
+          paidAmount:      paid,
+          remainingAmount: isPartial ? Math.max(0, booking.totalAmount - paid) : 0,
+          updatedAt:       new Date(),
+        });
+      }
     }
 
     return NextResponse.redirect(

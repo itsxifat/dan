@@ -54,17 +54,19 @@ export async function checkAvailability({ roomId, propertyId, checkIn, checkOut,
     : Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
 
   if (roomId) {
+    // "pending" bookings are payment-in-progress and not yet confirmed — exclude them.
+    // The BookingLock handles blocking during the payment window instead.
     const booked = await Booking.exists({
       $or: [
         { room: roomId },
         { "roomBookings.room": roomId },
       ],
-      status: { $nin: ["cancelled", "no_show"] },
+      status: { $nin: ["cancelled", "no_show", "pending"] },
       checkIn:  { $lt: checkOutDate },
       checkOut: { $gt: checkInDate },
     });
 
-    // Check active locks
+    // Check active locks (covers the payment window for pending bookings)
     const locked = await BookingLock.exists({
       roomId,
       checkIn:  { $lt: checkOutDate },
@@ -75,11 +77,11 @@ export async function checkAvailability({ roomId, propertyId, checkIn, checkOut,
     return { available: !booked && !locked, nights };
   }
 
-  // Cottage
+  // Cottage — same rule: exclude pending
   const conflict = await Booking.exists({
     property: propertyId,
     bookingType: "cottage",
-    status: { $nin: ["cancelled", "no_show"] },
+    status: { $nin: ["cancelled", "no_show", "pending"] },
     checkIn:  { $lt: checkOutDate },
     checkOut: { $gt: checkInDate },
   });
@@ -109,13 +111,13 @@ export async function getAvailableRoomsForBooking({
   const query = { property: propertyId, category: categoryId, status: "available" };
   const allRooms = await Room.find(query).lean();
 
-  // Booked room IDs in this date range
+  // Booked room IDs in this date range — exclude "pending" (payment not yet confirmed)
   const activeBookings = await Booking.find({
     $or: [
       { room: { $in: allRooms.map((r) => r._id) } },
       { "roomBookings.room": { $in: allRooms.map((r) => r._id) } },
     ],
-    status: { $nin: ["cancelled", "no_show"] },
+    status: { $nin: ["cancelled", "no_show", "pending"] },
     checkIn:  { $lt: checkOutDate },
     checkOut: { $gt: checkInDate },
   }).select("room roomBookings").lean();
@@ -154,19 +156,36 @@ export async function getAvailableRoomsForBooking({
     return true;
   });
 
-  // Attach resolved price and variant data
-  return available.map((room) => ({
-    ...room,
-    _id: room._id.toString(),
-    property: room.property.toString(),
-    category: room.category.toString(),
-    resolvedNightPrice: resolveNightPrice(room, category),
-    resolvedDayPrice:   resolveDayPrice(room, category),
-    maxAdults:   category.maxAdults   ?? 2,
-    maxChildren: category.maxChildren ?? 0,
-    categoryName: category.name,
-    bedType:      category.bedType ?? "",
-  }));
+  // Attach resolved price + per-room variant capacity / bed type
+  return available.map((room) => {
+    // Find this room's variant (if it has one)
+    const variant = room.variantId && category.variants?.length
+      ? category.variants.find((v) => v._id.toString() === room.variantId.toString())
+      : null;
+
+    // Capacity: variant-level overrides category-level
+    const maxAdults   = (variant?.maxAdults   > 0 ? variant.maxAdults   : null) ?? category.maxAdults   ?? 2;
+    const maxChildren = (variant?.maxChildren >= 0 ? variant.maxChildren : null) ?? category.maxChildren ?? 0;
+
+    // Bed type: room-level > variant-level > category-level
+    const bedType = room.bedType || variant?.bedType || category.bedType || "";
+
+    return {
+      ...room,
+      _id:       room._id.toString(),
+      property:  room.property.toString(),
+      category:  room.category.toString(),
+      variantId: room.variantId ? room.variantId.toString() : null,
+      resolvedNightPrice: resolveNightPrice(room, category),
+      resolvedDayPrice:   resolveDayPrice(room, category),
+      maxAdults,
+      maxChildren,
+      categoryName: category.name,
+      variantName:  variant?.name ?? null,
+      bedType,
+      hasPriceOverride: room.pricePerNight > 0 || room.pricePerDay > 0 || (variant?.pricePerNight > 0) || (variant?.pricePerDay > 0),
+    };
+  });
 }
 
 // ─── Create Pending Booking ───────────────────────────────────────────────────
@@ -334,7 +353,12 @@ export async function getAdminBookings({ page = 1, limit = 15, status = "", sear
   await dbConnect();
 
   const query = {};
-  if (status)      query.status = status;
+  // Never show unconfirmed payment-pending bookings in admin list
+  if (status) {
+    query.status = status;
+  } else {
+    query.status = { $ne: "pending" };
+  }
   if (propertyId)  query.property = propertyId;
   if (bookingMode) query.bookingMode = bookingMode;
   if (search) query.$or = [
@@ -439,5 +463,5 @@ export async function getUnviewedBookingCount() {
 
   await dbConnect();
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  return Booking.countDocuments({ status: "pending", createdAt: { $gte: since } });
+  return Booking.countDocuments({ status: "confirmed", createdAt: { $gte: since } });
 }

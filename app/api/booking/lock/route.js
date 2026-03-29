@@ -11,7 +11,7 @@ import BookingLock from "@/models/BookingLock";
 import Booking from "@/models/Booking";
 import PaymentAttempt from "@/models/PaymentAttempt";
 
-const LOCK_DURATION_MS = 60 * 1000; // 1 minute
+const LOCK_DURATION_MS = 30 * 60 * 1000; // 30 minutes (covers full SSLCommerz payment window)
 const ABUSE_THRESHOLD  = 5;         // locks without paying
 
 export async function POST(req) {
@@ -41,6 +41,21 @@ export async function POST(req) {
     const checkOutDate = new Date(checkOut);
     const now          = new Date();
     const expiresAt    = new Date(now.getTime() + LOCK_DURATION_MS);
+
+    // Clean up this user's own orphaned pending bookings for these rooms/dates
+    // so a failed payment attempt doesn't block them from retrying.
+    if (userId) {
+      await Booking.deleteMany({
+        bookedBy: userId,
+        status: "pending",
+        checkIn:  { $lt: checkOutDate },
+        checkOut: { $gt: checkInDate },
+        $or: [
+          { room: { $in: rooms } },
+          { "roomBookings.room": { $in: rooms } },
+        ],
+      });
+    }
 
     const conflicts = [];
 

@@ -5,7 +5,8 @@ import Settings from "@/models/Settings";
 
 export async function POST(req) {
   try {
-    const { bookingId } = await req.json();
+    const body = await req.json();
+    const { bookingId, amount: requestedAmount } = body;
 
     await dbConnect();
     const booking = await Booking.findById(bookingId)
@@ -21,12 +22,19 @@ export async function POST(req) {
     }
 
     const tran_id = `DAN-${booking._id}-${Date.now()}`;
-    const settings = await Settings.findOne().lean();
-    const advancePct = settings?.advancePaymentPercent ?? 30;
-    const advanceAmount = Math.ceil((booking.totalAmount * advancePct) / 100);
+
+    // Use the amount passed from the wizard (respects full/partial choice).
+    // Fall back to booking.advanceAmount or recalculate from settings.
+    let chargeAmount = requestedAmount;
+    if (!chargeAmount || chargeAmount <= 0) {
+      const settings = await Settings.findOne().lean();
+      const advancePct = settings?.advancePaymentPercent ?? 30;
+      chargeAmount = Math.ceil((booking.totalAmount * advancePct) / 100);
+    }
+
     await Booking.findByIdAndUpdate(bookingId, {
       transactionId: tran_id,
-      advanceAmount,
+      advanceAmount: chargeAmount,
       updatedAt: new Date(),
     });
 
@@ -43,7 +51,7 @@ export async function POST(req) {
     const params = new URLSearchParams({
       store_id:         process.env.SSLCOMMERZ_STORE_ID,
       store_passwd:     process.env.SSLCOMMERZ_STORE_PASSWORD,
-      total_amount:     advanceAmount.toString(),
+      total_amount:     chargeAmount.toString(),
       currency:         "BDT",
       tran_id,
       success_url:      `${base}/api/ssl/success`,
@@ -80,7 +88,7 @@ export async function POST(req) {
       );
     }
 
-    return NextResponse.json({ GatewayPageURL: data.GatewayPageURL });
+    return NextResponse.json({ url: data.GatewayPageURL });
   } catch (err) {
     console.error("SSL initiate error:", err);
     return NextResponse.json({ error: "Server error. Please try again." }, { status: 500 });

@@ -2,8 +2,13 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Image from "next/image";
 import { Lora, Josefin_Sans } from "next/font/google";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
 const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
@@ -15,10 +20,6 @@ const fadeUp = {
 const stagger = {
   hidden: {},
   show:   { transition: { staggerChildren: 0.11, delayChildren: 0.05 } },
-};
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.95 },
-  show:   { opacity: 1, scale: 1, transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] } },
 };
 
 function FeatureCard({ number, title, desc }) {
@@ -37,6 +38,50 @@ export default function AboutSection() {
   const ref      = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-80px" });
 
+  const imgMobile = useRef(null);
+  const imgLeft   = useRef(null);
+  const imgCenter = useRef(null);
+  const imgRight  = useRef(null);
+
+  useGSAP(() => {
+    const triggerOpts = (el) => ({
+      scrollTrigger: {
+        trigger: el,
+        start: "top 88%",
+        toggleActions: "play none none none",
+      },
+    });
+
+    gsap.from(imgMobile.current, {
+      opacity: 0, y: 50, duration: 1.1, ease: "power3.out",
+      ...triggerOpts(imgMobile.current),
+    });
+    gsap.from(imgLeft.current, {
+      opacity: 0, x: -55, duration: 1.1, ease: "power3.out",
+      ...triggerOpts(imgLeft.current),
+    });
+    gsap.from(imgCenter.current, {
+      opacity: 0, y: 55, duration: 1.2, ease: "power3.out",
+      ...triggerOpts(imgCenter.current),
+    });
+    gsap.from(imgRight.current, {
+      opacity: 0, x: 55, duration: 1.1, ease: "power3.out",
+      ...triggerOpts(imgRight.current),
+    });
+
+    // Hover animations
+    [imgLeft, imgCenter, imgRight, imgMobile].forEach((r) => {
+      const el = r.current;
+      if (!el) return;
+      el.addEventListener("mouseenter", () =>
+        gsap.to(el, { y: -8, scale: 1.02, duration: 0.45, ease: "power2.out" })
+      );
+      el.addEventListener("mouseleave", () =>
+        gsap.to(el, { y: 0, scale: 1, duration: 0.5, ease: "power2.inOut" })
+      );
+    });
+  });
+
   return (
     <section ref={ref} className="relative bg-[#f8f4ee] overflow-hidden">
 
@@ -48,21 +93,12 @@ export default function AboutSection() {
           animate={isInView ? "show" : "hidden"}
           className="flex flex-col items-center gap-5"
         >
-          {/* Eyebrow */}
-          <motion.div variants={fadeUp} className="flex items-center gap-4">
-            <div className="h-px w-10 bg-[#7A2267]/40" />
-            <span className={`${josefin.className} text-[10px] uppercase tracking-[0.35em] text-[#7A2267] font-medium`}>
-              Our Story
-            </span>
-            <div className="h-px w-10 bg-[#7A2267]/40" />
-          </motion.div>
-
           {/* Heading */}
           <motion.h2 variants={fadeUp}
             className={`${lora.className} text-[2.6rem] sm:text-[3.4rem] lg:text-[4rem] xl:text-[4.4rem]
               font-400 text-[#1a1309] leading-[1.1] tracking-[-0.02em] max-w-3xl`}>
             Where Nature Becomes{" "}
-            <em className={`${lora.className} italic text-[#7A2267] font-500`}>Your Sanctuary</em>
+            <em className={`${lora.className} italic text-[#7A2267] font-500`}>Your Retreat</em>
           </motion.h2>
 
           {/* Sub */}
@@ -74,15 +110,10 @@ export default function AboutSection() {
       </div>
 
       {/* ── IMAGE TRIPTYCH ──────────────────────────────────────── */}
-      <motion.div
-        variants={stagger}
-        initial="hidden"
-        animate={isInView ? "show" : "hidden"}
-        className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12"
-      >
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
+
         {/* Mobile: single hero image */}
-        <motion.div variants={scaleIn}
-          className="sm:hidden relative rounded-2xl overflow-hidden h-70">
+        <div ref={imgMobile} className="sm:hidden relative rounded-2xl overflow-hidden h-70">
           <Image
             src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=900&q=80"
             alt="Resort exterior"
@@ -94,20 +125,19 @@ export default function AboutSection() {
           <div className="absolute inset-0 bg-linear-to-t from-[#1a1309]/60 via-transparent to-transparent" />
           <div className="absolute bottom-5 inset-x-0 text-center">
             <p className={`${lora.className} text-[1.05rem] italic text-white/80`}>
-              &ldquo;A sanctuary of serenity&rdquo;
+              &ldquo;A haven of serenity&rdquo;
             </p>
           </div>
           <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/15 border border-white/20 rounded-full px-4 py-1.5">
             <p className={`${josefin.className} text-[8px] uppercase tracking-[0.28em] text-white whitespace-nowrap`}>Est. 2015</p>
           </div>
-        </motion.div>
+        </div>
 
         {/* SM+: Full triptych */}
         <div className="hidden sm:flex items-end gap-3 sm:gap-4 h-90 lg:h-115">
 
           {/* Left — shorter, bottom-aligned */}
-          <motion.div variants={scaleIn}
-            className="relative flex-1 h-4/5 rounded-2xl sm:rounded-3xl overflow-hidden">
+          <div ref={imgLeft} className="relative flex-1 h-4/5 rounded-2xl sm:rounded-3xl overflow-hidden">
             <Image
               src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=600&q=80"
               alt="Luxury room interior"
@@ -119,11 +149,10 @@ export default function AboutSection() {
             <div className="absolute bottom-4 left-4">
               <p className={`${josefin.className} text-[9px] uppercase tracking-widest text-white/70`}>Accommodation</p>
             </div>
-          </motion.div>
+          </div>
 
           {/* Center — full height */}
-          <motion.div variants={scaleIn}
-            className="relative flex-[1.2] h-full rounded-2xl sm:rounded-3xl overflow-hidden">
+          <div ref={imgCenter} className="relative flex-[1.2] h-full rounded-2xl sm:rounded-3xl overflow-hidden">
             <Image
               src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80"
               alt="Resort exterior"
@@ -138,14 +167,13 @@ export default function AboutSection() {
             </div>
             <div className="absolute bottom-5 inset-x-0 text-center">
               <p className={`${lora.className} text-[1.05rem] italic text-white/80`}>
-                &ldquo;A sanctuary of serenity&rdquo;
+                &ldquo;A haven of serenity&rdquo;
               </p>
             </div>
-          </motion.div>
+          </div>
 
           {/* Right — shorter, bottom-aligned */}
-          <motion.div variants={scaleIn}
-            className="relative flex-1 h-4/5 rounded-2xl sm:rounded-3xl overflow-hidden">
+          <div ref={imgRight} className="relative flex-1 h-4/5 rounded-2xl sm:rounded-3xl overflow-hidden">
             <Image
               src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=600&q=80"
               alt="Resort garden and recreation"
@@ -157,10 +185,10 @@ export default function AboutSection() {
             <div className="absolute bottom-4 left-4">
               <p className={`${josefin.className} text-[9px] uppercase tracking-widest text-white/70`}>Recreation</p>
             </div>
-          </motion.div>
+          </div>
 
         </div>
-      </motion.div>
+      </div>
 
       {/* ── STORY + FEATURES ────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-16 md:py-20">
