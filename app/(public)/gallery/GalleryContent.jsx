@@ -11,44 +11,58 @@ const playfair  = Playfair_Display({ subsets: ["latin"], weight: ["400", "500", 
 const sans      = Montserrat({ subsets: ["latin"], weight: ["300", "400", "500", "600"] });
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400", "500"], style: ["italic"] });
 
-// ── Static fallback (same set used in homepage GallerySection) ───────────────
+// ── Static fallback ───────────────────────────────────────────────────────────
 const STATIC_PHOTOS = [
-  { _id: "s1", category: "Swimming Pool",
-    image: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=900&q=80",
-    title: "Iconic Infinity Pool", altText: "Infinity pool" },
-  { _id: "s2", category: "Nature",
-    image: "https://images.unsplash.com/photo-1540541338537-1220059a7e9a?auto=format&fit=crop&w=900&q=80",
-    title: "Panoramic Landscape", altText: "Resort scenic landscape" },
-  { _id: "s3", category: "Rooms",
-    image: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=600&q=80",
-    title: "Luxury Suite", altText: "Cosy resort bedroom" },
-  { _id: "s4", category: "Events",
-    image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=900&q=80",
-    title: "Grand Event Hall", altText: "Corporate events" },
-  { _id: "s5", category: "Dining",
-    image: "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=600&q=80",
-    title: "Curated Dining", altText: "Resort dining" },
-  { _id: "s6", category: "Amenities",
-    image: "https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=600&q=80",
-    title: "Resort Amenities", altText: "Resort pool and garden" },
-  { _id: "s7", category: "Nature",
-    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=900&q=80",
-    title: "Valley Sunrise", altText: "Misty mountain" },
-  { _id: "s8", category: "Rooms",
-    image: "https://images.unsplash.com/photo-1551882547-ff40c63fe2e2?auto=format&fit=crop&w=600&q=80",
-    title: "Premium Room", altText: "Luxury hotel room" },
-  { _id: "s9", category: "Swimming Pool",
-    image: "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?auto=format&fit=crop&w=900&q=80",
-    title: "Evening Pool", altText: "Resort evening ambiance" },
-  { _id: "s10", category: "Amenities",
-    image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=900&q=80",
-    title: "Spa & Wellness", altText: "Spa area" },
-  { _id: "s11", category: "Dining",
-    image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=900&q=80",
-    title: "Fine Dining", altText: "Restaurant interior" },
-  { _id: "s12", category: "Events",
-    image: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=900&q=80",
-    title: "Banquet Hall", altText: "Event banquet hall" },
+  // Swimming Pool (8)
+  { _id: "p01", category: "Swimming Pool", title: "Iconic Infinity Pool",   altText: "Infinity pool with nature backdrop",     image: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=900&q=80" },
+  { _id: "p02", category: "Swimming Pool", title: "Evening Pool Glow",      altText: "Resort pool lit at dusk",                image: "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?auto=format&fit=crop&w=900&q=80" },
+  { _id: "p03", category: "Swimming Pool", title: "Serene Lap Pool",        altText: "Calm lap pool surrounded by greenery",   image: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?auto=format&fit=crop&w=900&q=80" },
+  { _id: "p04", category: "Swimming Pool", title: "Sky Reflection Pool",    altText: "Pool reflecting the open sky",           image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=900&q=80" },
+  { _id: "p05", category: "Swimming Pool", title: "Family Pool",            altText: "Wide family swimming area",              image: "https://images.unsplash.com/photo-1563298723-dcfebaa392e3?auto=format&fit=crop&w=900&q=80" },
+  { _id: "p06", category: "Swimming Pool", title: "Poolside Lounge",        altText: "Loungers beside the pool",               image: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=900&q=80" },
+  { _id: "p07", category: "Swimming Pool", title: "Tropical Pool View",     altText: "Pool surrounded by tropical palms",      image: "https://images.unsplash.com/photo-1540541338537-1220059a7e9a?auto=format&fit=crop&w=900&q=80" },
+  { _id: "p08", category: "Swimming Pool", title: "Waterfall Feature Pool", altText: "Pool with decorative waterfall",         image: "https://images.unsplash.com/photo-1564501049412-61c2a3083791?auto=format&fit=crop&w=900&q=80" },
+
+  // Rooms (9)
+  { _id: "r01", category: "Rooms", title: "Luxury Suite",         altText: "Cosy luxury resort bedroom",         image: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=900&q=80" },
+  { _id: "r02", category: "Rooms", title: "Premium Double Room",  altText: "Premium hotel double room interior", image: "https://images.unsplash.com/photo-1551882547-ff40c63fe2e2?auto=format&fit=crop&w=900&q=80" },
+  { _id: "r03", category: "Rooms", title: "Deluxe King Room",     altText: "Spacious king bedroom",              image: "https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=900&q=80" },
+  { _id: "r04", category: "Rooms", title: "Garden View Room",     altText: "Room with garden view window",       image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=900&q=80" },
+  { _id: "r05", category: "Rooms", title: "Modern Twin Room",     altText: "Contemporary twin bed setup",        image: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=900&q=80" },
+  { _id: "r06", category: "Rooms", title: "Amber Suite Bathroom", altText: "Elegant en-suite bathroom",          image: "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?auto=format&fit=crop&w=900&q=80" },
+  { _id: "r07", category: "Rooms", title: "Executive Room",       altText: "Executive-class hotel room",         image: "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=900&q=80" },
+  { _id: "r08", category: "Rooms", title: "Hillside Cabin Room",  altText: "Wooden cabin-style resort room",     image: "https://images.unsplash.com/photo-1596394516093-501ba68a0ba6?auto=format&fit=crop&w=900&q=80" },
+  { _id: "r09", category: "Rooms", title: "Heritage Suite",       altText: "Heritage-themed luxury suite",       image: "https://images.unsplash.com/photo-1444201983204-c43cbd584d93?auto=format&fit=crop&w=900&q=80" },
+
+  // Dining (8)
+  { _id: "d01", category: "Dining", title: "Curated Dining",        altText: "Resort dining lounge",               image: "https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=900&q=80" },
+  { _id: "d02", category: "Dining", title: "Amber Restaurant",      altText: "Main restaurant dining area",        image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=900&q=80" },
+  { _id: "d03", category: "Dining", title: "Breakfast Spread",      altText: "Morning breakfast buffet",           image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=80" },
+  { _id: "d04", category: "Dining", title: "Outdoor Café Seating",  altText: "Open-air café with garden view",     image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80" },
+  { _id: "d05", category: "Dining", title: "Private Dining Room",   altText: "Intimate private dining setup",      image: "https://images.unsplash.com/photo-1424847651672-bf20a4b0982b?auto=format&fit=crop&w=900&q=80" },
+  { _id: "d06", category: "Dining", title: "Fresh Dessert Counter", altText: "Artisan dessert and pastry station", image: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=900&q=80" },
+  { _id: "d07", category: "Dining", title: "Chef's Table",          altText: "Chef preparing fresh dishes",        image: "https://images.unsplash.com/photo-1600565193348-f74bd3c7ccdf?auto=format&fit=crop&w=900&q=80" },
+  { _id: "d08", category: "Dining", title: "Poolside Refreshments", altText: "Drinks and snacks by the pool",      image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=900&q=80" },
+
+  // Nature (9)
+  { _id: "n01", category: "Nature", title: "Panoramic Landscape",  altText: "Resort scenic landscape view",        image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=900&q=80" },
+  { _id: "n02", category: "Nature", title: "Valley Sunrise",       altText: "Misty mountain landscape",            image: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=900&q=80" },
+  { _id: "n03", category: "Nature", title: "Forest Trail",         altText: "Lush green forest pathway",           image: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=900&q=80" },
+  { _id: "n04", category: "Nature", title: "Garden Bloom",         altText: "Colourful resort garden flowers",     image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=900&q=80" },
+  { _id: "n05", category: "Nature", title: "Hilltop View",         altText: "Scenic hilltop overlooking valley",   image: "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=900&q=80" },
+  { _id: "n06", category: "Nature", title: "Waterfall Walk",       altText: "Natural waterfall in resort grounds", image: "https://images.unsplash.com/photo-1432405972618-c60b0225b8f9?auto=format&fit=crop&w=900&q=80" },
+  { _id: "n07", category: "Nature", title: "Bird's Eye Greenery",  altText: "Aerial view of green resort",         image: "https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?auto=format&fit=crop&w=900&q=80" },
+  { _id: "n08", category: "Nature", title: "Sunrise Mist",         altText: "Early morning mist over hills",       image: "https://images.unsplash.com/photo-1470770903676-69b98201ea1c?auto=format&fit=crop&w=900&q=80" },
+  { _id: "n09", category: "Nature", title: "Evening Sky",          altText: "Golden hour sunset over resort",      image: "https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=900&q=80" },
+
+  // Events (7)
+  { _id: "e01", category: "Events", title: "Grand Event Hall",     altText: "Large decorated event hall",          image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=900&q=80" },
+  { _id: "e02", category: "Events", title: "Corporate Conference", altText: "Professional conference setup",       image: "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=900&q=80" },
+  { _id: "e03", category: "Events", title: "Wedding Ceremony",     altText: "Elegant outdoor wedding setup",       image: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=900&q=80" },
+  { _id: "e04", category: "Events", title: "Banquet Hall",         altText: "Decorated banquet dining hall",       image: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&fit=crop&w=900&q=80" },
+  { _id: "e05", category: "Events", title: "Outdoor Gathering",    altText: "Guests at an outdoor garden event",   image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=900&q=80" },
+  { _id: "e06", category: "Events", title: "Family Celebration",   altText: "Joyful family gathering event",       image: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=900&q=80" },
+  { _id: "e07", category: "Events", title: "Stage & Podium",       altText: "Stage setup for event presentation",  image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=900&q=80" },
 ];
 
 // ── Lightbox ──────────────────────────────────────────────────────────────────
@@ -235,7 +249,7 @@ function PhotoTile({ photo, featured, onClick }) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function GalleryContent({ photos = [] }) {
-  const source = photos.length > 0 ? photos : STATIC_PHOTOS;
+  const source = photos.length >= 9 ? photos : STATIC_PHOTOS;
   const tabs   = ["All", ...Array.from(new Set(source.map((p) => p.category))).sort()];
 
   const [active, setActive]         = useState("All");
