@@ -4,11 +4,10 @@ import { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
-import { Cormorant, DM_Sans, Cormorant_Garamond } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 
-const cinzel    = Cormorant({ subsets: ["latin"], weight: ["300", "400", "500", "600"], style: ["normal", "italic"] });
-const sans      = DM_Sans({ subsets: ["latin"], weight: ["300", "400", "500", "600"] });
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400", "500"], style: ["italic"] });
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 const fadeUp   = { hidden: { opacity: 0, y: 28 }, show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.22,1,0.36,1] } } };
 const fadeLeft = { hidden: { opacity: 0, x: -32 }, show: { opacity: 1, x: 0, transition: { duration: 0.75, ease: [0.22,1,0.36,1] } } };
@@ -61,7 +60,7 @@ function VenueCard({ venue, inView }) {
           <div className="absolute inset-0 bg-gradient-to-t from-[#1a1309]/45 to-transparent" />
           <div className="absolute top-5 left-5">
             <div className="backdrop-blur-md bg-[#1a1309]/50 border border-white/15 rounded-xl px-4 py-2">
-              <p className={`${sans.className} text-[9px] uppercase tracking-[0.22em] font-semibold`}
+              <p className={`${josefin.className} text-[9px] uppercase tracking-[0.22em] font-semibold`}
                 style={{ color: venue.color }}>
                 {venue.tagline}
               </p>
@@ -76,14 +75,14 @@ function VenueCard({ venue, inView }) {
         className={`flex flex-col gap-5 ${venue.flip ? "lg:order-1" : ""}`}
       >
         <motion.div variants={fadeUp}>
-          <p className={`${sans.className} text-[9.5px] uppercase tracking-[0.28em] font-semibold mb-3`}
+          <p className={`${josefin.className} text-[9.5px] uppercase tracking-[0.28em] font-semibold mb-3`}
             style={{ color: venue.color }}>
             {venue.tagline}
           </p>
-          <h3 className={`${cinzel.className} text-[2rem] sm:text-[2.4rem] text-[#1a1309] leading-[1.15]`}>
+          <h3 className={`${lora.className} text-[2rem] sm:text-[2.4rem] text-[#1a1309] leading-[1.15]`}>
             {venue.name}
           </h3>
-          <p className={`${sans.className} text-[13px] font-light text-[#6b5e4a] leading-[1.9] mt-4`}>
+          <p className={`${josefin.className} text-[13px] font-light text-[#6b5e4a] leading-[1.9] mt-4`}>
             {venue.desc}
           </p>
         </motion.div>
@@ -94,7 +93,7 @@ function VenueCard({ venue, inView }) {
             <motion.div key={h} variants={fadeUp}
               className="flex items-center gap-2.5">
               <div className="w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: venue.color }} />
-              <span className={`${sans.className} text-[11.5px] font-light text-[#5a4e3a]`}>{h}</span>
+              <span className={`${josefin.className} text-[11.5px] font-light text-[#5a4e3a]`}>{h}</span>
             </motion.div>
           ))}
         </motion.div>
@@ -102,7 +101,7 @@ function VenueCard({ venue, inView }) {
         {/* CTA */}
         <motion.div variants={fadeUp}>
           <Link href={venue.href}
-            className={`${sans.className} inline-flex items-center gap-3
+            className={`${josefin.className} inline-flex items-center gap-3
               px-6 py-3 rounded-full text-[11px] font-semibold uppercase tracking-[0.16em]
               transition-all duration-300 group`}
             style={{ backgroundColor: `${venue.color}15`, color: venue.color,
@@ -139,12 +138,12 @@ export default function DiningSection() {
           transition={{ duration:0.6 }}
           className="text-center mb-16"
         >
-          <h2 className={`${cinzel.className} text-[2rem] sm:text-[2.6rem] lg:text-[3.2rem]
+          <h2 className={`${lora.className} text-[2rem] sm:text-[2.6rem] lg:text-[3.2rem]
             text-[#1a1309] leading-[1.12]`}>
             Savour Every{" "}
-            <em className={`${cormorant.className} not-italic text-[#7A2267]`}>Moment</em>
+            <em className={`${lora.className} not-italic text-[#7A2267]`}>Moment</em>
           </h2>
-          <p className={`${sans.className} text-[13px] font-light text-[#7a6a52] mt-4 max-w-lg mx-auto leading-[1.85]`}>
+          <p className={`${josefin.className} text-[13px] font-light text-[#7a6a52] mt-4 max-w-lg mx-auto leading-[1.85]`}>
             Two distinct dining destinations — one for refined meals, one for relaxed bites.
             Both crafted with halal ingredients and heartfelt hospitality.
           </p>

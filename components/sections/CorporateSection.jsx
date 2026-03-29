@@ -3,11 +3,10 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
-import { Cormorant, DM_Sans, Cormorant_Garamond } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 
-const cinzel    = Cormorant({ subsets: ["latin"], weight: ["300", "400", "500", "600"], style: ["normal", "italic"] });
-const sans      = DM_Sans({ subsets: ["latin"], weight: ["300", "400", "500", "600"] });
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400", "500"], style: ["italic"] });
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 const stagger = {
   hidden: {},
@@ -87,12 +86,12 @@ export default function CorporateSection() {
           transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
           className="text-center mb-5 max-w-3xl mx-auto"
         >
-          <h2 className={`${cinzel.className} text-[2rem] sm:text-[2.6rem] lg:text-[3rem]
+          <h2 className={`${lora.className} text-[2rem] sm:text-[2.6rem] lg:text-[3rem]
             font-500 text-white leading-[1.15] mb-4`}>
             Corporate Events,{" "}
-            <em className={`${cormorant.className} not-italic text-[#c084b8]`}>Elevated</em>
+            <em className={`${lora.className} not-italic text-[#c084b8]`}>Elevated</em>
           </h2>
-          <p className={`${sans.className} text-[13px] text-white/45 leading-[1.85] font-light`}>
+          <p className={`${josefin.className} text-[13px] text-white/45 leading-[1.85] font-light`}>
             From intimate boardroom sessions to grand outdoor galas for 15,000 guests —
             we provide the perfect backdrop, impeccable service, and everything in between.
           </p>
@@ -120,10 +119,10 @@ export default function CorporateSection() {
                 {p.icon}
               </div>
               <div>
-                <p className={`${cinzel.className} text-[1.1rem] font-semibold text-white mb-0.5`}>
+                <p className={`${lora.className} text-[1.1rem] font-semibold text-white mb-0.5`}>
                   {p.label}
                 </p>
-                <p className={`${sans.className} text-[11px] text-white/35 leading-[1.6] font-light`}>
+                <p className={`${josefin.className} text-[11px] text-white/35 leading-[1.6] font-light`}>
                   {p.sub}
                 </p>
               </div>
@@ -149,7 +148,7 @@ export default function CorporateSection() {
           ].map((v) => (
             <span
               key={v}
-              className={`${sans.className} text-[10px] uppercase tracking-[0.15em] font-medium
+              className={`${josefin.className} text-[10px] uppercase tracking-[0.15em] font-medium
                 px-3.5 py-1.5 rounded-full border border-white/[0.08] text-white/35
                 hover:border-[#7A2267]/30 hover:text-[#c084b8]/70 transition-colors duration-200`}
             >
@@ -167,7 +166,7 @@ export default function CorporateSection() {
         >
           <Link
             href="/corporate"
-            className={`${sans.className} group flex items-center gap-2.5 px-7 py-3 rounded-full
+            className={`${josefin.className} group flex items-center gap-2.5 px-7 py-3 rounded-full
               bg-[#7A2267] hover:bg-[#8a256f] text-white
               text-[10px] uppercase tracking-[0.2em] font-semibold
               transition-all duration-300 shadow-[0_4px_20px_rgba(122,34,103,0.3)]
@@ -182,7 +181,7 @@ export default function CorporateSection() {
           </Link>
           <Link
             href="/corporate#visit-form"
-            className={`${sans.className} flex items-center gap-2.5 px-7 py-3 rounded-full
+            className={`${josefin.className} flex items-center gap-2.5 px-7 py-3 rounded-full
               border border-white/15 text-white/55 hover:text-white hover:border-white/30
               text-[10px] uppercase tracking-[0.2em] font-semibold
               transition-all duration-300`}

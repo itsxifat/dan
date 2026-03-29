@@ -3,11 +3,10 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
-import { Cormorant, DM_Sans, Cormorant_Garamond } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 
-const cinzel    = Cormorant({ subsets: ["latin"], weight: ["300", "400", "500", "600"], style: ["normal", "italic"] });
-const sans      = DM_Sans({ subsets: ["latin"], weight: ["300", "400", "500", "600"] });
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400", "500"], style: ["italic"] });
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 const stagger = {
   hidden: {},
@@ -79,7 +78,7 @@ function PackageCard({ type }) {
       {/* Most Popular badge */}
       {isDay && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-          <span className={`${sans.className} text-[9px] uppercase tracking-[0.22em] font-semibold
+          <span className={`${josefin.className} text-[9px] uppercase tracking-[0.22em] font-semibold
             px-4 py-1.5 rounded-full bg-[#7A2267] text-white`}>
             Most Popular
           </span>
@@ -94,15 +93,15 @@ function PackageCard({ type }) {
 
       {/* Title & price */}
       <div>
-        <h3 className={`${cinzel.className} text-[1.4rem] font-500 leading-snug
+        <h3 className={`${lora.className} text-[1.4rem] font-500 leading-snug
           ${isDay ? "text-white" : "text-white"} mb-3`}>
           {isDay ? "Day Long Package" : "Night Stay Package"}
         </h3>
-        <p className={`${cinzel.className} text-[2.2rem] font-600 leading-none
+        <p className={`${lora.className} text-[2.2rem] font-600 leading-none
           ${isDay ? "text-white" : "text-[#c084b8]"}`}>
           {isDay ? "From ৳1,500" : "From ৳2,500"}
         </p>
-        <p className={`${sans.className} text-[11px] font-light mt-1
+        <p className={`${josefin.className} text-[11px] font-light mt-1
           ${isDay ? "text-white/60" : "text-white/40"}`}>
           {isDay ? "/ day" : "/ night"}
         </p>
@@ -116,7 +115,7 @@ function PackageCard({ type }) {
         {(isDay ? dayFeatures : nightFeatures).map((f) => (
           <li key={f} className="flex items-center gap-3">
             <CheckIcon featured={isDay} />
-            <span className={`${sans.className} text-[13px] font-light
+            <span className={`${josefin.className} text-[13px] font-light
               ${isDay ? "text-white/80" : "text-white/55"}`}>
               {f}
             </span>
@@ -127,7 +126,7 @@ function PackageCard({ type }) {
       {/* CTA */}
       <Link
         href="/booking"
-        className={`${sans.className} mt-2 inline-flex items-center justify-center gap-3
+        className={`${josefin.className} mt-2 inline-flex items-center justify-center gap-3
           px-7 py-3.5 rounded-full text-[12px] font-semibold uppercase tracking-[0.18em]
           transition-all duration-300 group
           ${isDay
@@ -168,10 +167,10 @@ export default function PackagesSection() {
           transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
           className="text-center mb-16"
         >
-          <h2 className={`${cinzel.className} text-[2rem] sm:text-[2.6rem] lg:text-[3rem]
+          <h2 className={`${lora.className} text-[2rem] sm:text-[2.6rem] lg:text-[3rem]
             font-500 text-white leading-[1.15]`}>
             Tailored Stays,{" "}
-            <em className={`${cormorant.className} not-italic text-[#c084b8]`}>Timeless Comfort</em>
+            <em className={`${lora.className} not-italic text-[#c084b8]`}>Timeless Comfort</em>
           </h2>
         </motion.div>
 

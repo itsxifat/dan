@@ -5,11 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
-import { Cormorant_Garamond, Montserrat } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 import { motion, AnimatePresence } from "framer-motion";
 
-const cormorant  = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400", "500"], style: ["normal", "italic"] });
-const montserrat = Montserrat({ subsets: ["latin"], weight: ["300", "400", "500", "600"] });
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 const EASE = [0.16, 1, 0.3, 1];
 
@@ -32,9 +32,8 @@ export default function Navbar() {
   const dropRef = useRef(null);
 
   const hiddenRoutes = ["/login", "/signup"];
-  if (hiddenRoutes.some((r) => pathname.startsWith(r))) return null;
+  const isHidden = hiddenRoutes.some((r) => pathname.startsWith(r));
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -42,16 +41,13 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => { setMobileOpen(false); setDropdown(false); }, [pathname]);
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [mobileOpen]);
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     const handler = (e) => {
       if (dropRef.current && !dropRef.current.contains(e.target)) setDropdown(false);
@@ -60,6 +56,8 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  if (isHidden) return null;
+
   return (
     <>
       {/* ── Desktop / sticky header ── */}
@@ -67,7 +65,7 @@ export default function Navbar() {
         initial={{ y: -16, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.65, ease: EASE }}
-        className={`sticky top-0 inset-x-0 z-[100] ${montserrat.className}`}
+        className={`sticky top-0 inset-x-0 z-[100] ${josefin.className}`}
       >
         {/* Background */}
         <div className={`absolute inset-0 transition-all duration-500
@@ -250,7 +248,7 @@ export default function Navbar() {
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: "100%", opacity: 0.6 }}
             transition={{ duration: 0.38, ease: EASE }}
-            className={`fixed inset-0 z-[99] flex flex-col bg-white ${montserrat.className}`}
+            className={`fixed inset-0 z-[99] flex flex-col bg-white ${josefin.className}`}
           >
             {/* Mobile header bar */}
             <div className="h-[60px] sm:h-[68px] shrink-0 flex items-center justify-between
@@ -293,7 +291,7 @@ export default function Navbar() {
                           className={`text-[1.6rem] sm:text-[1.85rem] font-light tracking-tight leading-none
                             transition-colors duration-200
                             ${isActive ? "text-[#1a1a1a]" : "text-[#ccc] group-hover:text-[#666]"}`}
-                          style={cormorant.style}
+                          style={lora.style}
                         >
                           {link.name}
                         </span>
