@@ -3,11 +3,10 @@
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import Image from "next/image";
-import { Cormorant, DM_Sans, Cormorant_Garamond } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 
-const cinzel    = Cormorant({ subsets: ["latin"], weight: ["300", "400", "500", "600"], style: ["normal", "italic"] });
-const sans      = DM_Sans({ subsets: ["latin"], weight: ["300", "400", "500", "600"] });
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400", "500", "600"], style: ["italic", "normal"] });
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
@@ -27,9 +26,9 @@ function FeatureCard({ number, title, desc }) {
     <motion.div variants={fadeUp}
       className="group pl-5 border-l-2 border-[#7A2267]/20 hover:border-[#7A2267] transition-colors duration-300"
     >
-      <p className={`${cormorant.className} text-[11px] text-[#7A2267]/50 tracking-widest mb-1 font-normal`}>{number}</p>
-      <p className={`${sans.className} text-[13px] font-semibold text-[#1a1309] mb-1`}>{title}</p>
-      <p className={`${sans.className} text-[12px] font-light text-[#7a6a52] leading-relaxed`}>{desc}</p>
+      <p className={`${lora.className} text-[11px] text-[#7A2267]/50 tracking-widest mb-1 font-normal`}>{number}</p>
+      <p className={`${josefin.className} text-[13px] font-semibold text-[#1a1309] mb-1`}>{title}</p>
+      <p className={`${josefin.className} text-[12px] font-light text-[#7a6a52] leading-relaxed`}>{desc}</p>
     </motion.div>
   );
 }
@@ -52,7 +51,7 @@ export default function AboutSection() {
           {/* Eyebrow */}
           <motion.div variants={fadeUp} className="flex items-center gap-4">
             <div className="h-px w-10 bg-[#7A2267]/40" />
-            <span className={`${sans.className} text-[10px] uppercase tracking-[0.35em] text-[#7A2267] font-medium`}>
+            <span className={`${josefin.className} text-[10px] uppercase tracking-[0.35em] text-[#7A2267] font-medium`}>
               Our Story
             </span>
             <div className="h-px w-10 bg-[#7A2267]/40" />
@@ -60,15 +59,15 @@ export default function AboutSection() {
 
           {/* Heading */}
           <motion.h2 variants={fadeUp}
-            className={`${cinzel.className} text-[2.6rem] sm:text-[3.4rem] lg:text-[4rem] xl:text-[4.4rem]
+            className={`${lora.className} text-[2.6rem] sm:text-[3.4rem] lg:text-[4rem] xl:text-[4.4rem]
               font-400 text-[#1a1309] leading-[1.1] tracking-[-0.02em] max-w-3xl`}>
             Where Nature Becomes{" "}
-            <em className={`${cormorant.className} italic text-[#7A2267] font-500`}>Your Sanctuary</em>
+            <em className={`${lora.className} italic text-[#7A2267] font-500`}>Your Sanctuary</em>
           </motion.h2>
 
           {/* Sub */}
           <motion.p variants={fadeUp}
-            className={`${sans.className} text-[13.5px] font-light text-[#9b8e78] max-w-md leading-relaxed`}>
+            className={`${josefin.className} text-[13.5px] font-light text-[#9b8e78] max-w-md leading-relaxed`}>
             Dhali&apos;s Amber Nivaas — a halal-friendly retreat where every detail is an act of care.
           </motion.p>
         </motion.div>
@@ -94,12 +93,12 @@ export default function AboutSection() {
           />
           <div className="absolute inset-0 bg-linear-to-t from-[#1a1309]/60 via-transparent to-transparent" />
           <div className="absolute bottom-5 inset-x-0 text-center">
-            <p className={`${cormorant.className} text-[1.05rem] italic text-white/80`}>
+            <p className={`${lora.className} text-[1.05rem] italic text-white/80`}>
               &ldquo;A sanctuary of serenity&rdquo;
             </p>
           </div>
           <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/15 border border-white/20 rounded-full px-4 py-1.5">
-            <p className={`${sans.className} text-[8px] uppercase tracking-[0.28em] text-white whitespace-nowrap`}>Est. 2015</p>
+            <p className={`${josefin.className} text-[8px] uppercase tracking-[0.28em] text-white whitespace-nowrap`}>Est. 2015</p>
           </div>
         </motion.div>
 
@@ -118,7 +117,7 @@ export default function AboutSection() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#1a1309]/55 to-transparent" />
             <div className="absolute bottom-4 left-4">
-              <p className={`${sans.className} text-[9px] uppercase tracking-widest text-white/70`}>Accommodation</p>
+              <p className={`${josefin.className} text-[9px] uppercase tracking-widest text-white/70`}>Accommodation</p>
             </div>
           </motion.div>
 
@@ -135,10 +134,10 @@ export default function AboutSection() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#1a1309]/40 via-transparent to-transparent" />
             <div className="absolute top-5 left-1/2 -translate-x-1/2 bg-white/15 border border-white/20 rounded-full px-5 py-2">
-              <p className={`${sans.className} text-[9px] uppercase tracking-[0.28em] text-white whitespace-nowrap`}>Est. 2015</p>
+              <p className={`${josefin.className} text-[9px] uppercase tracking-[0.28em] text-white whitespace-nowrap`}>Est. 2015</p>
             </div>
             <div className="absolute bottom-5 inset-x-0 text-center">
-              <p className={`${cormorant.className} text-[1.05rem] italic text-white/80`}>
+              <p className={`${lora.className} text-[1.05rem] italic text-white/80`}>
                 &ldquo;A sanctuary of serenity&rdquo;
               </p>
             </div>
@@ -156,7 +155,7 @@ export default function AboutSection() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#1a1309]/55 to-transparent" />
             <div className="absolute bottom-4 left-4">
-              <p className={`${sans.className} text-[9px] uppercase tracking-widest text-white/70`}>Recreation</p>
+              <p className={`${josefin.className} text-[9px] uppercase tracking-widest text-white/70`}>Recreation</p>
             </div>
           </motion.div>
 
@@ -175,7 +174,7 @@ export default function AboutSection() {
             className="space-y-7"
           >
             <motion.blockquote variants={fadeUp}
-              className={`${cormorant.className} text-[1.5rem] sm:text-[1.75rem] lg:text-[1.95rem]
+              className={`${lora.className} text-[1.5rem] sm:text-[1.75rem] lg:text-[1.95rem]
                 italic text-[#1a1309] leading-[1.45] font-400`}>
               &ldquo;Where the stillness of nature meets the warmth of heartfelt service.&rdquo;
             </motion.blockquote>
@@ -183,7 +182,7 @@ export default function AboutSection() {
             <motion.div variants={fadeUp} className="h-px bg-gradient-to-r from-[#7A2267]/30 to-transparent" />
 
             <motion.p variants={fadeUp}
-              className={`${sans.className} text-[13.5px] font-light text-[#6b5e4a] leading-[1.95]`}>
+              className={`${josefin.className} text-[13.5px] font-light text-[#6b5e4a] leading-[1.95]`}>
               Nestled amid serene landscapes, Dhali&apos;s Amber Nivaas was born from a simple vision —
               to create a retreat that honours the beauty of nature and the values of every guest.
               We are a proudly halal-certified resort, where every meal, every experience, and every
@@ -192,7 +191,7 @@ export default function AboutSection() {
 
             <motion.div variants={fadeUp} className="flex flex-wrap gap-3 pt-1">
               <a href="/accommodation"
-                className={`${sans.className} inline-flex items-center gap-3
+                className={`${josefin.className} inline-flex items-center gap-3
                   px-6 py-3 rounded-full bg-[#1a1309] text-white
                   text-[11px] font-semibold uppercase tracking-[0.2em]
                   hover:bg-[#7A2267] transition-all duration-300 group shadow-md`}>
@@ -204,7 +203,7 @@ export default function AboutSection() {
                 </svg>
               </a>
               <a href="/booking"
-                className={`${sans.className} inline-flex items-center px-6 py-3 rounded-full
+                className={`${josefin.className} inline-flex items-center px-6 py-3 rounded-full
                   border border-[#1a1309]/25 text-[#1a1309]
                   text-[11px] font-semibold uppercase tracking-[0.2em]
                   hover:border-[#7A2267] hover:text-[#7A2267] transition-all duration-300`}>
@@ -263,10 +262,10 @@ export default function AboutSection() {
                 {i < arr.length - 1 && (
                   <div className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-px bg-white/10 hidden sm:block" />
                 )}
-                <span className={`${cinzel.className} text-[2rem] sm:text-[2.4rem] font-semibold text-white leading-none`}>
+                <span className={`${lora.className} text-[2rem] sm:text-[2.4rem] font-semibold text-white leading-none`}>
                   {s.value}
                 </span>
-                <span className={`${sans.className} text-[9.5px] uppercase tracking-[0.22em] text-white/60 mt-2 font-medium`}>
+                <span className={`${josefin.className} text-[9.5px] uppercase tracking-[0.22em] text-white/60 mt-2 font-medium`}>
                   {s.label}
                 </span>
               </div>

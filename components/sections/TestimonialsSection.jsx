@@ -2,11 +2,10 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { Cormorant, DM_Sans, Cormorant_Garamond } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 
-const cinzel    = Cormorant({ subsets: ["latin"], weight: ["300", "400", "500", "600"], style: ["normal", "italic"] });
-const sans      = DM_Sans({ subsets: ["latin"], weight: ["300", "400", "500", "600"] });
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400", "500"], style: ["italic"] });
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 const stagger = {
   hidden: {},
@@ -69,14 +68,14 @@ function TestimonialCard({ testimonial }) {
 
       {/* Opening quote mark */}
       <div
-        className={`${cormorant.className} text-[5rem] leading-none text-[#9d3a8a] font-400 -mb-6 -mt-2 select-none`}
+        className={`${lora.className} text-[5rem] leading-none text-[#9d3a8a] font-400 -mb-6 -mt-2 select-none`}
         aria-hidden="true"
       >
         &ldquo;
       </div>
 
       {/* Quote */}
-      <p className={`${cormorant.className} text-[1.05rem] italic text-[#3d3427] leading-[1.75]`}>
+      <p className={`${lora.className} text-[1.05rem] italic text-[#3d3427] leading-[1.75]`}>
         {testimonial.quote}
       </p>
 
@@ -87,7 +86,7 @@ function TestimonialCard({ testimonial }) {
       <div className="flex items-center gap-4">
         {/* Avatar circle with initials */}
         <div
-          className={`${cinzel.className} w-11 h-11 rounded-full flex items-center justify-center
+          className={`${lora.className} w-11 h-11 rounded-full flex items-center justify-center
             text-white font-semibold text-sm shrink-0`}
           style={{ backgroundColor: testimonial.avatarColor }}
           aria-hidden="true"
@@ -95,10 +94,10 @@ function TestimonialCard({ testimonial }) {
           {testimonial.initials}
         </div>
         <div>
-          <p className={`${sans.className} text-[13px] font-semibold text-[#1a1309]`}>
+          <p className={`${josefin.className} text-[13px] font-semibold text-[#1a1309]`}>
             {testimonial.name}
           </p>
-          <p className={`${sans.className} text-[11px] font-light text-[#9b8e78] mt-0.5`}>
+          <p className={`${josefin.className} text-[11px] font-light text-[#9b8e78] mt-0.5`}>
             Stayed: {testimonial.stayed}
           </p>
         </div>
@@ -127,10 +126,10 @@ export default function TestimonialsSection() {
           transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
           className="text-center mb-14"
         >
-          <h2 className={`${cinzel.className} text-[2rem] sm:text-[2.6rem] lg:text-[3rem]
+          <h2 className={`${lora.className} text-[2rem] sm:text-[2.6rem] lg:text-[3rem]
             font-500 text-[#1a1309] leading-[1.15]`}>
             Words From Our{" "}
-            <em className={`${cormorant.className} not-italic text-[#7A2267]`}>Happy Guests</em>
+            <em className={`${lora.className} not-italic text-[#7A2267]`}>Happy Guests</em>
           </h2>
         </motion.div>
 

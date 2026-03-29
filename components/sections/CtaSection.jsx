@@ -4,10 +4,10 @@ import { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
-import { Cormorant, DM_Sans } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 
-const display = Cormorant({ subsets: ["latin"], weight: ["300", "400", "500", "600"], style: ["normal", "italic"] });
-const sans    = DM_Sans({ subsets: ["latin"], weight: ["400", "500", "600"] });
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 export default function CtaSection() {
   const ref      = useRef(null);
@@ -69,7 +69,7 @@ export default function CtaSection() {
         {/* Eyebrow */}
         <motion.div variants={lineUp} className="flex items-center justify-center gap-4 mb-7">
           <div className="h-px w-10 bg-[#7A2267]/60" />
-          <span className={`${sans.className} text-[9px] uppercase tracking-[0.42em] text-[#c084b8] font-medium`}>
+          <span className={`${josefin.className} text-[9px] uppercase tracking-[0.42em] text-[#c084b8] font-medium`}>
             Reserve Your Stay
           </span>
           <div className="h-px w-10 bg-[#7A2267]/60" />
@@ -78,7 +78,7 @@ export default function CtaSection() {
         {/* Heading line 1 */}
         <motion.h2
           variants={lineUp}
-          className={`${display.className} text-[2.8rem] sm:text-[3.6rem] lg:text-[4.8rem]
+          className={`${lora.className} text-[2.8rem] sm:text-[3.6rem] lg:text-[4.8rem]
             font-300 text-white leading-[1.08] tracking-[-0.01em]`}
         >
           Your Perfect Escape
@@ -87,7 +87,7 @@ export default function CtaSection() {
         {/* Heading line 2 — italic accent */}
         <motion.h2
           variants={lineUp}
-          className={`${display.className} text-[2.8rem] sm:text-[3.6rem] lg:text-[4.8rem]
+          className={`${lora.className} text-[2.8rem] sm:text-[3.6rem] lg:text-[4.8rem]
             font-300 italic text-[#c084b8] leading-[1.12] tracking-[-0.01em] mb-8`}
         >
           Awaits at Amber Nivaas
@@ -103,7 +103,7 @@ export default function CtaSection() {
         {/* Sub */}
         <motion.p
           variants={lineUp}
-          className={`${sans.className} text-[13px] sm:text-[14.5px] font-light text-white/55
+          className={`${josefin.className} text-[13px] sm:text-[14.5px] font-light text-white/55
             max-w-sm mx-auto leading-[1.9] mb-10`}
         >
           Nature, luxury, and serenity — all in one sanctuary crafted for those who seek more.
@@ -116,7 +116,7 @@ export default function CtaSection() {
         >
           <Link
             href="/booking"
-            className={`${sans.className} w-full sm:w-auto inline-flex items-center justify-center gap-3
+            className={`${josefin.className} w-full sm:w-auto inline-flex items-center justify-center gap-3
               px-8 py-4 rounded-full
               bg-white text-[#1a1309] text-[11px] font-semibold uppercase tracking-[0.22em]
               hover:bg-[#f8f4ee] transition-all duration-300 group
@@ -132,7 +132,7 @@ export default function CtaSection() {
 
           <Link
             href="/accommodation"
-            className={`${sans.className} w-full sm:w-auto inline-flex items-center justify-center gap-3
+            className={`${josefin.className} w-full sm:w-auto inline-flex items-center justify-center gap-3
               px-8 py-4 rounded-full
               border border-white/25 text-white text-[11px] font-semibold uppercase tracking-[0.22em]
               hover:bg-white/8 hover:border-white/50 transition-all duration-300`}

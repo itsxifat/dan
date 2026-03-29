@@ -3,11 +3,10 @@
 import { useRef } from "react";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
-import { Cormorant, DM_Sans, Cormorant_Garamond } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 
-const cinzel    = Cormorant({ subsets: ["latin"], weight: ["300", "400", "500", "600"], style: ["normal", "italic"] });
-const sans      = DM_Sans({ subsets: ["latin"], weight: ["300", "400", "500", "600"] });
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400", "500"], style: ["italic"] });
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 const stagger = {
   hidden: {},
@@ -53,7 +52,7 @@ const PLACEHOLDER_PROPERTIES = [
 function TypeBadge({ type }) {
   const label = type === "building" ? "Building" : "Cottage";
   return (
-    <span className={`${sans.className} text-[9px] uppercase tracking-[0.2em] font-semibold
+    <span className={`${josefin.className} text-[9px] uppercase tracking-[0.2em] font-semibold
       px-2.5 py-1 rounded-full backdrop-blur-md
       bg-[#1a1309]/60 text-[#c084b8] border border-[#7A2267]/30`}>
       {label}
@@ -94,19 +93,19 @@ function PropertyCard({ property }) {
       {/* Content */}
       <div className="p-6 flex flex-col gap-3">
         {/* Property name */}
-        <h3 className={`${cinzel.className} text-[1.25rem] font-500 text-[#1a1309] leading-snug`}>
+        <h3 className={`${lora.className} text-[1.25rem] font-500 text-[#1a1309] leading-snug`}>
           {property.name}
         </h3>
 
         {/* Tagline */}
         {property.tagline && (
-          <p className={`${cormorant.className} text-[15px] italic text-[#7a6a52] leading-relaxed`}>
+          <p className={`${lora.className} text-[15px] italic text-[#7a6a52] leading-relaxed`}>
             {property.tagline}
           </p>
         )}
 
         {/* Room hint */}
-        <p className={`${sans.className} text-[11px] font-medium text-[#9b8e78] uppercase tracking-[0.15em]`}>
+        <p className={`${josefin.className} text-[11px] font-medium text-[#9b8e78] uppercase tracking-[0.15em]`}>
           {isBuilding
             ? totalRooms > 0
               ? `${roomCount} of ${totalRooms} rooms available`
@@ -120,7 +119,7 @@ function PropertyCard({ property }) {
         {/* CTA */}
         <Link
           href={`/accommodation/${property.slug}`}
-          className={`${sans.className} inline-flex items-center gap-2 text-[11.5px] uppercase tracking-[0.18em]
+          className={`${josefin.className} inline-flex items-center gap-2 text-[11.5px] uppercase tracking-[0.18em]
             font-semibold text-[#7A2267] hover:text-[#1a1309] transition-colors duration-200 group/link`}
         >
           Explore
@@ -160,10 +159,10 @@ export default function RoomsSection({ properties }) {
           transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
           className="text-center mb-4"
         >
-          <h2 className={`${cinzel.className} text-[2rem] sm:text-[2.6rem] lg:text-[3rem]
+          <h2 className={`${lora.className} text-[2rem] sm:text-[2.6rem] lg:text-[3rem]
             font-500 text-[#1a1309] leading-[1.15]`}>
             Choose Your{" "}
-            <em className={`${cormorant.className} not-italic text-[#7A2267]`}>Perfect Sanctuary</em>
+            <em className={`${lora.className} not-italic text-[#7A2267]`}>Perfect Sanctuary</em>
           </h2>
         </motion.div>
 
@@ -171,7 +170,7 @@ export default function RoomsSection({ properties }) {
           initial={{ opacity: 0, y: 16 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.7, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-          className={`${sans.className} text-center text-[13.5px] font-light text-[#7a6a52] max-w-xl mx-auto mb-14 leading-[1.85]`}
+          className={`${josefin.className} text-center text-[13.5px] font-light text-[#7a6a52] max-w-xl mx-auto mb-14 leading-[1.85]`}
         >
           From private cottages nestled in greenery to suite-style rooms with sweeping views —
           each stay is crafted for comfort, elegance, and lasting memories.
@@ -201,7 +200,7 @@ export default function RoomsSection({ properties }) {
         >
           <Link
             href="/accommodation"
-            className={`${sans.className} inline-flex items-center gap-3
+            className={`${josefin.className} inline-flex items-center gap-3
               px-8 py-3.5 rounded-full
               border border-[#1a1309]/20 text-[#1a1309] text-[12px] font-semibold uppercase tracking-[0.18em]
               hover:bg-[#1a1309] hover:text-white hover:border-[#1a1309] transition-all duration-300 group`}

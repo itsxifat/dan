@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Cormorant, DM_Sans } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 
-const cinzel = Cormorant({ subsets: ["latin"], weight: ["300", "400", "500", "600"], style: ["normal", "italic"] });
-const sans   = DM_Sans({ subsets: ["latin"], weight: ["300", "400", "500", "600"] });
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 // ── Social Icons ──────────────────────────────────────────────────────────────
 function FacebookIcon() {
@@ -72,7 +72,7 @@ export default function FooterSection() {
         <div className="flex flex-col gap-5 lg:col-span-1">
           {/* Resort name */}
           <div>
-            <p className={`${cinzel.className} text-[1.2rem] font-600 text-white leading-snug`}>
+            <p className={`${lora.className} text-[1.2rem] font-600 text-white leading-snug`}>
               Dhali&apos;s Amber Nivaas
             </p>
             {/* Gold decorative line */}
@@ -80,7 +80,7 @@ export default function FooterSection() {
           </div>
 
           {/* Tagline */}
-          <p className={`${sans.className} text-[12.5px] font-light text-white/40 leading-[1.8]`}>
+          <p className={`${josefin.className} text-[12.5px] font-light text-white/40 leading-[1.8]`}>
             A sanctuary where nature meets luxury. Your perfect escape from the ordinary.
           </p>
 
@@ -118,7 +118,7 @@ export default function FooterSection() {
 
         {/* ── Col 2: Quick Links ───────────────────────────────────────────── */}
         <div className="flex flex-col gap-5">
-          <p className={`${sans.className} text-[10px] uppercase tracking-[0.22em] font-semibold text-white/50`}>
+          <p className={`${josefin.className} text-[10px] uppercase tracking-[0.22em] font-semibold text-white/50`}>
             Quick Links
           </p>
           <ul className="flex flex-col gap-3">
@@ -126,7 +126,7 @@ export default function FooterSection() {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className={`${sans.className} text-[13px] font-light text-white/35
+                  className={`${josefin.className} text-[13px] font-light text-white/35
                     hover:text-[#c084b8] transition-colors duration-200`}
                 >
                   {link.label}
@@ -138,7 +138,7 @@ export default function FooterSection() {
 
         {/* ── Col 3: Accommodation ─────────────────────────────────────────── */}
         <div className="flex flex-col gap-5">
-          <p className={`${sans.className} text-[10px] uppercase tracking-[0.22em] font-semibold text-white/50`}>
+          <p className={`${josefin.className} text-[10px] uppercase tracking-[0.22em] font-semibold text-white/50`}>
             Stay With Us
           </p>
           <ul className="flex flex-col gap-3">
@@ -146,7 +146,7 @@ export default function FooterSection() {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className={`${sans.className} text-[13px] font-light text-white/35
+                  className={`${josefin.className} text-[13px] font-light text-white/35
                     hover:text-[#c084b8] transition-colors duration-200`}
                 >
                   {link.label}
@@ -158,7 +158,7 @@ export default function FooterSection() {
 
         {/* ── Col 4: Contact ───────────────────────────────────────────────── */}
         <div className="flex flex-col gap-5">
-          <p className={`${sans.className} text-[10px] uppercase tracking-[0.22em] font-semibold text-white/50`}>
+          <p className={`${josefin.className} text-[10px] uppercase tracking-[0.22em] font-semibold text-white/50`}>
             Find Us
           </p>
           <ul className="flex flex-col gap-4">
@@ -166,7 +166,7 @@ export default function FooterSection() {
             <li>
               <div className="flex items-start gap-2.5">
                 <span className="mt-0.5 shrink-0"><MapPinIcon /></span>
-                <p className={`${sans.className} text-[12.5px] font-light text-white/35 leading-[1.75]`}>
+                <p className={`${josefin.className} text-[12.5px] font-light text-white/35 leading-[1.75]`}>
                   Dhali&apos;s Amber Nivaas Resort,<br />
                   Gazipur, Dhaka District,<br />
                   Bangladesh
@@ -177,7 +177,7 @@ export default function FooterSection() {
             <li>
               <a
                 href="tel:+880XXXXXXXXX"
-                className={`${sans.className} text-[12.5px] font-light text-white/35
+                className={`${josefin.className} text-[12.5px] font-light text-white/35
                   hover:text-[#c084b8] transition-colors duration-200`}
               >
                 +880 XXX XXX XXXX
@@ -187,7 +187,7 @@ export default function FooterSection() {
             <li>
               <a
                 href="mailto:info@dhalisambernivaas.com"
-                className={`${sans.className} text-[12.5px] font-light text-white/35
+                className={`${josefin.className} text-[12.5px] font-light text-white/35
                   hover:text-[#c084b8] transition-colors duration-200 break-all`}
               >
                 info@dhalisambernivaas.com
@@ -202,10 +202,10 @@ export default function FooterSection() {
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-5
           flex flex-col sm:flex-row items-center justify-between gap-2">
-          <p className={`${sans.className} text-[11px] text-white/30`}>
+          <p className={`${josefin.className} text-[11px] text-white/30`}>
             &copy; 2025 Dhali&apos;s Amber Nivaas. All rights reserved.
           </p>
-          <p className={`${sans.className} text-[11px] text-white/30`}>
+          <p className={`${josefin.className} text-[11px] text-white/30`}>
             Designed with care for your experience.
           </p>
         </div>
