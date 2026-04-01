@@ -39,8 +39,12 @@ const BookingSchema = new mongoose.Schema({
   category: { type: mongoose.Schema.Types.ObjectId, ref: "RoomCategory", default: null },
   room:      { type: mongoose.Schema.Types.ObjectId, ref: "Room", default: null },
 
-  // Day-long package (optional)
+  // Day-long entry service (mandatory for day_long, replaces old package concept)
   dayLongPackage: { type: mongoose.Schema.Types.ObjectId, ref: "DayLongPackage", default: null },
+  // Day-long optional add-ons selected by the guest
+  dayLongAddons:  [{ type: mongoose.Schema.Types.ObjectId, ref: "DayLongPackage" }],
+  // Total discount applied from add-on discount rules
+  dayLongDiscount: { type: Number, default: 0 },
 
   checkIn:   { type: Date, required: true },
   checkOut:  { type: Date, required: true },

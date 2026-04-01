@@ -64,7 +64,7 @@ function calcPos(anchorEl, calW = 252, calH = 360) {
 }
 
 // ─── Minimal Futuristic Calendar ───────────────────────────────────────────────
-function PremiumCalendar({ checkIn, checkOut, onCheckIn, onCheckOut, anchorEl, onClose, initialPicking }) {
+function PremiumCalendar({ checkIn, checkOut, onCheckIn, onCheckOut, anchorEl, onClose, initialPicking, singleDate = false }) {
   const today    = todayDate();
   const [viewYear,  setViewYear]  = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -173,39 +173,56 @@ function PremiumCalendar({ checkIn, checkOut, onCheckIn, onCheckOut, anchorEl, o
       >
         {/* ── Tabs ── */}
         <div className="flex border-b border-[#F0E6FF]">
-          {[
-            { key: "in",  label: "Arrival",   val: checkIn  },
-            { key: "out", label: "Departure",  val: checkOut },
-          ].map(({ key, label, val }) => (
-            <button
-              key={key}
-              onClick={() => setPicking(key)}
-              className={`flex-1 px-2.5 py-2 text-left transition-all duration-200 relative
-                ${picking === key ? "bg-[#FAF4FF]" : "hover:bg-[#FCF8FF]"}`}
-            >
-              {picking === key && (
-                <motion.div layoutId="calTab"
-                  className="absolute bottom-0 inset-x-0 h-[2px] bg-[#7A2267]"
-                  transition={{ duration: 0.25 }} />
-              )}
-              <p className={`text-[7.5px] uppercase tracking-[0.18em] font-semibold mb-0.5
-                ${picking === key ? "text-[#7A2267]" : "text-[#BCA8CC]"}`}>
-                {label}
+          {singleDate ? (
+            /* Single-date mode: show one "Visit Date" tab */
+            <div className="flex-1 px-2.5 py-2 bg-[#FAF4FF] relative">
+              <div className="absolute bottom-0 inset-x-0 h-[2px] bg-[#7A2267]" />
+              <p className="text-[7.5px] uppercase tracking-[0.18em] font-semibold mb-0.5 text-[#7A2267]">
+                Visit Date
               </p>
-              <p className={`text-[10.5px] font-medium transition-colors duration-200
-                ${val ? (picking === key ? "text-[#3D0A52]" : "text-[#7A5590]") : "text-[#CCBAD8]"}`}
-                style={val ? cormorant.style : {}}>
-                {val ? fmtShort(val) : "Select date"}
+              <p className={`text-[10.5px] font-medium ${checkIn ? "text-[#3D0A52]" : "text-[#CCBAD8]"}`}
+                style={checkIn ? cormorant.style : {}}>
+                {checkIn ? fmtShort(checkIn) : "Select date"}
               </p>
-            </button>
-          ))}
-          {nights > 0 && (
-            <div className="flex items-center px-2 border-l border-[#F0E6FF]">
-              <div className="text-center">
-                <p className="text-[9.5px] font-bold text-[#7A2267]">{nights}</p>
-                <p className="text-[7px] uppercase tracking-wider text-[#BCA8CC]">night{nights !== 1 ? "s" : ""}</p>
-              </div>
             </div>
+          ) : (
+            /* Range mode: Arrival + Departure tabs */
+            <>
+              {[
+                { key: "in",  label: "Arrival",   val: checkIn  },
+                { key: "out", label: "Departure",  val: checkOut },
+              ].map(({ key, label, val }) => (
+                <button
+                  key={key}
+                  onClick={() => setPicking(key)}
+                  className={`flex-1 px-2.5 py-2 text-left transition-all duration-200 relative
+                    ${picking === key ? "bg-[#FAF4FF]" : "hover:bg-[#FCF8FF]"}`}
+                >
+                  {picking === key && (
+                    <motion.div layoutId="calTab"
+                      className="absolute bottom-0 inset-x-0 h-[2px] bg-[#7A2267]"
+                      transition={{ duration: 0.25 }} />
+                  )}
+                  <p className={`text-[7.5px] uppercase tracking-[0.18em] font-semibold mb-0.5
+                    ${picking === key ? "text-[#7A2267]" : "text-[#BCA8CC]"}`}>
+                    {label}
+                  </p>
+                  <p className={`text-[10.5px] font-medium transition-colors duration-200
+                    ${val ? (picking === key ? "text-[#3D0A52]" : "text-[#7A5590]") : "text-[#CCBAD8]"}`}
+                    style={val ? cormorant.style : {}}>
+                    {val ? fmtShort(val) : "Select date"}
+                  </p>
+                </button>
+              ))}
+              {nights > 0 && (
+                <div className="flex items-center px-2 border-l border-[#F0E6FF]">
+                  <div className="text-center">
+                    <p className="text-[9.5px] font-bold text-[#7A2267]">{nights}</p>
+                    <p className="text-[7px] uppercase tracking-wider text-[#BCA8CC]">night{nights !== 1 ? "s" : ""}</p>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -380,26 +397,31 @@ const EASE = [0.16, 1, 0.3, 1];
 // ─── Hero Component ────────────────────────────────────────────────────────────
 export default function Hero() {
   const router = useRouter();
-  const [mounted,  setMounted]  = useState(false);
-  const [checkIn,  setCheckIn]  = useState("");
-  const [checkOut, setCheckOut] = useState("");
-  const [adults,   setAdults]   = useState(2);
-  const [children, setChildren] = useState(0);
-  const [calOpen,   setCalOpen]   = useState(false);
-  const [calAnchor, setCalAnchor] = useState(null);
-  const [calMode,   setCalMode]   = useState("in");
+  const [mounted,      setMounted]      = useState(false);
+  const [bookingType,  setBookingType]  = useState("night_stay"); // "day_long" | "night_stay"
+  const [checkIn,      setCheckIn]      = useState("");
+  const [checkOut,     setCheckOut]     = useState("");
+  const [adults,       setAdults]       = useState(2);
+  const [children,     setChildren]     = useState(0);
+  const [calOpen,      setCalOpen]      = useState(false);
+  const [calAnchor,    setCalAnchor]    = useState(null);
+  const [calMode,      setCalMode]      = useState("in");
 
   const checkInBtnRef  = useRef(null);
   const checkOutBtnRef = useRef(null);
 
   useEffect(() => { setMounted(true); }, []);
 
+  // Reset dates when switching modes
+  function switchType(type) {
+    setBookingType(type);
+    setCheckIn("");
+    setCheckOut("");
+    setCalOpen(false);
+  }
+
   function handleDateClick(btnRef, mode) {
-    // Toggle: same button while open → close
-    if (calOpen && calAnchor === btnRef.current) {
-      setCalOpen(false);
-      return;
-    }
+    if (calOpen && calAnchor === btnRef.current) { setCalOpen(false); return; }
     setCalAnchor(btnRef.current);
     setCalMode(mode);
     setCalOpen(true);
@@ -407,10 +429,15 @@ export default function Hero() {
 
   function handleCheckAvailability() {
     const p = new URLSearchParams();
-    if (checkIn)  p.set("checkIn",  checkIn);
-    if (checkOut) p.set("checkOut", checkOut);
-    p.set("adults",   adults);
-    p.set("children", children);
+    p.set("mode", bookingType);
+    p.set("adults",   String(adults));
+    p.set("children", String(children));
+    if (bookingType === "day_long") {
+      if (checkIn) p.set("date", checkIn);
+    } else {
+      if (checkIn)  p.set("checkIn",  checkIn);
+      if (checkOut) p.set("checkOut", checkOut);
+    }
     router.push(`/booking?${p.toString()}`);
   }
 
@@ -508,83 +535,135 @@ export default function Hero() {
 
             <div className="px-4 sm:px-5 pt-3 sm:pt-4 pb-4 sm:pb-5">
 
-              {/* Minimal header */}
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <h3 className={`text-[13px] font-semibold text-[#3D0A52] tracking-wide ${lora.className}`}>
-                  Reserve Your Stay
-                </h3>
-                <AnimatePresence>
-                  {nights > 0 && (
-                    <motion.span
-                      key="nights"
-                      initial={{ opacity: 0, scale: 0.85 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.85 }}
-                      transition={{ duration: 0.2 }}
-                      className={`text-[11px] font-semibold text-[#7A2267] bg-[#7A2267]/10 px-2.5 py-1 rounded-full ${josefin.className}`}
+              {/* Header */}
+              <h3 className={`text-[13px] font-semibold text-[#3D0A52] tracking-wide mb-3 ${lora.className}`}>
+                Reserve Your Stay
+              </h3>
+
+              {/* Mode toggle */}
+              <div className="flex gap-1.5 p-1 bg-[#EDD8FF]/60 rounded-xl mb-3 sm:mb-4">
+                {[
+                  { key: "day_long",   label: "Day Long"   },
+                  { key: "night_stay", label: "Night Stay" },
+                ].map(({ key, label }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => switchType(key)}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg
+                      text-[10.5px] font-semibold uppercase tracking-[0.12em] transition-all duration-200
+                      ${bookingType === key
+                        ? "bg-[#7A2267] text-white shadow-[0_2px_8px_rgba(122,34,103,0.35)]"
+                        : "text-[#9B70B0] hover:text-[#7A2267]"
+                      }`}
+                  >
+                    <span className={`transition-transform duration-200 ${bookingType === key ? "scale-90" : "scale-75 opacity-60"}`}>
+                      {key === "day_long"
+                        ? <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                        : <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                      }
+                    </span>
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Date fields */}
+              <AnimatePresence mode="wait">
+                {bookingType === "day_long" ? (
+                  /* ── Day Long: single date ── */
+                  <motion.div key="daylong"
+                    initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.18 }}
+                    className="mb-3 sm:mb-4"
+                  >
+                    <button
+                      ref={checkInBtnRef}
+                      type="button"
+                      onClick={() => handleDateClick(checkInBtnRef, "in")}
+                      className={`w-full px-3 py-3 rounded-xl text-left transition-all duration-200 border
+                        ${calOpen && calAnchor === checkInBtnRef.current
+                          ? "bg-[#EDD8FF] border-[#7A2267]/30 ring-1 ring-[#7A2267]/12"
+                          : "bg-[#F2E8FF] border-[#D0A8E8]/60 hover:border-[#7A2267]/35 hover:bg-[#EDD8FF]"}`}
                     >
-                      {nights} {nights === 1 ? "night" : "nights"}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </div>
+                      <p className="text-[8px] uppercase tracking-[0.15em] text-[#9B70B0] font-medium mb-0.5">
+                        Visit Date
+                      </p>
+                      <p className={`text-[13px] font-semibold leading-none ${checkIn ? "text-[#3D0A52]" : "text-[#CDB4E0]"}`}>
+                        {checkIn ? fmtFull(checkIn) : "Select a date"}
+                      </p>
+                    </button>
+                  </motion.div>
+                ) : (
+                  /* ── Night Stay: two dates ── */
+                  <motion.div key="night-stay"
+                    initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.18 }}
+                    className="mb-3 sm:mb-4"
+                  >
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        ref={checkInBtnRef}
+                        type="button"
+                        onClick={() => handleDateClick(checkInBtnRef, "in")}
+                        className={`w-full px-3 py-2.5 rounded-xl text-left transition-all duration-200 border group
+                          ${calOpen && calAnchor === checkInBtnRef.current
+                            ? "bg-[#EDD8FF] border-[#7A2267]/30 ring-1 ring-[#7A2267]/12"
+                            : "bg-[#F2E8FF] border-[#D0A8E8]/60 hover:border-[#7A2267]/35 hover:bg-[#EDD8FF]"}`}
+                      >
+                        <p className="text-[8px] uppercase tracking-[0.15em] text-[#9B70B0] font-medium mb-0.5">Arrival</p>
+                        <p className={`text-[12.5px] font-semibold leading-none ${checkIn ? "text-[#3D0A52]" : "text-[#CDB4E0]"}`}>
+                          {checkIn ? fmtShort(checkIn) : "Add date"}
+                        </p>
+                      </button>
+                      <button
+                        ref={checkOutBtnRef}
+                        type="button"
+                        onClick={() => handleDateClick(checkOutBtnRef, "out")}
+                        className={`w-full px-3 py-2.5 rounded-xl text-left transition-all duration-200 border group
+                          ${calOpen && calAnchor === checkOutBtnRef.current
+                            ? "bg-[#EDD8FF] border-[#7A2267]/30 ring-1 ring-[#7A2267]/12"
+                            : "bg-[#F2E8FF] border-[#D0A8E8]/60 hover:border-[#7A2267]/35 hover:bg-[#EDD8FF]"}`}
+                      >
+                        <p className="text-[8px] uppercase tracking-[0.15em] text-[#9B70B0] font-medium mb-0.5">Departure</p>
+                        <p className={`text-[12.5px] font-semibold leading-none ${checkOut ? "text-[#3D0A52]" : "text-[#CDB4E0]"}`}>
+                          {checkOut ? fmtShort(checkOut) : "Add date"}
+                        </p>
+                      </button>
+                    </div>
+                    <AnimatePresence>
+                      {nights > 0 && (
+                        <motion.p
+                          initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }}
+                          className={`text-[10.5px] font-semibold text-[#7A2267] text-center mt-2 ${josefin.className}`}
+                        >
+                          {nights} {nights === 1 ? "night" : "nights"}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-              {/* Date row */}
-              <div className="grid grid-cols-2 gap-2 mb-2 sm:mb-3">
-                {/* Check-in */}
-                <button
-                  ref={checkInBtnRef}
-                  type="button"
-                  onClick={() => handleDateClick(checkInBtnRef, "in")}
-                  className={`w-full px-3 py-2.5 rounded-xl text-left transition-all duration-200 border group
-                    ${calOpen && calAnchor === checkInBtnRef.current
-                      ? "bg-[#EDD8FF] border-[#7A2267]/30 ring-1 ring-[#7A2267]/12"
-                      : "bg-[#F2E8FF] border-[#D0A8E8]/60 hover:border-[#7A2267]/35 hover:bg-[#EDD8FF]"}`}
-                >
-                  <p className="text-[8px] uppercase tracking-[0.15em] text-[#9B70B0] font-medium mb-0.5">Arrival</p>
-                  <p className={`text-[12.5px] font-semibold leading-none transition-colors duration-200
-                    ${checkIn ? "text-[#3D0A52]" : "text-[#CDB4E0]"}`}>
-                    {checkIn ? fmtShort(checkIn) : "Add date"}
-                  </p>
-                </button>
-
-                {/* Check-out */}
-                <button
-                  ref={checkOutBtnRef}
-                  type="button"
-                  onClick={() => handleDateClick(checkOutBtnRef, "out")}
-                  className={`w-full px-3 py-2.5 rounded-xl text-left transition-all duration-200 border group
-                    ${calOpen && calAnchor === checkOutBtnRef.current
-                      ? "bg-[#EDD8FF] border-[#7A2267]/30 ring-1 ring-[#7A2267]/12"
-                      : "bg-[#F2E8FF] border-[#D0A8E8]/60 hover:border-[#7A2267]/35 hover:bg-[#EDD8FF]"}`}
-                >
-                  <p className="text-[8px] uppercase tracking-[0.15em] text-[#9B70B0] font-medium mb-0.5">Departure</p>
-                  <p className={`text-[12.5px] font-semibold leading-none transition-colors duration-200
-                    ${checkOut ? "text-[#3D0A52]" : "text-[#CDB4E0]"}`}>
-                    {checkOut ? fmtShort(checkOut) : "Add date"}
-                  </p>
-                </button>
-              </div>
-
-              {/* Guest counters */}
+              {/* Guest Counts */}
               <div className="grid grid-cols-2 gap-2 mb-3 sm:mb-4">
-                <Counter label="Adults"   value={adults}   min={1} max={10} onChange={setAdults} />
-                <Counter label="Children" value={children} min={0} max={6}  onChange={setChildren} />
+                <Counter label="Adults" value={adults} min={1} max={20} onChange={setAdults} />
+                <Counter label="Children" value={children} min={0} max={10} onChange={setChildren} />
               </div>
 
               {/* CTA */}
               <button
                 onClick={handleCheckAvailability}
                 className={`group w-full flex items-center justify-center gap-3
-                  py-3 rounded-xl
-                  bg-[#7A2267] hover:bg-[#5C1A4D]
+                  py-3 rounded-xl bg-[#7A2267] hover:bg-[#5C1A4D]
                   transition-all duration-300
                   shadow-[0_4px_20px_rgba(122,34,103,0.3)]
                   hover:shadow-[0_6px_28px_rgba(122,34,103,0.5)]
                   active:scale-[0.98]`}
               >
                 <span className="text-[10.5px] font-semibold uppercase tracking-[0.2em] text-white">
-                  Check Availability
+                  {bookingType === "day_long" ? "Check Availability" : "Check Availability"}
                 </span>
                 <svg viewBox="0 0 20 20" width="13" height="13" fill="none"
                   stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
@@ -601,12 +680,21 @@ export default function Hero() {
       {calOpen && (
         <PremiumCalendar
           checkIn={checkIn}
-          checkOut={checkOut}
-          onCheckIn={setCheckIn}
-          onCheckOut={setCheckOut}
+          checkOut={bookingType === "day_long" ? checkIn : checkOut}
+          onCheckIn={(v) => {
+            setCheckIn(v);
+            if (bookingType === "day_long") {
+              setCheckOut(v); // same day for day long
+              setCalOpen(false);
+            }
+          }}
+          onCheckOut={(v) => {
+            if (bookingType !== "day_long") setCheckOut(v);
+          }}
           anchorEl={calAnchor}
           onClose={() => setCalOpen(false)}
-          initialPicking={calMode}
+          initialPicking={bookingType === "day_long" ? "in" : calMode}
+          singleDate={bookingType === "day_long"}
         />
       )}
     </div>

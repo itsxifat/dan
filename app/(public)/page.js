@@ -6,17 +6,20 @@ import GallerySection from "../../components/sections/GallerySection";
 import TestimonialsSection from "../../components/sections/TestimonialsSection";
 import PackagesSection from "../../components/sections/PackagesSection";
 import CorporateSection from "../../components/sections/CorporateSection";
+import WeddingSection from "../../components/sections/WeddingSection";
 import DiningSection from "../../components/sections/DiningSection";
 import CtaSection from "../../components/sections/CtaSection";
 import FooterSection from "../../components/sections/FooterSection";
 import { getProperties } from "@/actions/accommodation/propertyActions";
 import { getPublishedGalleryPhotos, getGalleryCategories } from "@/actions/gallery/galleryActions";
+import { getActiveDayLongPackages } from "@/actions/accommodation/dayLongPackageActions";
 
 export default async function Home() {
-  const [{ properties }, galleryPhotos, galleryCategories] = await Promise.all([
+  const [{ properties }, galleryPhotos, galleryCategories, dayLongServices] = await Promise.all([
     getProperties({ onlyActive: true, limit: 6 }),
     getPublishedGalleryPhotos({ limit: 24 }),
     getGalleryCategories(),
+    getActiveDayLongPackages(),
   ]);
 
   return (
@@ -30,8 +33,9 @@ export default async function Home() {
         categories={galleryCategories.map((c) => c.name)}
       />
       <TestimonialsSection />
-      <PackagesSection />
+      <PackagesSection services={dayLongServices} />
       <CorporateSection />
+      <WeddingSection />
       <DiningSection />
       <CtaSection />
       <FooterSection />

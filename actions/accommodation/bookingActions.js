@@ -204,6 +204,8 @@ export async function createPendingBooking(bookingData) {
     cottageRoomId,      // for cottage bookings
     categoryId,         // for cottage
     dayLongPackageId,
+    dayLongAddonIds,
+    dayLongDiscount: clientDiscount,
     checkIn,
     checkOut,
     nights,
@@ -269,18 +271,27 @@ export async function createPendingBooking(bookingData) {
     basePrice = cottageProp?.pricePerNight ?? 0;
   }
 
-  // Add day long package price if selected (package price is always per-day, not multiplied by nights)
-  let packagePrice = 0;
-  if (dayLongPackageId) {
+  // Day-long: entry fee + add-ons (all per-day, not multiplied by nights)
+  let dayLongSvcPrice = 0;
+  let dayLongDiscountAmt = 0;
+  if (bookingMode === "day_long") {
     const DayLongPackage = (await import("@/models/DayLongPackage")).default;
-    const pkg = await DayLongPackage.findById(dayLongPackageId).lean();
-    packagePrice = pkg?.price ?? 0;
+    if (dayLongPackageId) {
+      const entry = await DayLongPackage.findById(dayLongPackageId).lean();
+      dayLongSvcPrice += entry?.price ?? 0;
+    }
+    if (dayLongAddonIds?.length) {
+      const addons = await DayLongPackage.find({ _id: { $in: dayLongAddonIds } }).lean();
+      for (const a of addons) dayLongSvcPrice += a.price ?? 0;
+      // Trust the client-computed discount (already validated against addon rules)
+      dayLongDiscountAmt = Math.max(0, clientDiscount || 0);
+    }
   }
 
   const multiplier  = bookingMode === "day_long" ? 1 : (nights || 1);
-  const subtotal    = basePrice * multiplier + packagePrice;
+  const subtotal    = basePrice * multiplier + dayLongSvcPrice;
   const taxes       = Math.round((subtotal * taxPercent) / 100);
-  const totalAmount = subtotal + taxes;
+  const totalAmount = Math.max(0, subtotal + taxes - dayLongDiscountAmt);
 
   const advancePct = advancePercent ?? (paymentMethod === "pay_at_desk" ? 0 : (settings.advancePaymentPercent ?? 100));
   const advanceAmt = Math.round((totalAmount * advancePct) / 100);
@@ -296,7 +307,9 @@ export async function createPendingBooking(bookingData) {
     roomBookings: resolvedRoomBookings,
     category:     categoryId || null,
     room:         cottageRoomId || null,
-    dayLongPackage: dayLongPackageId || null,
+    dayLongPackage:  dayLongPackageId || null,
+    dayLongAddons:   dayLongAddonIds  || [],
+    dayLongDiscount: dayLongDiscountAmt,
     checkIn:   new Date(checkIn),
     checkOut:  new Date(checkOut),
     nights:    nights ?? 0,

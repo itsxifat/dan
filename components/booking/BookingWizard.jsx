@@ -37,6 +37,14 @@ function fmtDate(iso) {
   return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 function isSameDay(a, b) { return a === b; }
+// True when a guest should be classified as a child.
+// Age is authoritative when present; falls back to _intent when age is blank.
+function guestIsChild(g, maxFCA) {
+  if (g.age !== "" && g.age !== null && g.age !== undefined && !isNaN(Number(g.age))) {
+    return Number(g.age) <= maxFCA;
+  }
+  return g._intent === "child";
+}
 
 const EASE = [0.16, 1, 0.3, 1];
 
@@ -342,22 +350,38 @@ export default function BookingWizard({ settings, preselect }) {
   const { data: session } = useSession();
   const [isPending, startTransition] = useTransition();
 
+  // ── Derive initial state from hero preselect ─────────────────────────────────
+  // If mode + date(s) arrive from the hero card, skip steps 1 & 2 entirely.
+  const _preselectMode = preselect?.mode === "day_long" || preselect?.mode === "night_stay"
+    ? preselect.mode : null;
+  const _preselectHasDates = _preselectMode === "day_long"
+    ? !!preselect?.date
+    : !!(preselect?.checkIn && preselect?.checkOut);
+
   // Steps: 1=mode, 2=dates+guests, 3=rooms, 4=guest-info, 5=payment
-  const [step, setStep] = useState(1);
-  const [bookingMode, setBookingMode] = useState("night_stay");  // "night_stay" | "day_long"
+  const [step, setStep] = useState(() => {
+    if (_preselectMode && _preselectHasDates) return 3; // skip steps 1 & 2
+    if (_preselectMode) return 2;                       // skip step 1 only
+    return 1;
+  });
+  const [bookingMode, setBookingMode] = useState(
+    _preselectMode ?? "night_stay"
+  );
 
   // Dates
-  const [dateRange, setDateRange] = useState([
-    preselect?.checkIn || null,
-    preselect?.checkOut || null,
-  ]);
+  const [dateRange, setDateRange] = useState(() => {
+    if (_preselectMode === "day_long" && preselect?.date) {
+      return [preselect.date, addDays(preselect.date, 1)];
+    }
+    return [preselect?.checkIn || null, preselect?.checkOut || null];
+  });
   const checkIn  = dateRange[0];
   const checkOut = dateRange[1];
   const nights   = checkIn && checkOut ? diffDays(checkIn, checkOut) : 0;
 
-  // Guest counts
-  const [adults,   setAdults]   = useState(2);
-  const [children, setChildren] = useState(0);
+  // Guest counts — pre-filled from hero reserve card if provided
+  const [adults,   setAdults]   = useState(preselect?.adults   ?? 2);
+  const [children, setChildren] = useState(preselect?.children ?? 0);
 
   // Properties + Categories
   const [properties,  setProperties]  = useState([]);
@@ -383,8 +407,18 @@ export default function BookingWizard({ settings, preselect }) {
   const [cart, setCart] = useState(new Map());
 
   // Day long packages
-  const [packages,     setPackages]     = useState([]);
-  const [selectedPkg,  setSelectedPkg]  = useState(null);
+  const [packages,       setPackages]       = useState([]);
+  const [selectedEntry,  setSelectedEntry]  = useState(null);   // required entry service
+  const [selectedAddons, setSelectedAddons] = useState([]);     // optional add-ons (array)
+
+  // Step 3 sub-steps: 0=packages(daylong only), 1=property, 2=category, 3=rooms
+  // If jumping straight to step 3 from hero, init correctly for the mode
+  const [roomSubStep, setRoomSubStep] = useState(() => {
+    if (_preselectMode && _preselectHasDates) {
+      return _preselectMode === "day_long" ? 0 : 1;
+    }
+    return 1;
+  });
 
   // Guest info per room: Map<roomId, { guests: [], groupType, coupleDocumentUrl, coupleDocMethod }>
   // groupType: null = not asked yet, "couple" = married/couple, "family" = relatives/family
@@ -403,6 +437,8 @@ export default function BookingWizard({ settings, preselect }) {
 
   // Upload-prompt warnings (room._id or "nid" or null)
   const [uploadWarn, setUploadWarn] = useState(null); // "nid" | roomId string
+  // Child→adult reclassification warnings: key = `${roomId}-${guestIdx}`
+  const [childReclassifyMsg, setChildReclassifyMsg] = useState({});
 
   // Error
   const [error, setError] = useState("");
@@ -416,10 +452,16 @@ export default function BookingWizard({ settings, preselect }) {
     return sum * (bookingMode === "day_long" ? 1 : nights || 1);
   }, [cartRooms, bookingMode, nights]);
 
-  const taxPercent  = settings?.taxPercent ?? 0;
-  const subtotal    = totalPrice + (selectedPkg ? selectedPkg.price : 0);
+  const taxPercent      = settings?.taxPercent ?? 0;
+  const dayLongSvcTotal = (selectedEntry?.price || 0) + selectedAddons.reduce((s, a) => s + (a.price || 0), 0);
+  const dayLongDiscount = selectedAddons.reduce((sum, a) => {
+    if (a.discountType === "percent") return sum + Math.round(((totalPrice + dayLongSvcTotal) * (a.discountValue || 0)) / 100);
+    if (a.discountType === "fixed")   return sum + (a.discountValue || 0);
+    return sum;
+  }, 0);
+  const subtotal    = totalPrice + dayLongSvcTotal;
   const taxes       = Math.round((subtotal * taxPercent) / 100);
-  const total       = subtotal + taxes;
+  const total       = Math.max(0, subtotal + taxes - dayLongDiscount);
   const partialPct  = settings?.advancePaymentPercent ?? 30;
   const partialAmt  = Math.round((total * partialPct) / 100);
   const partialRem  = total - partialAmt;
@@ -518,9 +560,36 @@ export default function BookingWizard({ settings, preselect }) {
   }
 
   function updateGuest(roomId, idx, field, value) {
-    const info = getGuestInfo(roomId);
+    const info   = getGuestInfo(roomId);
     const guests = [...info.guests];
-    guests[idx] = { ...guests[idx], [field]: value };
+    const maxFCA = settings?.maxFreeChildAge ?? 5;
+    let updatedGuest = { ...guests[idx], [field]: value };
+
+    if (field === "age") {
+      const numAge     = Number(value);
+      const hasAge     = value !== "" && value !== null && !isNaN(numAge);
+      const msgKey     = `${roomId}-${idx}`;
+
+      if (guests[idx]._intent === "child" && hasAge && numAge > maxFCA) {
+        // Child-intent guest's age exceeds threshold → auto-promote to adult
+        updatedGuest._intent = "adult";
+        const room       = cartRooms.find((r) => r._id === roomId);
+        const otherAdults = guests.filter((g, i) => i !== idx && !guestIsChild(g, maxFCA)).length;
+        if (room?.maxAdults > 0 && otherAdults + 1 > room.maxAdults) {
+          setChildReclassifyMsg((prev) => ({
+            ...prev,
+            [msgKey]: `Age ${numAge} is above the child limit (${maxFCA}). This guest is now counted as an adult, but the room is at adult capacity. Please remove an adult to continue.`,
+          }));
+        } else {
+          setChildReclassifyMsg((prev) => ({ ...prev, [msgKey]: null }));
+        }
+      } else {
+        // Age back in child range, or no age yet — clear any prior warning
+        setChildReclassifyMsg((prev) => ({ ...prev, [msgKey]: null }));
+      }
+    }
+
+    guests[idx] = updatedGuest;
     updateGuestInfo(roomId, { guests });
   }
 
@@ -528,12 +597,12 @@ export default function BookingWizard({ settings, preselect }) {
     const room   = cartRooms.find((r) => r._id === roomId);
     const info   = getGuestInfo(roomId);
     const maxFCA = settings?.maxFreeChildAge ?? 5;
-    const curAdults   = info.guests.filter((g) => !g.age || Number(g.age) > maxFCA).length;
-    const curChildren = info.guests.filter((g) =>  g.age && Number(g.age) <= maxFCA).length;
+    const curAdults   = info.guests.filter((g) => !guestIsChild(g, maxFCA)).length;
+    const curChildren = info.guests.filter((g) =>  guestIsChild(g, maxFCA)).length;
     if (type === "adult" && room?.maxAdults   > 0  && curAdults   >= room.maxAdults)   return;
     if (type === "child" && room?.maxChildren >= 0  && curChildren >= room.maxChildren) return;
     updateGuestInfo(roomId, {
-      guests: [...info.guests, { name: "", age: "", gender: "male" }],
+      guests: [...info.guests, { name: "", age: "", gender: "male", _intent: type }],
     });
   }
 
@@ -541,6 +610,19 @@ export default function BookingWizard({ settings, preselect }) {
     const info = getGuestInfo(roomId);
     updateGuestInfo(roomId, {
       guests: info.guests.filter((_, i) => i !== idx),
+    });
+    // Clear any reclassification warning for the removed guest (and reindex subsequent ones)
+    setChildReclassifyMsg((prev) => {
+      const next = { ...prev };
+      delete next[`${roomId}-${idx}`];
+      // Shift down keys for guests after the removed index
+      info.guests.forEach((_, i) => {
+        if (i > idx && next[`${roomId}-${i}`] !== undefined) {
+          next[`${roomId}-${i - 1}`] = next[`${roomId}-${i}`];
+          delete next[`${roomId}-${i}`];
+        }
+      });
+      return next;
     });
   }
 
@@ -553,7 +635,7 @@ export default function BookingWizard({ settings, preselect }) {
     if (alreadyIn) return;
     const room   = cartRooms.find((r) => r._id === roomId);
     const maxFCA = settings?.maxFreeChildAge ?? 5;
-    const curAdults = info.guests.filter((g) => !g.age || Number(g.age) > maxFCA).length;
+    const curAdults = info.guests.filter((g) => !guestIsChild(g, maxFCA)).length;
     const primaryIsAdult = !primaryGuest.age || Number(primaryGuest.age) > maxFCA;
     if (primaryIsAdult && room?.maxAdults > 0 && curAdults >= room.maxAdults) return;
     updateGuestInfo(roomId, {
@@ -576,15 +658,20 @@ export default function BookingWizard({ settings, preselect }) {
       if (bookingMode === "night_stay" && nights < 1) return "Check-out must be after check-in.";
     }
     if (n === 3) {
-      if (!selectedProp) return "Please select a property.";
-      // For night stay: room selection is mandatory and must meet minimum rooms for adults
+      // For night stay: property + rooms are required
       if (bookingMode === "night_stay") {
+        if (!selectedProp) return "Please select a property.";
         if (cart.size === 0) return "Please add at least one room to your cart.";
         if (cart.size > 0 && cartCapacity < adults) {
           return `Your selected room${cart.size > 1 ? "s" : ""} can accommodate ${cartCapacity} adult${cartCapacity !== 1 ? "s" : ""}, but you have ${adults}. Please add more rooms.`;
         }
       }
-      // For day long: rooms are optional — guests can come without booking a room
+      // For day long: entry is required; rooms are optional and skipped when roomSubStep === 0
+      if (bookingMode === "day_long") {
+        if (!selectedEntry) return "Please select an entry service to continue.";
+        // If the user went into room sub-steps, a property must be selected before continuing
+        if (roomSubStep > 0 && !selectedProp) return "Please select a property.";
+      }
     }
     if (n === 4) {
       if (!primaryGuest.name.trim())  return "Please enter the primary guest's full name.";
@@ -639,12 +726,20 @@ export default function BookingWizard({ settings, preselect }) {
       const warn = checkUploadWarnings();
       if (warn) { setUploadWarn(warn); return; }
     }
+    if (step === 2) {
+      // Initialize room sub-step when entering step 3
+      setRoomSubStep(bookingMode === "day_long" ? 0 : 1);
+    }
     setStep((s) => s + 1);
   }
 
   function goBack() {
     setError("");
     setUploadWarn(null);
+    if (step === 3) {
+      // Reset sub-step when leaving step 3
+      setRoomSubStep(bookingMode === "day_long" ? 0 : 1);
+    }
     setStep((s) => s - 1);
   }
 
@@ -662,7 +757,8 @@ export default function BookingWizard({ settings, preselect }) {
       return {
         roomId:   room._id,
         categoryId: room.category,
-        guests:   info.guests,
+        // Strip internal _intent field before sending to server
+        guests:   info.guests.map(({ _intent, ...g }) => g),
         coupleDocumentUrl: info.coupleDocumentUrl || "",
         coupleDocMethod:   info.coupleDocMethod   || "at_desk",
       };
@@ -700,7 +796,9 @@ export default function BookingWizard({ settings, preselect }) {
           propertyId: selectedProp,
           bookingType: "room",
           roomBookings: roomBookingsData,
-          dayLongPackageId: selectedPkg?._id || null,
+          dayLongPackageId: selectedEntry?._id || null,
+          dayLongAddonIds:  selectedAddons.map((a) => a._id),
+          dayLongDiscount,
           checkIn,
           checkOut: checkOutCalc,
           nights: bookingMode === "day_long" ? 0 : nights,
@@ -932,217 +1030,164 @@ export default function BookingWizard({ settings, preselect }) {
           </motion.div>
         )}
 
-        {/* ── STEP 3: Choose Rooms ── */}
-        {step === 3 && (
-          <motion.div key="step3"
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.3 }}>
+        {/* ── STEP 3: Room Selection (3 sub-steps) ── */}
+        {step === 3 && (() => {
+          // Sub-step breadcrumb
+          const subStepLabels = bookingMode === "day_long"
+            ? ["Packages", "Property", "Category", "Rooms"]
+            : ["Property", "Category", "Rooms"];
+          const activeIndex = bookingMode === "day_long" ? roomSubStep : roomSubStep - 1;
 
-            {/* ── 3a: Property Selection ── */}
-            <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
-              <div className="h-[3px] bg-[#7A2267]" />
-              <div className="p-6 sm:p-8">
-                <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>Choose your property</h2>
-                <p className="text-[12px] text-[#9B8BAB] mb-5">Select the property that fits your stay.</p>
+          const SubBreadcrumb = () => (
+            <div className="flex items-center gap-1 mb-5 overflow-x-auto pb-1">
+              {subStepLabels.map((label, i) => {
+                const done   = i < activeIndex;
+                const active = i === activeIndex;
+                return (
+                  <div key={i} className="flex items-center gap-1 shrink-0">
+                    <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all duration-200
+                      ${active ? "bg-[#7A2267] text-white shadow-sm" : done ? "bg-[#7A2267]/12 text-[#7A2267]" : "bg-[#F0E8F4] text-[#C4B3CE]"}`}>
+                      {done && (
+                        <svg viewBox="0 0 8 8" width="8" height="8" fill="none">
+                          <path d="M1.3 4L3 5.7 6.7 2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                      {label}
+                    </div>
+                    {i < subStepLabels.length - 1 && (
+                      <svg viewBox="0 0 6 10" width="5" height="9" fill="none" className="shrink-0">
+                        <path d="M1 1l4 4-4 4" stroke="#C4B3CE" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
 
-                {properties.filter((p) => p.type === "building").length === 0 ? (
-                  <p className="text-[13px] text-[#C4B3CE] text-center py-4">No properties available.</p>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {properties.filter((p) => p.type === "building").map((p) => (
-                      <button key={p._id}
-                        onClick={() => { setSelectedProp(p._id); setSelectedCat(null); setRooms([]); setCart(new Map()); setPreviewRoom(null); }}
-                        className={`group relative text-left rounded-2xl overflow-hidden transition-all duration-300
-                          ${selectedProp === p._id
-                            ? "ring-2 ring-[#7A2267] ring-offset-2 shadow-[0_8px_36px_rgba(122,34,103,0.22)]"
-                            : "shadow-sm hover:shadow-xl hover:-translate-y-0.5"}`}>
-                        {/* Hero image */}
-                        <div className="relative aspect-[16/9] bg-gradient-to-br from-[#F0E8F4] to-[#E4D5F0] overflow-hidden">
-                          {p.coverImage
-                            ? <img src={p.coverImage} alt={p.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.05]" />
-                            : <div className="w-full h-full flex items-center justify-center">
-                                <svg viewBox="0 0 32 28" width="32" height="28" fill="none">
-                                  <rect x="1" y="8" width="30" height="19" rx="2" stroke="#C4B3CE" strokeWidth="1.4"/>
-                                  <path d="M8 8V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3" stroke="#C4B3CE" strokeWidth="1.4"/>
-                                  <path d="M13 16h6M16 13v6" stroke="#C4B3CE" strokeWidth="1.2" strokeLinecap="round"/>
-                                </svg>
-                              </div>
-                          }
-                          {/* Gradient overlay */}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                          {/* Selected badge */}
-                          {selectedProp === p._id && (
-                            <div className="absolute top-3 right-3 w-7 h-7 rounded-full bg-[#7A2267] shadow-lg flex items-center justify-center">
-                              <svg viewBox="0 0 10 10" width="10" height="10" fill="none">
-                                <path d="M2 5l2.5 2.5 3.5-4" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                            </div>
-                          )}
-                          {/* Info on image */}
-                          <div className="absolute bottom-0 inset-x-0 p-4">
-                            <p className={`text-white text-[16px] font-semibold leading-tight ${playfair.className}`}>{p.name}</p>
-                            {p.tagline && <p className="text-white/60 text-[11px] mt-0.5 line-clamp-1">{p.tagline}</p>}
-                            {p.location && (
-                              <p className="text-white/45 text-[10px] mt-1 flex items-center gap-1">
-                                <svg viewBox="0 0 12 14" width="8" height="10" fill="none">
-                                  <path d="M6 1C3.79 1 2 2.79 2 5c0 3.25 4 8 4 8s4-4.75 4-8c0-2.21-1.79-4-4-4z" stroke="currentColor" strokeWidth="1.3"/>
-                                  <circle cx="6" cy="5" r="1.5" stroke="currentColor" strokeWidth="1.2"/>
-                                </svg>
-                                {p.location}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </button>
-                    ))}
+          // Shared ServiceCard for day long packages
+          const ServiceCard = ({ svc, selected, onClick }) => {
+            const hasDiscount = svc.discountType !== "none" && svc.discountValue > 0;
+            const discountLabel = hasDiscount
+              ? (svc.discountType === "percent" ? `${svc.discountValue}% OFF` : `৳${svc.discountValue} OFF`)
+              : null;
+            const discountNote = hasDiscount
+              ? (svc.discountType === "percent" ? `Saves ${svc.discountValue}% off total` : `Saves ৳${svc.discountValue} off total`)
+              : null;
+            return (
+              <button onClick={onClick}
+                className={`relative text-left rounded-2xl border-2 overflow-hidden transition-all duration-150 group
+                  ${selected ? "border-[#7A2267] shadow-[0_4px_20px_rgba(122,34,103,0.15)]" : "border-[#EDE5F0] hover:border-[#C4B3CE]"}`}>
+                {svc.image ? (
+                  <div className="relative h-28 overflow-hidden bg-[#F0E8F4]">
+                    <img src={svc.image} alt={svc.name} className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
+                    {selected && (
+                      <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#7A2267] flex items-center justify-center shadow">
+                        <svg viewBox="0 0 10 10" width="10" height="10" fill="none">
+                          <path d="M2 5l2.5 2.5 3.5-4" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                    )}
+                    {hasDiscount && (
+                      <div className="absolute top-2 left-2 bg-emerald-500 text-white text-[9.5px] font-bold px-2 py-0.5 rounded-full">
+                        {discountLabel}
+                      </div>
+                    )}
+                  </div>
+                ) : selected && (
+                  <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-[#7A2267] flex items-center justify-center shadow z-10">
+                    <svg viewBox="0 0 10 10" width="10" height="10" fill="none">
+                      <path d="M2 5l2.5 2.5 3.5-4" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </div>
                 )}
-              </div>
-            </div>
-
-            {/* ── 3b: Category Selection ── */}
-            {selectedProp && (
-              <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
-                <div className="p-5 sm:p-6">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-[#9B8BAB] font-semibold mb-3">Room Category</p>
-                  {categories.length === 0 ? (
-                    <p className="text-[13px] text-[#C4B3CE]">No categories found for this property.</p>
-                  ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {categories.map((c) => (
-                        <button key={c._id}
-                          onClick={() => { setSelectedCat(c._id); setCart(new Map()); setPreviewRoom(null); }}
-                          className={`group relative rounded-xl overflow-hidden text-left transition-all duration-250
-                            ${selectedCat === c._id
-                              ? "ring-2 ring-[#7A2267] ring-offset-1 shadow-[0_4px_18px_rgba(122,34,103,0.18)]"
-                              : "shadow-sm hover:shadow-md hover:-translate-y-0.5"}`}>
-                          {/* Image or branded placeholder */}
-                          <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-[#F0E8F4] to-[#E8D8F0]">
-                            {c.coverImage
-                              ? <img src={c.coverImage} alt={c.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
-                              : <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-                                  <svg viewBox="0 0 24 18" width="28" height="22" fill="none">
-                                    <rect x="1" y="5" width="22" height="12" rx="1.5" stroke="#C4B3CE" strokeWidth="1.3"/>
-                                    <path d="M7 5V3a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v2" stroke="#C4B3CE" strokeWidth="1.3"/>
-                                    <rect x="9" y="8" width="6" height="4" rx="0.5" stroke="#C4B3CE" strokeWidth="1.1"/>
-                                  </svg>
-                                </div>
-                            }
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-transparent" />
-                            {selectedCat === c._id && (
-                              <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#7A2267] flex items-center justify-center shadow-sm">
-                                <svg viewBox="0 0 8 8" width="8" height="8" fill="none">
-                                  <path d="M1.5 4L3 5.5 6.5 2" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                              </div>
-                            )}
-                            {/* Text on image */}
-                            <div className="absolute bottom-0 inset-x-0 p-2.5">
-                              <p className="text-white text-[12.5px] font-semibold leading-tight truncate">{c.name}</p>
-                              {c.description && (
-                                <p className="text-white/45 text-[9.5px] mt-0.5 line-clamp-1">{c.description}</p>
-                              )}
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* ── 3c: Room Numbers Grid ── */}
-            {selectedProp && selectedCat && (
-              <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
-                <div className="p-5 sm:p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-[#9B8BAB] font-semibold">Available Rooms</p>
-                    {bookingMode === "night_stay" && cart.size > 0 && (
-                      <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full
-                        ${cartCapacity >= adults ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
-                        {cartCapacity}/{adults} adults fit
+                <div className={`p-3 ${selected ? "bg-[#FAF7FC]" : "bg-white"}`}>
+                  <div className="flex items-start justify-between gap-1.5 mb-0.5">
+                    <p className="text-[12.5px] font-semibold text-[#1a1410] leading-tight">{svc.name}</p>
+                    {hasDiscount && !svc.image && (
+                      <span className="shrink-0 bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-tight">
+                        {discountLabel}
                       </span>
                     )}
                   </div>
-
-                  {bookingMode === "day_long" && (
-                    <div className="mb-4 px-3 py-2.5 rounded-xl text-[11.5px] font-medium flex items-center gap-2 bg-[#FAF7FC] text-[#7A2267] border border-[#EDE5F0]">
-                      <svg viewBox="0 0 12 12" width="13" height="13" fill="none">
-                        <circle cx="6" cy="6" r="5.3" stroke="currentColor" strokeWidth="1.2"/>
-                        <path d="M6 4v3M6 8.5v.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                      </svg>
-                      Room selection is optional for Day Long.
-                    </div>
+                  {svc.description && <p className="text-[10.5px] text-[#9B8BAB] mt-0.5 line-clamp-2 leading-snug">{svc.description}</p>}
+                  <p className="text-[14px] font-bold text-[#7A2267] mt-1.5">৳{Number(svc.price).toLocaleString()}</p>
+                  {hasDiscount && (
+                    <p className="text-[9.5px] text-emerald-600 font-medium mt-0.5">{discountNote}</p>
                   )}
+                </div>
+              </button>
+            );
+          };
 
-                  {roomsLoading ? (
-                    <div className="py-10 text-center text-[13px] text-[#C4B3CE]">Checking availability…</div>
-                  ) : rooms.length === 0 ? (
-                    <div className="py-10 text-center text-[13px] text-[#C4B3CE]">No rooms available for the selected dates and category.</div>
-                  ) : (() => {
-                    const roomBlocks = propertyBlocks.length > 0 ? propertyBlocks : [...new Set(rooms.map((r) => r.block || "").filter(Boolean))];
-                    const hasBlocks  = roomBlocks.length > 0 && rooms.some((r) => r.block);
-                    const blockKeys  = hasBlocks
-                      ? [...roomBlocks, ...rooms.filter((r) => r.block && !roomBlocks.includes(r.block)).map((r) => r.block)].filter((v, i, a) => a.indexOf(v) === i)
-                      : [""];
+          // Room grid (shared by both modes in sub-step 3)
+          const RoomGrid = () => {
+            if (roomsLoading) return <div className="py-10 text-center text-[13px] text-[#C4B3CE]">Checking availability…</div>;
+            if (rooms.length === 0) return <div className="py-10 text-center text-[13px] text-[#C4B3CE]">No rooms available for the selected dates and category.</div>;
 
-                    return (
-                      <div className="space-y-5">
-                        {blockKeys.map((blockKey) => {
-                          const blockRooms = blockKey === "" ? rooms.filter((r) => !r.block || r.block === "") : rooms.filter((r) => r.block === blockKey);
-                          if (!blockRooms.length) return null;
-                          const floors = [...new Set(blockRooms.map((r) => r.floor))].sort((a, b) => a - b);
+            const roomBlocks = propertyBlocks.length > 0 ? propertyBlocks : [...new Set(rooms.map((r) => r.block || "").filter(Boolean))];
+            const hasBlocks  = roomBlocks.length > 0 && rooms.some((r) => r.block);
+            const blockKeys  = hasBlocks
+              ? [...roomBlocks, ...rooms.filter((r) => r.block && !roomBlocks.includes(r.block)).map((r) => r.block)].filter((v, i, a) => a.indexOf(v) === i)
+              : [""];
+
+            return (
+              <div className="space-y-5">
+                {blockKeys.map((blockKey) => {
+                  const blockRooms = blockKey === "" ? rooms.filter((r) => !r.block || r.block === "") : rooms.filter((r) => r.block === blockKey);
+                  if (!blockRooms.length) return null;
+                  const floors = [...new Set(blockRooms.map((r) => r.floor))].sort((a, b) => a - b);
+                  return (
+                    <div key={blockKey || "general"}>
+                      {hasBlocks && (
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="flex items-center gap-1.5 bg-[#7A2267]/8 border border-[#7A2267]/20 px-3 py-1.5 rounded-full">
+                            <span className="text-[11px] font-bold text-[#7A2267] uppercase tracking-wider">{blockKey || "General"}</span>
+                          </div>
+                          <div className="flex-1 h-px bg-[#EDE5F0]" />
+                          <span className="text-[10px] text-[#C4B3CE]">{blockRooms.length} available</span>
+                        </div>
+                      )}
+                      <div className="space-y-3">
+                        {floors.map((floor) => {
+                          const floorRooms = blockRooms.filter((r) => r.floor === floor);
                           return (
-                            <div key={blockKey || "general"}>
-                              {hasBlocks && (
-                                <div className="flex items-center gap-2 mb-3">
-                                  <div className="flex items-center gap-1.5 bg-[#7A2267]/8 border border-[#7A2267]/20 px-3 py-1.5 rounded-full">
-                                    <span className="text-[11px] font-bold text-[#7A2267] uppercase tracking-wider">{blockKey || "General"}</span>
-                                  </div>
-                                  <div className="flex-1 h-px bg-[#EDE5F0]" />
-                                  <span className="text-[10px] text-[#C4B3CE]">{blockRooms.length} available</span>
-                                </div>
-                              )}
-                              <div className="space-y-3">
-                                {floors.map((floor) => {
-                                  const floorRooms = blockRooms.filter((r) => r.floor === floor);
+                            <div key={floor}>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-[9.5px] font-semibold uppercase tracking-[0.18em] text-[#C4B3CE]">Floor {floor}</span>
+                                <div className="flex-1 h-px bg-[#F0E8F4]" />
+                              </div>
+                              <div className="flex flex-wrap gap-2">
+                                {floorRooms.map((room) => {
+                                  const isSelected   = cart.has(room._id);
+                                  const isPreviewing = previewRoom?._id === room._id;
+                                  const displayPrice = bookingMode === "day_long" ? room.resolvedDayPrice : room.resolvedNightPrice;
                                   return (
-                                    <div key={floor}>
-                                      <div className="flex items-center gap-2 mb-2">
-                                        <span className="text-[9.5px] font-semibold uppercase tracking-[0.18em] text-[#C4B3CE]">Floor {floor}</span>
-                                        <div className="flex-1 h-px bg-[#F0E8F4]" />
-                                      </div>
-                                      <div className="flex flex-wrap gap-2">
-                                        {floorRooms.map((room) => {
-                                          const isSelected = cart.has(room._id);
-                                          const isPreviewing = previewRoom?._id === room._id;
-                                          return (
-                                            <button key={room._id}
-                                              onClick={() => setPreviewRoom(isPreviewing ? null : room)}
-                                              className={`relative rounded-xl border-2 flex flex-col items-center justify-center gap-0.5 transition-all duration-150 font-semibold text-[13px] px-2 py-2 min-w-[56px]
-                                                ${isSelected ? "bg-[#7A2267] border-[#7A2267] text-white shadow-[0_2px_10px_rgba(122,34,103,0.3)]"
-                                                  : isPreviewing ? "bg-[#F0E8F4] border-[#7A2267] text-[#7A2267]"
-                                                  : "bg-white border-[#EDE5F0] text-[#1a1410] hover:border-[#C4B3CE] hover:bg-[#FAF7FC]"}`}>
-                                              {isSelected && (
-                                                <div className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
-                                                  <svg viewBox="0 0 8 8" width="7" height="7" fill="none">
-                                                    <path d="M1.5 4L3 5.5 6.5 2" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                                                  </svg>
-                                                </div>
-                                              )}
-                                              <span>{room.roomNumber}</span>
-                                              {(room.variantName || room.bedType) && (
-                                                <span className={`text-[8.5px] font-medium leading-tight text-center max-w-[52px] truncate
-                                                  ${isSelected ? "text-white/70" : isPreviewing ? "text-[#7A2267]/60" : "text-[#9B8BAB]"}`}>
-                                                  {room.variantName || room.bedType}
-                                                </span>
-                                              )}
-                                            </button>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
+                                    <button key={room._id}
+                                      onClick={() => setPreviewRoom(isPreviewing ? null : room)}
+                                      className={`relative rounded-xl border-2 flex flex-col items-center justify-center gap-0.5 transition-all duration-150 font-semibold text-[13px] px-2 py-2 min-w-[62px]
+                                        ${isSelected ? "bg-[#7A2267] border-[#7A2267] text-white shadow-[0_2px_10px_rgba(122,34,103,0.3)]"
+                                          : isPreviewing ? "bg-[#F0E8F4] border-[#7A2267] text-[#7A2267]"
+                                          : "bg-white border-[#EDE5F0] text-[#1a1410] hover:border-[#C4B3CE] hover:bg-[#FAF7FC]"}`}>
+                                      {isSelected && (
+                                        <div className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+                                          <svg viewBox="0 0 8 8" width="7" height="7" fill="none">
+                                            <path d="M1.5 4L3 5.5 6.5 2" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                                          </svg>
+                                        </div>
+                                      )}
+                                      <span>{room.roomNumber}</span>
+                                      {(room.variantName || room.bedType) && (
+                                        <span className={`text-[8px] font-medium leading-tight text-center max-w-[58px] truncate
+                                          ${isSelected ? "text-white/70" : isPreviewing ? "text-[#7A2267]/60" : "text-[#9B8BAB]"}`}>
+                                          {room.variantName || room.bedType}
+                                        </span>
+                                      )}
+                                      <span className={`text-[8px] font-semibold leading-tight
+                                        ${isSelected ? "text-white/80" : isPreviewing ? "text-[#7A2267]/70" : "text-[#C4B3CE]"}`}>
+                                        ৳{Number(displayPrice).toLocaleString()}
+                                      </span>
+                                    </button>
                                   );
                                 })}
                               </div>
@@ -1150,87 +1195,379 @@ export default function BookingWizard({ settings, preselect }) {
                           );
                         })}
                       </div>
-                    );
-                  })()}
-
-                  {/* Room preview is now a fixed floating card — see bottom of component */}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
-            )}
+            );
+          };
 
-            {/* ── Day Long Packages ── */}
-            {bookingMode === "day_long" && packages.length > 0 && selectedProp && (
-              <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
-                <div className="p-5 sm:p-6">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-[#9B8BAB] font-semibold mb-3">Day Package (Optional)</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {packages.map((pkg) => (
-                      <button key={pkg._id} onClick={() => setSelectedPkg(selectedPkg?._id === pkg._id ? null : pkg)}
-                        className={`text-left rounded-xl border-2 p-4 transition-all duration-150
-                          ${selectedPkg?._id === pkg._id ? "border-[#7A2267] bg-[#FAF7FC]" : "border-[#EDE5F0] hover:border-[#C4B3CE]"}`}>
-                        <p className="text-[13px] font-semibold text-[#1a1410]">{pkg.name}</p>
-                        <p className="text-[13px] font-bold text-[#7A2267] mt-0.5">৳{Number(pkg.price).toLocaleString()}</p>
-                        {pkg.includes?.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {pkg.includes.map((item, i) => (
-                              <span key={i} className="text-[10px] bg-[#F0E8F4] text-[#9B8BAB] px-2 py-0.5 rounded-full">{item}</span>
-                            ))}
+          return (
+            <motion.div key={`step3-${roomSubStep}`}
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}>
+
+              <SubBreadcrumb />
+
+              {/* ── Day Long Sub-step 0: Package Selection ── */}
+              {bookingMode === "day_long" && roomSubStep === 0 && (() => {
+                const entryServices = packages.filter((p) => p.type === "entry");
+                const addonServices = packages.filter((p) => p.type === "addon");
+                return (
+                  <>
+                    <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+                      <div className="h-[3px] bg-[#7A2267]" />
+                      <div className="p-6 sm:p-8">
+                        <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>Choose your day package</h2>
+                        <p className="text-[12px] text-[#9B8BAB] mb-5">Select an entry option and any optional add-ons.</p>
+
+                        {/* Entry — required */}
+                        {entryServices.length > 0 && (
+                          <div className="mb-6">
+                            <div className="flex items-center gap-2 mb-3">
+                              <p className="text-[10px] uppercase tracking-[0.2em] text-[#9B8BAB] font-semibold">Entry</p>
+                              <span className="text-[9px] font-semibold bg-amber-50 text-amber-600 border border-amber-200 px-2 py-0.5 rounded-full">Required</span>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                              {entryServices.map((svc) => (
+                                <ServiceCard key={svc._id} svc={svc}
+                                  selected={selectedEntry?._id === svc._id}
+                                  onClick={() => setSelectedEntry(selectedEntry?._id === svc._id ? null : svc)} />
+                              ))}
+                            </div>
                           </div>
                         )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
 
-            {/* ── Cart Summary ── */}
-            {cart.size > 0 && (
-              <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
-                <div className="p-5 sm:p-6">
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-[#9B8BAB] font-semibold mb-3">Your Selection</p>
-                  {cartRooms.map((r) => (
-                    <div key={r._id} className="flex items-center justify-between text-[12.5px] py-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[#1a1410] font-medium">Room {r.roomNumber} · Floor {r.floor}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[#7A2267] font-semibold">৳{(bookingMode === "day_long" ? r.resolvedDayPrice : r.resolvedNightPrice * nights).toLocaleString()}</span>
-                        <button onClick={() => { toggleRoom(r); if (previewRoom?._id === r._id) setPreviewRoom(null); }}
-                          className="w-5 h-5 rounded-full bg-[#F0E8F4] flex items-center justify-center text-[#C4B3CE] hover:bg-red-100 hover:text-red-500 transition-colors">
-                          <svg viewBox="0 0 8 8" width="7" height="7" fill="none">
-                            <path d="M1.5 1.5l5 5M6.5 1.5l-5 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                          </svg>
-                        </button>
+                        {/* Add-ons — optional */}
+                        {addonServices.length > 0 && (
+                          <div>
+                            <div className="flex items-center gap-2 mb-3">
+                              <p className="text-[10px] uppercase tracking-[0.2em] text-[#9B8BAB] font-semibold">Add Services</p>
+                              <span className="text-[9px] font-semibold bg-[#F0E8F4] text-[#9B8BAB] border border-[#EDE5F0] px-2 py-0.5 rounded-full">Optional</span>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                              {addonServices.map((svc) => {
+                                const isOn = selectedAddons.some((a) => a._id === svc._id);
+                                return (
+                                  <ServiceCard key={svc._id} svc={svc} selected={isOn}
+                                    onClick={() => setSelectedAddons((prev) =>
+                                      isOn ? prev.filter((a) => a._id !== svc._id) : [...prev, svc]
+                                    )} />
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  ))}
-                  {selectedPkg && (
-                    <div className="flex items-center justify-between text-[12.5px] py-1.5 border-t border-[#F0E8F4] mt-1">
-                      <span className="text-[#1a1410]">{selectedPkg.name} package</span>
-                      <span className="text-[#7A2267] font-semibold">৳{Number(selectedPkg.price).toLocaleString()}</span>
+
+                    {/* Package summary */}
+                    {(selectedEntry || selectedAddons.length > 0) && (
+                      <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+                        <div className="p-4 sm:p-5">
+                          <p className="text-[10px] uppercase tracking-[0.2em] text-[#9B8BAB] font-semibold mb-2.5">Selected Packages</p>
+                          {selectedEntry && (
+                            <div className="flex items-center justify-between text-[12.5px] py-1.5">
+                              <span className="text-[#1a1410] font-medium">{selectedEntry.name} <span className="text-[#C4B3CE] text-[10px]">Entry</span></span>
+                              <span className="text-[#7A2267] font-semibold">৳{Number(selectedEntry.price).toLocaleString()}</span>
+                            </div>
+                          )}
+                          {selectedAddons.map((a) => (
+                            <div key={a._id} className="flex items-center justify-between text-[12.5px] py-1">
+                              <span className="text-[#1a1410]">{a.name} <span className="text-[#C4B3CE] text-[10px]">Add-on</span></span>
+                              <span className="text-[#7A2267] font-semibold">৳{Number(a.price).toLocaleString()}</span>
+                            </div>
+                          ))}
+                          <div className="flex items-center justify-between text-[13px] font-bold mt-2 pt-2 border-t border-[#EDE5F0]">
+                            <span className="text-[#1a1410]">Package Total</span>
+                            <span className="text-[#7A2267]">৳{dayLongSvcTotal.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {error && <p className="text-[12px] text-red-600 bg-red-50 border border-red-200 px-4 py-3 rounded-xl mb-4">{error}</p>}
+                    <div className="flex gap-3 mb-3">
+                      <button onClick={goBack} className="flex-1 py-4 rounded-2xl border-2 border-[#EDE5F0] text-[#9B8BAB] font-semibold text-[13px] hover:border-[#C4B3CE] transition-colors">← Back</button>
+                      <button onClick={goNext}
+                        className="flex-[2] bg-[#7A2267] hover:bg-[#8e2878] text-white font-semibold text-[13.5px]
+                          py-4 rounded-2xl transition-all duration-200 shadow-[0_4px_20px_rgba(122,34,103,0.25)]">
+                        Continue →
+                      </button>
+                    </div>
+                    {/* Optional: add a day long room */}
+                    <button onClick={() => setRoomSubStep(1)}
+                      className="w-full py-3.5 rounded-2xl border-2 border-dashed border-[#C4B3CE] text-[#7A2267] font-semibold text-[13px]
+                        hover:border-[#7A2267] hover:bg-[#FAF7FC] transition-all duration-200 flex items-center justify-center gap-2">
+                      <svg viewBox="0 0 14 14" width="14" height="14" fill="none">
+                        <rect x="1" y="3" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
+                        <path d="M4 3V2a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1" stroke="currentColor" strokeWidth="1.3"/>
+                        <path d="M7 6v3M5.5 7.5h3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                      </svg>
+                      + Add a Day Long Room (Optional)
+                    </button>
+                  </>
+                );
+              })()}
+
+              {/* ── Sub-step 1: Property Selection ── */}
+              {roomSubStep === 1 && (
+                <>
+                  <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+                    <div className="h-[3px] bg-[#7A2267]" />
+                    <div className="p-6 sm:p-8">
+                      <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>Choose your property</h2>
+                      <p className="text-[12px] text-[#9B8BAB] mb-5">Select the property that fits your stay.</p>
+
+                      {properties.filter((p) => p.type === "building").length === 0 ? (
+                        <p className="text-[13px] text-[#C4B3CE] text-center py-4">No properties available.</p>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {properties.filter((p) => p.type === "building").map((p) => (
+                            <button key={p._id}
+                              onClick={() => { setSelectedProp(p._id); setSelectedCat(null); setRooms([]); setCart(new Map()); setPreviewRoom(null); }}
+                              className={`group relative text-left rounded-2xl overflow-hidden transition-all duration-300
+                                ${selectedProp === p._id
+                                  ? "ring-2 ring-[#7A2267] ring-offset-2 shadow-[0_8px_36px_rgba(122,34,103,0.22)]"
+                                  : "shadow-sm hover:shadow-xl hover:-translate-y-0.5"}`}>
+                              <div className="relative aspect-[16/9] bg-gradient-to-br from-[#F0E8F4] to-[#E4D5F0] overflow-hidden">
+                                {p.coverImage
+                                  ? <img src={p.coverImage} alt={p.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.05]" />
+                                  : <div className="w-full h-full flex items-center justify-center">
+                                      <svg viewBox="0 0 32 28" width="32" height="28" fill="none">
+                                        <rect x="1" y="8" width="30" height="19" rx="2" stroke="#C4B3CE" strokeWidth="1.4"/>
+                                        <path d="M8 8V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3" stroke="#C4B3CE" strokeWidth="1.4"/>
+                                        <path d="M13 16h6M16 13v6" stroke="#C4B3CE" strokeWidth="1.2" strokeLinecap="round"/>
+                                      </svg>
+                                    </div>
+                                }
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                                {selectedProp === p._id && (
+                                  <div className="absolute top-3 right-3 w-7 h-7 rounded-full bg-[#7A2267] shadow-lg flex items-center justify-center">
+                                    <svg viewBox="0 0 10 10" width="10" height="10" fill="none">
+                                      <path d="M2 5l2.5 2.5 3.5-4" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                  </div>
+                                )}
+                                <div className="absolute bottom-0 inset-x-0 p-4">
+                                  <p className={`text-white text-[16px] font-semibold leading-tight ${playfair.className}`}>{p.name}</p>
+                                  {p.tagline && <p className="text-white/60 text-[11px] mt-0.5 line-clamp-1">{p.tagline}</p>}
+                                  {p.location && (
+                                    <p className="text-white/45 text-[10px] mt-1 flex items-center gap-1">
+                                      <svg viewBox="0 0 12 14" width="8" height="10" fill="none">
+                                        <path d="M6 1C3.79 1 2 2.79 2 5c0 3.25 4 8 4 8s4-4.75 4-8c0-2.21-1.79-4-4-4z" stroke="currentColor" strokeWidth="1.3"/>
+                                        <circle cx="6" cy="5" r="1.5" stroke="currentColor" strokeWidth="1.2"/>
+                                      </svg>
+                                      {p.location}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => bookingMode === "day_long" ? setRoomSubStep(0) : goBack()}
+                      className="flex-1 py-4 rounded-2xl border-2 border-[#EDE5F0] text-[#9B8BAB] font-semibold text-[13px] hover:border-[#C4B3CE] transition-colors">
+                      ← Back
+                    </button>
+                    <button
+                      onClick={() => { if (selectedProp) setRoomSubStep(2); }}
+                      disabled={!selectedProp}
+                      className="flex-[2] bg-[#7A2267] hover:bg-[#8e2878] text-white font-semibold text-[13.5px]
+                        py-4 rounded-2xl transition-all duration-200 shadow-[0_4px_20px_rgba(122,34,103,0.25)]
+                        disabled:opacity-40 disabled:cursor-not-allowed">
+                      Next →
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* ── Sub-step 2: Category Selection ── */}
+              {roomSubStep === 2 && (
+                <>
+                  <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+                    <div className="h-[3px] bg-[#7A2267]" />
+                    <div className="p-6 sm:p-8">
+                      <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>Choose room category</h2>
+                      <p className="text-[12px] text-[#9B8BAB] mb-5">Select the type of room you prefer.</p>
+
+                      {categories.length === 0 ? (
+                        <p className="text-[13px] text-[#C4B3CE]">No categories found for this property.</p>
+                      ) : (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {categories.map((c) => (
+                            <button key={c._id}
+                              onClick={() => { setSelectedCat(c._id); setCart(new Map()); setPreviewRoom(null); }}
+                              className={`group relative rounded-xl overflow-hidden text-left transition-all duration-250
+                                ${selectedCat === c._id
+                                  ? "ring-2 ring-[#7A2267] ring-offset-1 shadow-[0_4px_18px_rgba(122,34,103,0.18)]"
+                                  : "shadow-sm hover:shadow-md hover:-translate-y-0.5"}`}>
+                              <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-[#F0E8F4] to-[#E8D8F0]">
+                                {c.coverImage
+                                  ? <img src={c.coverImage} alt={c.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
+                                  : <div className="w-full h-full flex flex-col items-center justify-center gap-2">
+                                      <svg viewBox="0 0 24 18" width="28" height="22" fill="none">
+                                        <rect x="1" y="5" width="22" height="12" rx="1.5" stroke="#C4B3CE" strokeWidth="1.3"/>
+                                        <path d="M7 5V3a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v2" stroke="#C4B3CE" strokeWidth="1.3"/>
+                                        <rect x="9" y="8" width="6" height="4" rx="0.5" stroke="#C4B3CE" strokeWidth="1.1"/>
+                                      </svg>
+                                    </div>
+                                }
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-transparent" />
+                                {selectedCat === c._id && (
+                                  <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#7A2267] flex items-center justify-center shadow-sm">
+                                    <svg viewBox="0 0 8 8" width="8" height="8" fill="none">
+                                      <path d="M1.5 4L3 5.5 6.5 2" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  </div>
+                                )}
+                                <div className="absolute bottom-0 inset-x-0 p-2.5">
+                                  <p className="text-white text-[12.5px] font-semibold leading-tight truncate">{c.name}</p>
+                                  {c.description && (
+                                    <p className="text-white/45 text-[9.5px] mt-0.5 line-clamp-1">{c.description}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button onClick={() => setRoomSubStep(1)}
+                      className="flex-1 py-4 rounded-2xl border-2 border-[#EDE5F0] text-[#9B8BAB] font-semibold text-[13px] hover:border-[#C4B3CE] transition-colors">
+                      ← Back
+                    </button>
+                    <button
+                      onClick={() => { if (selectedCat) setRoomSubStep(3); }}
+                      disabled={!selectedCat}
+                      className="flex-[2] bg-[#7A2267] hover:bg-[#8e2878] text-white font-semibold text-[13.5px]
+                        py-4 rounded-2xl transition-all duration-200 shadow-[0_4px_20px_rgba(122,34,103,0.25)]
+                        disabled:opacity-40 disabled:cursor-not-allowed">
+                      Next →
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* ── Sub-step 3: Room Grid ── */}
+              {roomSubStep === 3 && (
+                <>
+                  <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+                    <div className="h-[3px] bg-[#7A2267]" />
+                    <div className="p-5 sm:p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <p className="text-[10px] uppercase tracking-[0.2em] text-[#9B8BAB] font-semibold">
+                            {bookingMode === "day_long" ? "Day Long Rooms" : "Available Rooms"}
+                          </p>
+                          {bookingMode === "day_long" && (
+                            <span className="text-[9px] font-semibold bg-[#F0E8F4] text-[#9B8BAB] border border-[#EDE5F0] px-2 py-0.5 rounded-full">Optional</span>
+                          )}
+                        </div>
+                        {bookingMode === "night_stay" && cart.size > 0 && (
+                          <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full
+                            ${cartCapacity >= adults ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"}`}>
+                            {cartCapacity}/{adults} adults fit
+                          </span>
+                        )}
+                        {bookingMode === "day_long" && cart.size > 0 && (
+                          <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-[#F0E8F4] text-[#7A2267]">
+                            {cart.size} room{cart.size > 1 ? "s" : ""} selected
+                          </span>
+                        )}
+                      </div>
+
+                      {bookingMode === "day_long" && (
+                        <div className="mb-4 px-3 py-2.5 rounded-xl text-[11.5px] font-medium flex items-center gap-2 bg-[#FAF7FC] text-[#7A2267] border border-[#EDE5F0]">
+                          <svg viewBox="0 0 12 12" width="13" height="13" fill="none">
+                            <circle cx="6" cy="6" r="5.3" stroke="currentColor" strokeWidth="1.2"/>
+                            <path d="M6 4v3M6 8.5v.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                          </svg>
+                          Prices shown are day long rates. Room selection is optional.
+                        </div>
+                      )}
+
+                      <RoomGrid />
+
+                      {/* Room preview placeholder */}
+                    </div>
+                  </div>
+
+                  {/* Cart summary */}
+                  {cart.size > 0 && (
+                    <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+                      <div className="p-4 sm:p-5">
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-[#9B8BAB] font-semibold mb-2.5">Your Selection</p>
+                        {cartRooms.map((r) => (
+                          <div key={r._id} className="flex items-center justify-between text-[12.5px] py-1.5">
+                            <span className="text-[#1a1410] font-medium">Room {r.roomNumber} · Floor {r.floor}</span>
+                            <div className="flex items-center gap-3">
+                              <span className="text-[#7A2267] font-semibold">
+                                ৳{(bookingMode === "day_long" ? r.resolvedDayPrice : r.resolvedNightPrice * nights).toLocaleString()}
+                                <span className="text-[9px] text-[#C4B3CE] font-normal ml-0.5">/{bookingMode === "day_long" ? "day" : `${nights}n`}</span>
+                              </span>
+                              <button onClick={() => { toggleRoom(r); if (previewRoom?._id === r._id) setPreviewRoom(null); }}
+                                className="w-5 h-5 rounded-full bg-[#F0E8F4] flex items-center justify-center text-[#C4B3CE] hover:bg-red-100 hover:text-red-500 transition-colors">
+                                <svg viewBox="0 0 8 8" width="7" height="7" fill="none">
+                                  <path d="M1.5 1.5l5 5M6.5 1.5l-5 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {bookingMode === "day_long" && selectedEntry && (
+                          <div className="flex items-center justify-between text-[12.5px] py-1.5 border-t border-[#F0E8F4] mt-1">
+                            <span className="text-[#1a1410]">{selectedEntry.name} <span className="text-[#C4B3CE] text-[10px]">Entry</span></span>
+                            <span className="text-[#7A2267] font-semibold">৳{Number(selectedEntry.price).toLocaleString()}</span>
+                          </div>
+                        )}
+                        {selectedAddons.map((a) => (
+                          <div key={a._id} className="flex items-center justify-between text-[12.5px] py-1">
+                            <span className="text-[#1a1410]">{a.name} <span className="text-[#C4B3CE] text-[10px]">Add-on</span></span>
+                            <span className="text-[#7A2267] font-semibold">৳{Number(a.price).toLocaleString()}</span>
+                          </div>
+                        ))}
+                        {dayLongDiscount > 0 && (
+                          <div className="flex items-center justify-between text-[12px] py-1 text-emerald-600">
+                            <span>Discount</span>
+                            <span className="font-semibold">−৳{dayLongDiscount.toLocaleString()}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between text-[14px] font-bold mt-2 pt-2.5 border-t border-[#EDE5F0]">
+                          <span className="text-[#1a1410]">Total</span>
+                          <span className="text-[#7A2267]">৳{total.toLocaleString()}</span>
+                        </div>
+                      </div>
                     </div>
                   )}
-                  <div className="flex items-center justify-between text-[14px] font-bold mt-2 pt-2.5 border-t border-[#EDE5F0]">
-                    <span className="text-[#1a1410]">Total</span>
-                    <span className="text-[#7A2267]">৳{total.toLocaleString()}</span>
-                  </div>
-                </div>
-              </div>
-            )}
 
-            {error && <p className="text-[12px] text-red-600 bg-red-50 border border-red-200 px-4 py-3 rounded-xl mb-4">{error}</p>}
-            <div className="flex gap-3">
-              <button onClick={goBack} className="flex-1 py-4 rounded-2xl border-2 border-[#EDE5F0] text-[#9B8BAB] font-semibold text-[13px] hover:border-[#C4B3CE] transition-colors">← Back</button>
-              <button onClick={goNext} disabled={bookingMode === "night_stay" && cart.size === 0}
-                className="flex-[2] bg-[#7A2267] hover:bg-[#8e2878] text-white font-semibold text-[13.5px]
-                  py-4 rounded-2xl transition-all duration-200 shadow-[0_4px_20px_rgba(122,34,103,0.25)]
-                  disabled:opacity-50 disabled:cursor-not-allowed">
-                Continue →
-              </button>
-            </div>
-          </motion.div>
-        )}
+                  {error && <p className="text-[12px] text-red-600 bg-red-50 border border-red-200 px-4 py-3 rounded-xl mb-4">{error}</p>}
+                  <div className="flex gap-3">
+                    <button onClick={() => setRoomSubStep(2)}
+                      className="flex-1 py-4 rounded-2xl border-2 border-[#EDE5F0] text-[#9B8BAB] font-semibold text-[13px] hover:border-[#C4B3CE] transition-colors">
+                      ← Back
+                    </button>
+                    <button onClick={goNext}
+                      disabled={bookingMode === "night_stay" && cart.size === 0}
+                      className="flex-[2] bg-[#7A2267] hover:bg-[#8e2878] text-white font-semibold text-[13.5px]
+                        py-4 rounded-2xl transition-all duration-200 shadow-[0_4px_20px_rgba(122,34,103,0.25)]
+                        disabled:opacity-50 disabled:cursor-not-allowed">
+                      Continue →
+                    </button>
+                  </div>
+                </>
+              )}
+
+            </motion.div>
+          );
+        })()}
 
         {/* ── STEP 4: Guest Info ── */}
         {step === 4 && (
@@ -1327,8 +1664,8 @@ export default function BookingWizard({ settings, preselect }) {
                 {cartRooms.map((room) => {
                   const info    = getGuestInfo(room._id);
                   const maxFCA  = settings?.maxFreeChildAge ?? 5;
-                  const curAdults   = info.guests.filter((g) => !g.age || Number(g.age) > maxFCA).length;
-                  const curChildren = info.guests.filter((g) =>  g.age && Number(g.age) <= maxFCA).length;
+                  const curAdults   = info.guests.filter((g) => !guestIsChild(g, maxFCA)).length;
+                  const curChildren = info.guests.filter((g) =>  guestIsChild(g, maxFCA)).length;
                   const atAdultLimit   = room.maxAdults   > 0  && curAdults   >= room.maxAdults;
                   const atChildLimit   = room.maxChildren >= 0  && curChildren >= room.maxChildren;
                   const hasOpposite = (() => {
@@ -1376,41 +1713,57 @@ export default function BookingWizard({ settings, preselect }) {
                       ) : (
                         <div className="space-y-2.5 mb-2.5">
                           {info.guests.map((g, gi) => {
-                            const isChild = g.age && Number(g.age) <= maxFCA;
+                            const isChild  = guestIsChild(g, maxFCA);
+                            const warnMsg  = childReclassifyMsg[`${room._id}-${gi}`];
                             return (
-                              <div key={gi} className="grid grid-cols-[1fr_80px_auto_auto] gap-2 items-end">
-                                <div>
-                                  {gi === 0 && <label className="block text-[9px] uppercase tracking-wider text-[#C4B3CE] font-semibold mb-1">Name</label>}
-                                  <input placeholder="Name" value={g.name || ""}
-                                    onChange={(e) => updateGuest(room._id, gi, "name", e.target.value)}
-                                    className="w-full border border-[#EDE5F0] rounded-xl px-3 py-2 text-[12.5px] outline-none focus:border-[#7A2267]/40 text-[#1a1a1a] placeholder:text-[#C4B3CE] transition-all" />
-                                </div>
-                                <div>
-                                  {gi === 0 && <label className="block text-[9px] uppercase tracking-wider text-[#C4B3CE] font-semibold mb-1">Age</label>}
-                                  <div className="relative flex items-center border border-[#EDE5F0] rounded-xl overflow-hidden focus-within:border-[#7A2267]/40 transition-all bg-white">
-                                    <button type="button"
-                                      onClick={() => updateGuest(room._id, gi, "age", Math.max(0, (Number(g.age) || 1) - 1))}
-                                      className="px-2 py-2 text-[#9B8BAB] hover:text-[#7A2267] hover:bg-[#FAF7FC] transition-colors text-base leading-none font-bold select-none">−</button>
-                                    <input type="number" placeholder="—" min="0" max="120" value={g.age ?? ""}
-                                      onChange={(e) => updateGuest(room._id, gi, "age", e.target.value === "" ? "" : Math.min(120, Math.max(0, Number(e.target.value))))}
-                                      className="w-full text-center text-[12.5px] outline-none text-[#1a1a1a] placeholder:text-[#C4B3CE] bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                                    <button type="button"
-                                      onClick={() => updateGuest(room._id, gi, "age", Math.min(120, (Number(g.age) || 0) + 1))}
-                                      className="px-2 py-2 text-[#9B8BAB] hover:text-[#7A2267] hover:bg-[#FAF7FC] transition-colors text-base leading-none font-bold select-none">+</button>
-                                    {isChild && (
-                                      <span className="absolute -top-1.5 -right-1 text-[8px] font-bold bg-amber-400 text-white px-1.5 py-0.5 rounded-full leading-none pointer-events-none">Child</span>
-                                    )}
+                              <div key={gi}>
+                                <div className="grid grid-cols-[1fr_80px_auto_auto] gap-2 items-end">
+                                  <div>
+                                    {gi === 0 && <label className="block text-[9px] uppercase tracking-wider text-[#C4B3CE] font-semibold mb-1">Name</label>}
+                                    <input placeholder="Name" value={g.name || ""}
+                                      onChange={(e) => updateGuest(room._id, gi, "name", e.target.value)}
+                                      className="w-full border border-[#EDE5F0] rounded-xl px-3 py-2 text-[12.5px] outline-none focus:border-[#7A2267]/40 text-[#1a1a1a] placeholder:text-[#C4B3CE] transition-all" />
                                   </div>
+                                  <div>
+                                    {gi === 0 && <label className="block text-[9px] uppercase tracking-wider text-[#C4B3CE] font-semibold mb-1">Age *</label>}
+                                    <div className={`relative flex items-center border rounded-xl overflow-hidden transition-all bg-white
+                                      ${warnMsg ? "border-amber-400 focus-within:border-amber-500" : "border-[#EDE5F0] focus-within:border-[#7A2267]/40"}`}>
+                                      <button type="button"
+                                        onClick={() => updateGuest(room._id, gi, "age", Math.max(0, (Number(g.age) || 1) - 1))}
+                                        className="px-2 py-2 text-[#9B8BAB] hover:text-[#7A2267] hover:bg-[#FAF7FC] transition-colors text-base leading-none font-bold select-none">−</button>
+                                      <input type="number" placeholder="—" min="0" max="120" value={g.age ?? ""}
+                                        onChange={(e) => updateGuest(room._id, gi, "age", e.target.value === "" ? "" : Math.min(120, Math.max(0, Number(e.target.value))))}
+                                        className="w-full text-center text-[12.5px] outline-none text-[#1a1a1a] placeholder:text-[#C4B3CE] bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                                      <button type="button"
+                                        onClick={() => updateGuest(room._id, gi, "age", Math.min(120, (Number(g.age) || 0) + 1))}
+                                        className="px-2 py-2 text-[#9B8BAB] hover:text-[#7A2267] hover:bg-[#FAF7FC] transition-colors text-base leading-none font-bold select-none">+</button>
+                                      {isChild && (
+                                        <span className="absolute -top-1.5 -right-1 text-[8px] font-bold bg-amber-400 text-white px-1.5 py-0.5 rounded-full leading-none pointer-events-none">
+                                          {g.age === "" || g.age === null ? "Child*" : "Child"}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    {gi === 0 && <label className="block text-[9px] uppercase tracking-wider text-[#C4B3CE] font-semibold mb-1">Gender</label>}
+                                    <CustomSelect
+                                      value={g.gender || "male"}
+                                      onChange={(v) => updateGuest(room._id, gi, "gender", v)}
+                                      options={GENDER_SHORT_OPTIONS} />
+                                  </div>
+                                  <button type="button" onClick={() => removeGuest(room._id, gi)}
+                                    className="text-[#C4B3CE] hover:text-red-400 transition-colors pb-1 text-lg leading-none">×</button>
                                 </div>
-                                <div>
-                                  {gi === 0 && <label className="block text-[9px] uppercase tracking-wider text-[#C4B3CE] font-semibold mb-1">Gender</label>}
-                                  <CustomSelect
-                                    value={g.gender || "male"}
-                                    onChange={(v) => updateGuest(room._id, gi, "gender", v)}
-                                    options={GENDER_SHORT_OPTIONS} />
-                                </div>
-                                <button type="button" onClick={() => removeGuest(room._id, gi)}
-                                  className="text-[#C4B3CE] hover:text-red-400 transition-colors pb-1 text-lg leading-none">×</button>
+                                {/* Reclassification warning */}
+                                {warnMsg && (
+                                  <div className="mt-1.5 flex items-start gap-1.5 px-2.5 py-2 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800">
+                                    <svg viewBox="0 0 12 12" width="13" height="13" fill="none" className="shrink-0 mt-0.5">
+                                      <path d="M5.13 1.87L1.05 9a1 1 0 0 0 .87 1.5h8.16A1 1 0 0 0 10.95 9L6.87 1.87a1 1 0 0 0-1.74 0z" stroke="#d97706" strokeWidth="1.1"/>
+                                      <path d="M6 4.5v2.5M6 8.5v.25" stroke="#d97706" strokeWidth="1.2" strokeLinecap="round"/>
+                                    </svg>
+                                    <span>{warnMsg}</span>
+                                  </div>
+                                )}
                               </div>
                             );
                           })}
@@ -1697,10 +2050,22 @@ export default function BookingWizard({ settings, preselect }) {
                           </div>
                         );
                       })}
-                      {selectedPkg && (
+                      {selectedEntry && (
                         <div className="flex justify-between">
-                          <span className="text-[#9B8BAB]">{selectedPkg.name}</span>
-                          <span className="font-medium">৳{selectedPkg.price.toLocaleString()}</span>
+                          <span className="text-[#9B8BAB]">{selectedEntry.name} <span className="text-[10px]">(Entry)</span></span>
+                          <span className="font-medium">৳{selectedEntry.price.toLocaleString()}</span>
+                        </div>
+                      )}
+                      {selectedAddons.map((a) => (
+                        <div key={a._id} className="flex justify-between">
+                          <span className="text-[#9B8BAB]">{a.name} <span className="text-[10px]">(Add-on)</span></span>
+                          <span className="font-medium">৳{a.price.toLocaleString()}</span>
+                        </div>
+                      ))}
+                      {dayLongDiscount > 0 && (
+                        <div className="flex justify-between text-emerald-600">
+                          <span>Discount</span>
+                          <span>−৳{dayLongDiscount.toLocaleString()}</span>
                         </div>
                       )}
                       {taxPercent > 0 && (

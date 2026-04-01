@@ -35,6 +35,7 @@ export async function createDayLongPackage(data) {
   await dbConnect();
   await DayLongPackage.create({ ...data, updatedAt: new Date() });
   revalidatePath("/admin/daylong-packages");
+  revalidatePath("/");
   return { success: true };
 }
 
@@ -43,6 +44,7 @@ export async function updateDayLongPackage(packageId, data) {
   await dbConnect();
   await DayLongPackage.findByIdAndUpdate(packageId, { ...data, updatedAt: new Date() });
   revalidatePath("/admin/daylong-packages");
+  revalidatePath("/");
   return { success: true };
 }
 
@@ -51,5 +53,6 @@ export async function deleteDayLongPackage(packageId) {
   await dbConnect();
   await DayLongPackage.findByIdAndDelete(packageId);
   revalidatePath("/admin/daylong-packages");
+  revalidatePath("/");
   return { success: true };
 }

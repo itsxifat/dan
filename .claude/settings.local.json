@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(wc -l \"e:\\\\En-Tech\\\\WebProjects\\\\dan\\\\app\\\\\\(admin\\)\\\\admin\\\\\\(protected\\)\\\\gallery\\\\GalleryManager.jsx\")"
+    ]
+  }
+}

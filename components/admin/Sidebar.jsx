@@ -179,6 +179,18 @@ const NAV = [
           </svg>
         ),
       },
+      {
+        label: "Wedding Gallery",
+        href: "/admin/wedding-gallery",
+        permission: "settings.write",
+        Icon: ({ active }) => (
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
+            <path d="M9 2C9 2 4 5.5 4 10a5 5 0 0 0 10 0C14 5.5 9 2 9 2z" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.12" : "0"} strokeLinejoin="round" />
+            <path d="M6.5 10a2.5 2.5 0 0 0 5 0" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          </svg>
+        ),
+      },
     ],
   },
   {

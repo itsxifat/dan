@@ -14,13 +14,14 @@ const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600",
 const EASE = [0.16, 1, 0.3, 1];
 
 const navLinks = [
-  { name: "Home",          href: "/" },
-  { name: "About",         href: "/about" },
-  { name: "Accommodation", href: "/accommodation" },
-  { name: "Facilities",    href: "/facilities" },
-  { name: "Corporate",     href: "/corporate" },
-  { name: "Gallery",       href: "/gallery" },
-  { name: "Contact",       href: "/contact" },
+  { name: "Home",                href: "/" },
+  { name: "About",               href: "/about" },
+  { name: "Accommodation",       href: "/accommodation" },
+  { name: "Facilities",          href: "/facilities" },
+  { name: "Corporate",           href: "/corporate" },
+  { name: "Destination Wedding", href: "/destination-wedding" },
+  { name: "Gallery",             href: "/gallery" },
+  { name: "Contact",             href: "/contact" },
 ];
 
 export default function Navbar() {

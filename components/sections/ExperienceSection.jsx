@@ -130,20 +130,52 @@ function FeatureCard({ feature, index }) {
       gsap.set(h, { scaleX: 0 });
       gsap.set(v, { scaleY: 0 });
 
+      let enterTimer  = null;   // debounce quick pass-throughs
+      let idleTimer   = null;   // auto-fade-out after mouse goes idle
+      let hovered     = false;
+
+      const fadeOut = () => {
+        hovered = false;
+        gsap.killTweensOf([h, v]);
+        gsap.to(h, { scaleX: 0, duration: 0.32, ease: "power2.in" });
+        gsap.to(v, { scaleY: 0, duration: 0.32, ease: "power2.in" });
+      };
+
+      const resetIdle = () => {
+        clearTimeout(idleTimer);
+        if (hovered) idleTimer = setTimeout(fadeOut, 1500);
+      };
+
       const onEnter = () => {
-        gsap.to(h, { scaleX: 1, duration: 0.38, ease: "power2.out" });
-        gsap.to(v, { scaleY: 1, duration: 0.38, ease: "power2.out", delay: 0.04 });
+        clearTimeout(enterTimer);
+        clearTimeout(idleTimer);
+        // Only commit to the animation if mouse actually stays ≥ 80ms
+        enterTimer = setTimeout(() => {
+          hovered = true;
+          gsap.killTweensOf([h, v]);
+          gsap.to(h, { scaleX: 1, duration: 0.38, ease: "power2.out" });
+          gsap.to(v, { scaleY: 1, duration: 0.38, ease: "power2.out", delay: 0.04 });
+          idleTimer = setTimeout(fadeOut, 1500);
+        }, 80);
       };
+
       const onLeave = () => {
-        gsap.to(h, { scaleX: 0, duration: 0.28, ease: "power2.in" });
-        gsap.to(v, { scaleY: 0, duration: 0.28, ease: "power2.in" });
+        clearTimeout(enterTimer);
+        clearTimeout(idleTimer);
+        fadeOut();
       };
+
+      const onMove = () => resetIdle();
 
       card.addEventListener("mouseenter", onEnter);
       card.addEventListener("mouseleave", onLeave);
+      card.addEventListener("mousemove",  onMove);
       return () => {
+        clearTimeout(enterTimer);
+        clearTimeout(idleTimer);
         card.removeEventListener("mouseenter", onEnter);
         card.removeEventListener("mouseleave", onLeave);
+        card.removeEventListener("mousemove",  onMove);
       };
     });
   });

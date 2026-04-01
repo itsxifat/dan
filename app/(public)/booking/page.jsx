@@ -15,8 +15,12 @@ export default async function BookingPage({ searchParams }) {
   const preselect = {
     propertyId: params?.property  ?? null,
     categoryId: params?.category  ?? null,
+    mode:       params?.mode      ?? null,   // "day_long" | "night_stay" from hero
+    date:       params?.date      ?? null,   // single date for day long
     checkIn:    params?.checkIn   ?? null,
     checkOut:   params?.checkOut  ?? null,
+    adults:     params?.adults    ? Number(params.adults)   : null,
+    children:   params?.children  ? Number(params.children) : null,
   };
 
   return (
