@@ -191,6 +191,20 @@ const NAV = [
           </svg>
         ),
       },
+      {
+        label: "Wedding Venues",
+        href: "/admin/wedding-venues",
+        permission: "settings.write",
+        Icon: ({ active }) => (
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
+            <path d="M2 16V9L9 3l7 6v7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.08" : "0"} />
+            <rect x="6" y="10" width="6" height="6" rx="0.8" stroke="currentColor" strokeWidth="1.2"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.15" : "0"} />
+            <path d="M9 10v6" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" opacity={active ? "1" : "0.5"} />
+          </svg>
+        ),
+      },
     ],
   },
   {

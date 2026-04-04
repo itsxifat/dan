@@ -18,15 +18,7 @@ const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300","400",
 // ── Hero bg photo ──────────────────────────────────────────────────────────────
 const HERO_IMAGE = "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1920&q=85";
 
-// ── Venue data ─────────────────────────────────────────────────────────────────
-const VENUES = [
-  { id:"grand-field",    name:"Grand Outdoor Field",  capacity:"Up to 15,000", badge:"Grand Scale",    description:"Our flagship open-air expanse — a breathtaking setting for the most lavish wedding receptions. Host thousands under the open sky with full stage, lighting, and floral décor.", features:["15,000 guests","Stage & sound","Floodlit evenings","Helipad access"], icon:"field" },
-  { id:"garden-field",   name:"Garden Field",          capacity:"Up to 3,000",  description:"A lush, verdant garden venue — perfect for Holud ceremonies, outdoor receptions, and daytime celebrations surrounded by nature.", features:["3,000 guests","Natural landscaping","Flexible layout","Catering ready"], icon:"garden" },
-  { id:"banquet-hall",   name:"Grand Banquet Hall",    capacity:"Up to 800",    badge:"Most Popular",   description:"Our magnificent hall adorned with crystal chandeliers and premium décor — the premier choice for receptions, Nikah ceremonies, and formal dinners.", features:["800 guests","Crystal chandeliers","Stage & podium","Full AV & lighting"], icon:"banquet" },
-  { id:"banquet-garden", name:"Banquet Garden",        capacity:"Up to 2,000",  description:"A beautifully landscaped open-air garden ideal for evening cocktail receptions, Mehndi nights, and pre-wedding gatherings.", features:["2,000 guests","Garden ambiance","Evening lighting","Adjacent to hall"], icon:"garden2" },
-  { id:"helipad-field",  name:"Helipad Field",         capacity:"Up to 1,000",  badge:"VIP Exclusive",  description:"An exclusive outdoor venue with a certified helipad — the ultimate VIP arrival for prestige weddings.", features:["1,000 guests","Helipad landing","VIP access zone","Elite ambiance"], icon:"helipad" },
-  { id:"conference-suite",name:"Conference Suite",     capacity:"Up to 50",     description:"An intimate elegantly appointed suite — ideal for Nikah signing, private gatherings, or bridal preparation in a refined setting.", features:["50 guests","Intimate setting","AV system","Private access"], icon:"suite" },
-];
+// ── Venue data comes from DB (passed as props) ─────────────────────────────────
 
 // ── Services ───────────────────────────────────────────────────────────────────
 const SERVICES = [
@@ -216,7 +208,7 @@ function StatsBar() {
 }
 
 // ── Venue Cards ────────────────────────────────────────────────────────────────
-function VenuesSection() {
+function VenuesSection({ venues = [] }) {
   const sectionRef = useRef(null);
   const headRef    = useRef(null);
   const cardsRef   = useRef(null);
@@ -233,15 +225,6 @@ function VenuesSection() {
         scrollTrigger: { trigger: cardsRef.current, start: "top 82%", once: true } }
     );
   }, { scope: sectionRef });
-
-  const icons = {
-    field:   <svg viewBox="0 0 32 28" className="w-full h-full" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="2" y="8" width="28" height="18" rx="2"/><path d="M10 8V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v3"/><path d="M16 13v5M13 15.5h6"/></svg>,
-    garden:  <svg viewBox="0 0 32 28" className="w-full h-full" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M5 26c0-6 5-11 11-11s11 5 11 11"/><path d="M16 15V7"/><path d="M9 10c2-4 7-5 7-5s5 1 7 5"/></svg>,
-    garden2: <svg viewBox="0 0 32 28" className="w-full h-full" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M5 26c0-6 5-11 11-11s11 5 11 11"/><path d="M16 15V7"/><path d="M9 10c2-4 7-5 7-5s5 1 7 5"/><circle cx="16" cy="7" r="2"/></svg>,
-    banquet: <svg viewBox="0 0 32 28" className="w-full h-full" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="2" y="8" width="28" height="18" rx="2"/><path d="M8 8V5.5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2V8"/><path d="M16 13v6M12 16h8"/></svg>,
-    helipad: <svg viewBox="0 0 32 28" className="w-full h-full" fill="none" stroke="currentColor" strokeWidth="1.2"><circle cx="16" cy="14" r="11"/><path d="M9 14h14M16 7v14M12.5 10.5h7"/></svg>,
-    suite:   <svg viewBox="0 0 32 28" className="w-full h-full" fill="none" stroke="currentColor" strokeWidth="1.2"><rect x="4" y="4" width="24" height="20" rx="2"/><path d="M4 10h24M11 4v6M21 4v6"/></svg>,
-  };
 
   return (
     <div ref={sectionRef} id="venues"
@@ -271,57 +254,94 @@ function VenuesSection() {
         </div>
 
         {/* Grid */}
+        {venues.length === 0 ? (
+          <div className={`${sans.className} text-center py-16 text-white/20 text-[13px]`}>
+            Venues coming soon. Check back shortly.
+          </div>
+        ) : (
         <div ref={cardsRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
-          {VENUES.map((v) => (
-            <div key={v.id} className="venue-card group relative rounded-2xl overflow-hidden cursor-default"
+          {venues.map((v) => (
+            <div key={v._id} className="venue-card group relative rounded-2xl overflow-hidden"
               style={{ opacity: 0,
                 background: "linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
                 border: "1px solid rgba(201,149,108,0.12)" }}>
 
-              {/* Top gradient accent strip */}
-              <div className="h-[3px] w-full"
-                style={{ background: "linear-gradient(90deg, transparent 0%, #7A2267 40%, #C9956C 60%, transparent 100%)",
-                  opacity: 0.6 }} />
-
-              {/* Icon area */}
-              <div className="relative h-36 flex items-center justify-center overflow-hidden px-6 pt-4"
-                style={{ background: "linear-gradient(135deg, rgba(122,34,103,0.08) 0%, rgba(201,149,108,0.04) 100%)" }}>
-                <div className="w-14 h-14 text-[#C9956C]/25 group-hover:text-[#C9956C]/50 transition-colors duration-500">
-                  {icons[v.icon] || icons.suite}
-                </div>
+              {/* Cover image or gradient placeholder */}
+              <div className="relative h-44 overflow-hidden"
+                style={{ background: "linear-gradient(135deg, rgba(122,34,103,0.12) 0%, rgba(201,149,108,0.06) 100%)" }}>
+                {v.coverImage ? (
+                  <Image
+                    src={v.coverImage}
+                    alt={v.name}
+                    fill
+                    sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 33vw"
+                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <svg viewBox="0 0 40 36" className="w-14 h-14 text-[#C9956C]/20 group-hover:text-[#C9956C]/40 transition-colors duration-500" fill="none" stroke="currentColor" strokeWidth="1">
+                      <rect x="2" y="8" width="36" height="26" rx="3"/>
+                      <path d="M20 16v8M16 19.5h8"/>
+                    </svg>
+                  </div>
+                )}
+                {/* Dark overlay for readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0e0710]/80 via-transparent to-transparent" />
                 {v.badge && (
                   <div className="absolute top-3 left-3 bg-[#C9956C] text-[#0e0710] text-[8px] font-bold
                     px-2.5 py-1 rounded-full uppercase tracking-[0.15em]">
                     {v.badge}
                   </div>
                 )}
+                {v.capacity && (
+                  <span className={`${sans.className} absolute bottom-3 right-3 text-[9px] font-semibold
+                    text-[#C9956C] bg-[#0e0710]/70 backdrop-blur-sm border border-[#C9956C]/25
+                    px-2.5 py-1 rounded-full whitespace-nowrap`}>
+                    {v.capacity}
+                  </span>
+                )}
                 {/* Glow on hover */}
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                  style={{ background: "radial-gradient(ellipse at center, rgba(201,149,108,0.08) 0%, transparent 70%)" }} />
+                  style={{ background: "radial-gradient(ellipse at center, rgba(201,149,108,0.06) 0%, transparent 70%)" }} />
               </div>
 
               {/* Content */}
               <div className="px-5 pb-5 pt-4">
-                <div className="flex items-start justify-between gap-2 mb-3">
-                  <h3 className={`${playfair.className} text-[1.05rem] font-semibold text-white/90 leading-tight`}>{v.name}</h3>
-                  <span className={`${sans.className} shrink-0 text-[9px] font-semibold text-[#C9956C] bg-[#C9956C]/10
-                    border border-[#C9956C]/20 px-2.5 py-1 rounded-full whitespace-nowrap`}>
-                    {v.capacity}
-                  </span>
-                </div>
-                <p className={`${sans.className} text-[11.5px] text-white/35 leading-[1.75] font-light mb-4`}>{v.description}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {v.features.map((f) => (
-                    <span key={f} className={`${sans.className} text-[9.5px] text-[#C9956C]/50
-                      bg-[#C9956C]/[0.06] border border-[#C9956C]/10 px-2.5 py-0.5 rounded-full`}>
-                      {f}
-                    </span>
-                  ))}
-                </div>
+                <h3 className={`${playfair.className} text-[1.05rem] font-semibold text-white/90 leading-tight mb-2`}>
+                  {v.name}
+                </h3>
+                {v.description && (
+                  <p className={`${sans.className} text-[11.5px] text-white/35 leading-[1.75] font-light mb-3 line-clamp-2`}>
+                    {v.description}
+                  </p>
+                )}
+                {v.features?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {v.features.slice(0, 3).map((f) => (
+                      <span key={f} className={`${sans.className} text-[9.5px] text-[#C9956C]/50
+                        bg-[#C9956C]/[0.06] border border-[#C9956C]/10 px-2.5 py-0.5 rounded-full`}>
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <Link
+                  href={`/destination-wedding/venues/${v.slug}`}
+                  className={`${sans.className} inline-flex items-center gap-1.5 text-[9.5px] uppercase
+                    tracking-[0.18em] font-semibold text-[#C9956C]/60 hover:text-[#C9956C]
+                    transition-colors duration-200 group/link`}
+                >
+                  View Details
+                  <svg viewBox="0 0 10 10" width="7" height="7" fill="none"
+                    className="transition-transform duration-200 group-hover/link:translate-x-0.5">
+                    <path d="M1 5h7M5 2l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </Link>
               </div>
             </div>
           ))}
         </div>
+        )}
       </div>
     </div>
   );
@@ -842,7 +862,7 @@ function FloatingTextarea({ label, value, onChange }) {
 }
 
 // ── Enquiry Form ───────────────────────────────────────────────────────────────
-function EnquiryForm() {
+function EnquiryForm({ venues = [] }) {
   const sectionRef = useRef(null);
   const headRef    = useRef(null);
   const [isPending, startTransition] = useTransition();
@@ -867,7 +887,10 @@ function EnquiryForm() {
   }, { scope: sectionRef });
 
   const venueOptions = [
-    ...VENUES.map((v) => ({ value: v.id, label: `${v.name} (${v.capacity})` })),
+    ...venues.map((v) => ({
+      value: v.slug,
+      label: v.capacity ? `${v.name} (${v.capacity})` : v.name,
+    })),
     { value: "not-sure", label: "Not sure yet — help me choose" },
   ];
 
@@ -1014,7 +1037,7 @@ function EnquiryForm() {
 }
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
-export default function WeddingContent({ photos = [] }) {
+export default function WeddingContent({ photos = [], venues = [] }) {
   const heroRef    = useRef(null);
   const heroBgRef  = useRef(null);
   const heroTextRef = useRef(null);
@@ -1152,7 +1175,7 @@ export default function WeddingContent({ photos = [] }) {
       <Marquee />
 
       {/* ── Venues ── */}
-      <VenuesSection />
+      <VenuesSection venues={venues} />
 
       {/* ── Services ── */}
       <ServicesSection />
@@ -1164,7 +1187,7 @@ export default function WeddingContent({ photos = [] }) {
       <StatsBar />
 
       {/* ── Form ── */}
-      <EnquiryForm />
+      <EnquiryForm venues={venues} />
 
       {/* ── Footer strip ── */}
       <div className="py-8 border-t" style={{ background: "#0e0710", borderColor: "rgba(201,149,108,0.08)" }}>

@@ -1,5 +1,6 @@
 import WeddingContent from "./WeddingContent";
 import { getPublishedWeddingPhotos } from "@/actions/wedding/weddingActions";
+import { getPublishedVenues } from "@/actions/wedding/venueActions";
 
 export const metadata = {
   title: "Destination Wedding — Dhali's Amber Nivaas",
@@ -8,6 +9,9 @@ export const metadata = {
 };
 
 export default async function DestinationWeddingPage() {
-  const photos = await getPublishedWeddingPhotos({ limit: 60 });
-  return <WeddingContent photos={photos} />;
+  const [photos, venues] = await Promise.all([
+    getPublishedWeddingPhotos({ limit: 60 }),
+    getPublishedVenues(),
+  ]);
+  return <WeddingContent photos={photos} venues={venues} />;
 }
