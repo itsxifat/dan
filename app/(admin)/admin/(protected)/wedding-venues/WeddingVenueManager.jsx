@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Image from "next/image";
 import { Montserrat } from "next/font/google";
 import {
   createVenue,
@@ -138,7 +137,8 @@ function VenueForm({ form, setForm, onSave, onCancel, isPending, isEdit }) {
         <div className="flex flex-wrap gap-2 mb-2">
           {form.images.map((img, i) => (
             <div key={i} className="relative w-20 h-20 rounded-xl overflow-hidden group">
-              <Image src={img} alt="" fill className="object-cover" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={img} alt="" className="absolute inset-0 w-full h-full object-cover" />
               <button
                 type="button"
                 onClick={() => removeImage(i)}
@@ -354,7 +354,8 @@ export default function WeddingVenueManager({ initialVenues = [] }) {
                 {/* Cover */}
                 <div className="relative h-36 bg-white/[0.04]">
                   {v.coverImage ? (
-                    <Image src={v.coverImage} alt={v.name} fill className="object-cover" />
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={v.coverImage} alt={v.name} className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
                     <div className="flex items-center justify-center h-full text-white/10 text-[11px] uppercase tracking-widest">
                       No Image

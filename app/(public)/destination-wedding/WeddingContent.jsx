@@ -219,11 +219,14 @@ function VenuesSection({ venues = [] }) {
       { opacity: 1, y: 0, stagger: 0.12, duration: 0.9, ease: "power3.out",
         scrollTrigger: { trigger: headRef.current, start: "top 82%", once: true } }
     );
-    gsap.fromTo(cardsRef.current?.querySelectorAll(".venue-card"),
-      { opacity: 0, y: 60, scale: 0.97 },
-      { opacity: 1, y: 0, scale: 1, stagger: 0.1, duration: 0.9, ease: "power3.out",
-        scrollTrigger: { trigger: cardsRef.current, start: "top 82%", once: true } }
-    );
+    const cards = cardsRef.current?.querySelectorAll(".venue-card");
+    if (cards?.length) {
+      gsap.set(cards, { opacity: 0, y: 60, scale: 0.97 });
+      gsap.to(cards, {
+        opacity: 1, y: 0, scale: 1, stagger: 0.1, duration: 0.9, ease: "power3.out",
+        scrollTrigger: { trigger: cardsRef.current, start: "top 85%", once: true },
+      });
+    }
   }, { scope: sectionRef });
 
   return (
@@ -262,7 +265,7 @@ function VenuesSection({ venues = [] }) {
         <div ref={cardsRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
           {venues.map((v) => (
             <div key={v._id} className="venue-card group relative rounded-2xl overflow-hidden"
-              style={{ opacity: 0,
+              style={{
                 background: "linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
                 border: "1px solid rgba(201,149,108,0.12)" }}>
 
@@ -270,12 +273,11 @@ function VenuesSection({ venues = [] }) {
               <div className="relative h-44 overflow-hidden"
                 style={{ background: "linear-gradient(135deg, rgba(122,34,103,0.12) 0%, rgba(201,149,108,0.06) 100%)" }}>
                 {v.coverImage ? (
-                  <Image
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
                     src={v.coverImage}
                     alt={v.name}
-                    fill
-                    sizes="(max-width:640px) 100vw, (max-width:1024px) 50vw, 33vw"
-                    className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full">

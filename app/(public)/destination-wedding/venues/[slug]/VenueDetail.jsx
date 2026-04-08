@@ -2,7 +2,6 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Playfair_Display, Montserrat, Cormorant_Garamond } from "next/font/google";
 import gsap from "gsap";
@@ -152,12 +151,11 @@ export default function VenueDetail({ venue }) {
         {/* BG */}
         <div ref={heroBgRef} className="absolute inset-0 will-change-transform" style={{ top: "-15%" }}>
           {venue.coverImage ? (
-            <Image
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
               src={venue.coverImage}
               alt={venue.name}
-              fill priority
-              sizes="100vw"
-              className="object-cover object-center"
+              className="absolute inset-0 w-full h-full object-cover object-center"
             />
           ) : (
             <div className="w-full h-full"
@@ -285,12 +283,13 @@ export default function VenueDetail({ venue }) {
                 <motion.div
                   key={i}
                   className="gal-item relative rounded-xl overflow-hidden cursor-pointer group"
-                  style={{ opacity: 0, aspectRatio: "4/3" }}
+                  style={{ aspectRatio: "4/3" }}
                   whileHover={{ scale: 1.02 }}
                   transition={{ duration: 0.25 }}
                   onClick={() => setLightboxIdx(i)}
                 >
-                  <Image src={img} alt="" fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-300 flex items-center justify-center">
                     <svg viewBox="0 0 20 20" width="20" height="20" fill="none"
                       className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
