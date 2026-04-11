@@ -131,8 +131,8 @@ export async function changePassword({ currentPassword, newPassword }) {
       return { error: "Not authenticated." };
     }
 
-    if (!currentPassword || !newPassword) {
-      return { error: "Missing fields." };
+    if (!newPassword) {
+      return { error: "New password is required." };
     }
 
     if (newPassword.length < 8) {

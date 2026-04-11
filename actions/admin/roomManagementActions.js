@@ -86,10 +86,17 @@ export async function getRoomsOverview({ propertyId, status = "", floor = "", bl
     .lean();
 
   // Today's movements (online)
+  // Only "confirmed" = not yet arrived; "checked_in" with today checkIn = already arrived
   const todayCheckIns = await Booking.find({
     "roomBookings.room": { $in: roomIds },
     checkIn: { $gte: today, $lt: tomorrow },
-    status: { $in: ["confirmed", "checked_in"] },
+    status: "confirmed",
+  }).select("roomBookings primaryGuest checkIn checkOut bookingNumber status").lean();
+
+  const todayCheckedIn = await Booking.find({
+    "roomBookings.room": { $in: roomIds },
+    checkIn: { $gte: today, $lt: tomorrow },
+    status: "checked_in",
   }).select("roomBookings primaryGuest checkIn checkOut bookingNumber status").lean();
 
   const todayCheckOuts = await Booking.find({
@@ -146,6 +153,15 @@ export async function getRoomsOverview({ propertyId, status = "", floor = "", bl
     if (rId) checkInsByRoom[rId] = { ...ob, _isOffline: true };
   }
 
+  // Rooms where guest already checked in today
+  const checkedInTodayByRoom = {};
+  for (const b of todayCheckedIn) {
+    for (const rb of b.roomBookings || []) {
+      const rId = rb.room?.toString();
+      if (rId) checkedInTodayByRoom[rId] = b;
+    }
+  }
+
   const checkOutsByRoom = {};
   for (const b of todayCheckOuts) {
     for (const rb of b.roomBookings || []) {
@@ -162,11 +178,12 @@ export async function getRoomsOverview({ propertyId, status = "", floor = "", bl
     const rId = room._id.toString();
     return {
       ...room,
-      _activeBooking: bookingByRoom[rId] || null,
-      _activeOffline: offlineByRoom[rId]  || null,
-      _todayCheckIn:  checkInsByRoom[rId]  || null,
-      _todayCheckOut: checkOutsByRoom[rId] || null,
-      _hasConflict:   !!(bookingByRoom[rId] && offlineByRoom[rId]),
+      _activeBooking:   bookingByRoom[rId]       || null,
+      _activeOffline:   offlineByRoom[rId]        || null,
+      _todayCheckIn:    checkInsByRoom[rId]        || null,
+      _checkedInToday:  checkedInTodayByRoom[rId]  || null,
+      _todayCheckOut:   checkOutsByRoom[rId]       || null,
+      _hasConflict:     !!(bookingByRoom[rId] && offlineByRoom[rId]),
     };
   });
 
@@ -208,7 +225,7 @@ export async function getPropertyRoomStats(propertyId) {
     Booking.countDocuments({
       "roomBookings.room": { $in: roomIds },
       checkIn: { $gte: today, $lt: tomorrow },
-      status: { $in: ["confirmed", "checked_in"] },
+      status: "confirmed",   // only guests not yet arrived
     }),
     Booking.countDocuments({
       "roomBookings.room": { $in: roomIds },
@@ -263,7 +280,7 @@ export async function getTodayMovements(propertyId) {
     Booking.find({
       "roomBookings.room": { $in: roomIds },
       checkIn: { $gte: today, $lt: tomorrow },
-      status: { $in: ["confirmed", "checked_in"] },
+      status: "confirmed",   // only guests not yet arrived; checked_in guests are already here
     }).select("bookingNumber status checkIn checkOut primaryGuest roomBookings totalAmount paidAmount").lean(),
 
     Booking.find({

@@ -11,6 +11,11 @@ import Settings from "@/models/Settings";
 import BookingLock from "@/models/BookingLock";
 import { hasPermission } from "@/lib/permissions";
 import { createAdminNotification } from "@/actions/notifications/adminNotificationActions";
+import {
+  sendBookingConfirmationEmail,
+  sendCheckInEmail,
+  sendCheckOutEmail,
+} from "@/lib/email";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -342,7 +347,8 @@ export async function createPendingBooking(bookingData) {
   const advanceAmt = Math.round((totalAmount * advancePct) / 100);
   const remaining  = totalAmount - advanceAmt;
 
-  const bookingNumber = `DAN-${Date.now()}`;
+  const bookingCount = await Booking.countDocuments();
+  const bookingNumber = `DAN-${String(bookingCount + 1).padStart(4, "0")}`;
 
   const booking = await Booking.create({
     bookingNumber,
@@ -411,6 +417,45 @@ export async function confirmPayAtDesk(bookingId) {
     status: "confirmed",
     updatedAt: new Date(),
   });
+
+  // Send confirmation email (non-blocking)
+  const b = await Booking.findById(bookingId)
+    .populate("property", "name")
+    .populate("roomBookings.room", "roomNumber")
+    .lean();
+
+  if (b?.primaryGuest?.email) {
+    const rooms = (b.roomBookings || [])
+      .map((rb) => rb.room?.roomNumber ? `#${rb.room.roomNumber}` : null)
+      .filter(Boolean);
+    const totalSaved = (b.dayLongDiscount ?? 0) + (b.offerDiscount ?? 0) + (b.couponDiscount ?? 0);
+
+    sendBookingConfirmationEmail({
+      to:              b.primaryGuest.email,
+      guestName:       b.primaryGuest.name   || "Guest",
+      bookingNumber:   b.bookingNumber,
+      bookingId:       bookingId.toString(),
+      propertyName:    b.property?.name      || "Dhali's Amber Nivaas",
+      checkIn:         b.checkIn,
+      checkOut:        b.checkOut,
+      nights:          b.nights              ?? 0,
+      bookingMode:     b.bookingMode,
+      rooms,
+      subtotal:        b.subtotal            ?? 0,
+      taxes:           b.taxes               ?? 0,
+      dayLongDiscount: b.dayLongDiscount      ?? 0,
+      offerDiscount:   b.offerDiscount        ?? 0,
+      couponDiscount:  b.couponDiscount       ?? 0,
+      couponCode:      b.couponCode           || "",
+      totalAmount:     b.totalAmount          ?? 0,
+      paidAmount:      0,
+      remainingAmount: b.totalAmount          ?? 0,
+      isPartial:       false,
+      totalSaved,
+      baseUrl:         process.env.NEXT_PUBLIC_BASE_URL,
+    }).catch((err) => console.error("Pay-at-desk confirmation email failed:", err));
+  }
+
   return { success: true };
 }
 
@@ -490,9 +535,25 @@ export async function updateBookingStatus(bookingId, status) {
 
   await dbConnect();
 
+  // When checking in, enforce full payment and ensure paymentStatus is accurate
+  let extraFields = {};
+  if (status === "checked_in") {
+    const b = await Booking.findById(bookingId).select("remainingAmount totalAmount").lean();
+    if (!b) throw new Error("Booking not found");
+    if ((b.remainingAmount ?? 0) > 0) {
+      throw new Error(
+        `Full payment required before check-in. Still due: ৳${(b.remainingAmount).toLocaleString("en-BD")}.`
+      );
+    }
+    // Ensure payment fields are fully consistent at check-in
+    extraFields.paymentStatus   = "paid";
+    extraFields.paidAmount      = b.totalAmount || 0;
+    extraFields.remainingAmount = 0;
+  }
+
   const booking = await Booking.findByIdAndUpdate(
     bookingId,
-    { status, updatedAt: new Date() },
+    { status, ...extraFields, updatedAt: new Date() },
     { returnDocument: "after" }
   );
 
@@ -514,6 +575,56 @@ export async function updateBookingStatus(bookingId, status) {
   }
 
   revalidatePath("/admin/bookings");
+  revalidatePath("/admin/rooms");
+
+  // Send status-change emails (non-blocking)
+  if (status === "checked_in" || status === "checked_out") {
+    (async () => {
+      try {
+        const bPop = await Booking.findById(bookingId)
+          .populate("property", "name")
+          .populate("roomBookings.room", "roomNumber")
+          .lean();
+        if (!bPop?.primaryGuest?.email) return;
+
+        const rooms = (bPop.roomBookings || [])
+          .map((rb) => rb.room?.roomNumber ? `#${rb.room.roomNumber}` : null)
+          .filter(Boolean);
+
+        if (status === "checked_in") {
+          await sendCheckInEmail({
+            to:          bPop.primaryGuest.email,
+            guestName:   bPop.primaryGuest.name   || "Guest",
+            bookingNumber: bPop.bookingNumber,
+            bookingId:   bookingId.toString(),
+            propertyName: bPop.property?.name     || "Dhali's Amber Nivaas",
+            checkIn:     bPop.checkIn,
+            checkOut:    bPop.checkOut,
+            nights:      bPop.nights              ?? 0,
+            bookingMode: bPop.bookingMode,
+            rooms,
+            totalAmount: bPop.totalAmount         ?? 0,
+            baseUrl:     process.env.NEXT_PUBLIC_BASE_URL,
+          });
+        } else {
+          await sendCheckOutEmail({
+            to:          bPop.primaryGuest.email,
+            guestName:   bPop.primaryGuest.name   || "Guest",
+            bookingNumber: bPop.bookingNumber,
+            propertyName: bPop.property?.name     || "Dhali's Amber Nivaas",
+            checkOut:    bPop.checkOut,
+            nights:      bPop.nights              ?? 0,
+            bookingMode: bPop.bookingMode,
+            rooms,
+            baseUrl:     process.env.NEXT_PUBLIC_BASE_URL,
+          });
+        }
+      } catch (err) {
+        console.error(`${status} email failed:`, err);
+      }
+    })();
+  }
+
   return { success: true };
 }
 
@@ -541,18 +652,27 @@ export async function recordCheckInPayment(bookingId, { paidAmount, paymentMetho
   if (!booking) throw new Error("Booking not found");
 
   const paid = parseFloat(paidAmount) || 0;
-  const total = booking.totalAmount || 0;
-  const alreadyPaid = booking.paidAmount || 0;
-  const newTotalPaid = alreadyPaid + paid;
-  const newRemaining = Math.max(0, total - newTotalPaid);
-  const newPaymentStatus = newRemaining <= 0 ? "paid" : "partial";
+  // Use remainingAmount as the authoritative "still owed" figure.
+  // paidAmount in DB may be 0 for pay-at-desk bookings where the advance
+  // wasn't recorded before confirmation, so total-(alreadyPaid+paid) is unreliable.
+  const currentRemaining = booking.remainingAmount ?? 0;
+  const newRemaining = Math.max(0, currentRemaining - paid);
+
+  if (newRemaining > 0) {
+    throw new Error(
+      `Full payment required to check in. Still due: ৳${newRemaining.toLocaleString("en-BD")}. Please collect the full outstanding amount before proceeding.`
+    );
+  }
+
+  // Bring paidAmount fully up to date regardless of prior recording gaps
+  const newTotalPaid = booking.totalAmount || 0;
 
   await Booking.findByIdAndUpdate(bookingId, {
     status:          "checked_in",
     paymentMethod:   paymentMethod || booking.paymentMethod,
-    paymentStatus:   newPaymentStatus,
+    paymentStatus:   "paid",
     paidAmount:      newTotalPaid,
-    remainingAmount: newRemaining,
+    remainingAmount: 0,
     updatedAt:       new Date(),
   });
 
@@ -574,8 +694,35 @@ export async function recordCheckInPayment(bookingId, { paidAmount, paymentMetho
     metadata: { bookingId: bookingId.toString(), bookingNumber: booking.bookingNumber, paid },
   }).catch(() => {});
 
+  // Send check-in welcome email (non-blocking)
+  if (booking.primaryGuest?.email) {
+    const bPop = await Booking.findById(bookingId)
+      .populate("property", "name")
+      .populate("roomBookings.room", "roomNumber")
+      .lean();
+    const rooms = (bPop?.roomBookings || [])
+      .map((rb) => rb.room?.roomNumber ? `#${rb.room.roomNumber}` : null)
+      .filter(Boolean);
+
+    sendCheckInEmail({
+      to:          booking.primaryGuest.email,
+      guestName:   booking.primaryGuest.name  || "Guest",
+      bookingNumber: booking.bookingNumber,
+      bookingId:   bookingId.toString(),
+      propertyName: bPop?.property?.name      || "Dhali's Amber Nivaas",
+      checkIn:     booking.checkIn,
+      checkOut:    booking.checkOut,
+      nights:      booking.nights             ?? 0,
+      bookingMode: booking.bookingMode,
+      rooms,
+      totalAmount: booking.totalAmount        ?? 0,
+      baseUrl:     process.env.NEXT_PUBLIC_BASE_URL,
+    }).catch((err) => console.error("Check-in email failed:", err));
+  }
+
   revalidatePath(`/admin/bookings/${bookingId}`);
   revalidatePath("/admin/bookings");
+  revalidatePath("/admin/rooms");
   return { success: true, paymentStatus: newPaymentStatus, remainingAmount: newRemaining };
 }
 

@@ -5,7 +5,6 @@ import dbConnect from "@/lib/db";
 import Media from "@/models/Media";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { hasPermission } from "@/lib/permissions";
 
 const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif", "image/avif"];
 const MAX_SIZE_MB   = 10;
@@ -22,7 +21,7 @@ export async function POST(req) {
   try {
     // ── Authentication ────────────────────────────────────────────────────────
     const session = await getServerSession(authOptions);
-    if (!session?.user?.role || !hasPermission(session.user.role, "settings.write")) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

@@ -415,12 +415,14 @@ export default function Navbar() {
                       onClick={() => setDropdown((v) => !v)}
                       className="flex items-center gap-2 focus:outline-none group"
                     >
-                      <Image
-                        src={session.user.image ||
-                          `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.name)}&background=7A2267&color=fff`}
-                        alt="Profile" width={30} height={30}
-                        className="rounded-full object-cover border border-[#e0e0e0] group-hover:border-[#7A2267]/30 transition-colors duration-200"
-                      />
+                      <div className="w-[30px] h-[30px] rounded-full overflow-hidden shrink-0 border border-[#e0e0e0] group-hover:border-[#7A2267]/30 transition-colors duration-200">
+                        <Image
+                          src={session.user.image ||
+                            `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.name)}&background=7A2267&color=fff`}
+                          alt="Profile" width={30} height={30}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
                       <motion.svg
                         animate={{ rotate: dropdownOpen ? 180 : 0 }}
                         transition={{ duration: 0.2 }}
@@ -569,10 +571,6 @@ export default function Navbar() {
                 </button>
               </div>
 
-              {/* Decorative brand strip */}
-              <div className="shrink-0 h-[3px]"
-                style={{ background: "linear-gradient(to right, #7A2267, #C9963A, #7A2267)" }} />
-
               {/* Nav links */}
               <nav className="flex-1 overflow-y-auto py-3">
                 {navLinks.map((link, i) => {
@@ -636,12 +634,14 @@ export default function Navbar() {
                   {session?.user ? (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3 min-w-0">
-                        <Image
-                          src={session.user.image ||
-                            `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.name)}&background=7A2267&color=fff`}
-                          alt="Profile" width={32} height={32}
-                          className="rounded-full object-cover border-2 border-[#f0e8f4] shrink-0"
-                        />
+                        <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border-2 border-[#f0e8f4]">
+                          <Image
+                            src={session.user.image ||
+                              `https://ui-avatars.com/api/?name=${encodeURIComponent(session.user.name)}&background=7A2267&color=fff`}
+                            alt="Profile" width={32} height={32}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
                         <div className="min-w-0">
                           <p className="text-[11px] text-[#1a1a1a] font-semibold truncate">{session.user.name}</p>
                           <p className="text-[9px] text-[#aaa] truncate mt-0.5">{session.user.email}</p>

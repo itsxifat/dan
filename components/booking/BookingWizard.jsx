@@ -879,7 +879,7 @@ export default function BookingWizard({ settings, preselect }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             bookingId:   result.bookingId,
-            amount:      paymentMethod === "partial" ? result.advanceAmount : result.totalAmount,
+            amount:      result.advanceAmount,
             customerName:  primaryGuest.name,
             customerEmail: primaryGuest.email,
             customerPhone: primaryGuest.phone,
@@ -1049,7 +1049,7 @@ export default function BookingWizard({ settings, preselect }) {
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}>
             <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-6">
-              <div className="h-[3px] bg-[#7A2267]" />
+
               <div className="p-6 sm:p-8">
                 <h2 className={`text-[22px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>
                   How would you like to stay?
@@ -1141,7 +1141,7 @@ export default function BookingWizard({ settings, preselect }) {
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}>
             <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
-              <div className="h-[3px] bg-[#7A2267]" />
+
               <div className="p-6 sm:p-8">
                 <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>
                   {bookingMode === "day_long" ? "Select your date" : "Select your dates"}
@@ -1401,7 +1401,7 @@ export default function BookingWizard({ settings, preselect }) {
                 return (
                   <>
                     <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
-                      <div className="h-[3px] bg-[#7A2267]" />
+        
                       <div className="p-6 sm:p-8">
                         <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>Choose your day package</h2>
                         <p className="text-[12px] text-[#9B8BAB] mb-5">Select an entry option and any optional add-ons.</p>
@@ -1499,7 +1499,7 @@ export default function BookingWizard({ settings, preselect }) {
               {roomSubStep === 1 && (
                 <>
                   <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
-                    <div className="h-[3px] bg-[#7A2267]" />
+      
                     <div className="p-6 sm:p-8">
                       <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>Choose your property</h2>
                       <p className="text-[12px] text-[#9B8BAB] mb-5">Select the property that fits your stay.</p>
@@ -1576,7 +1576,7 @@ export default function BookingWizard({ settings, preselect }) {
               {roomSubStep === 2 && (
                 <>
                   <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
-                    <div className="h-[3px] bg-[#7A2267]" />
+      
                     <div className="p-6 sm:p-8">
                       <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>Choose room category</h2>
                       <p className="text-[12px] text-[#9B8BAB] mb-5">Select the type of room you prefer.</p>
@@ -1645,7 +1645,7 @@ export default function BookingWizard({ settings, preselect }) {
               {roomSubStep === 3 && (
                 <>
                   <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
-                    <div className="h-[3px] bg-[#7A2267]" />
+      
                     <div className="p-5 sm:p-6">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
@@ -1748,7 +1748,7 @@ export default function BookingWizard({ settings, preselect }) {
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}>
             <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
-              <div className="h-[3px] bg-[#7A2267]" />
+
               <div className="p-6 sm:p-8">
                 <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>Your details</h2>
                 <p className="text-[12px] text-[#9B8BAB] mb-6">Just a few details to complete your reservation.</p>
@@ -2107,7 +2107,7 @@ export default function BookingWizard({ settings, preselect }) {
               <>
                 {/* Booking summary */}
                 <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
-                  <div className="h-[3px] bg-[#7A2267]" />
+    
                   <div className="p-6">
                     <h2 className={`text-[18px] font-semibold text-[#1a1410] mb-4 ${playfair.className}`}>Booking Summary</h2>
 

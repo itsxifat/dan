@@ -23,7 +23,6 @@ export default function BookingDetailClient({ booking }) {
 
   // Check-in payment modal state
   const [showCheckinModal, setShowCheckinModal] = useState(false);
-  const [checkinPaid,      setCheckinPaid]      = useState("");
   const [checkinMethod,    setCheckinMethod]    = useState("cash");
   const [checkinLoading,   setCheckinLoading]   = useState(false);
   const [checkinError,     setCheckinError]     = useState("");
@@ -37,9 +36,8 @@ export default function BookingDetailClient({ booking }) {
     setError("");
     // When checking in: open payment modal if there's a remaining balance
     if (newStatus === "checked_in") {
-      const due = booking.remainingAmount ?? 0;
+      const due = remaining;
       if (due > 0) {
-        setCheckinPaid(String(due));
         setShowCheckinModal(true);
         return;
       }
@@ -56,15 +54,10 @@ export default function BookingDetailClient({ booking }) {
 
   async function handleCheckinPayment() {
     setCheckinError("");
-    const amount = parseFloat(checkinPaid);
-    if (isNaN(amount) || amount < 0) {
-      setCheckinError("Enter a valid amount (0 or more).");
-      return;
-    }
     setCheckinLoading(true);
     try {
       const result = await recordCheckInPayment(booking._id, {
-        paidAmount:    amount,
+        paidAmount:    remaining,
         paymentMethod: checkinMethod,
       });
       setStatus("checked_in");
@@ -210,20 +203,16 @@ export default function BookingDetailClient({ booking }) {
               </p>
             )}
 
-            {/* Amount input */}
+            {/* Fixed amount display */}
             <div>
-              <label className="block text-[10px] uppercase tracking-wider text-white/30 font-semibold mb-1.5">
-                Amount Collected (৳)
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={checkinPaid}
-                onChange={(e) => setCheckinPaid(e.target.value)}
-                className={INPUT}
-                placeholder={`e.g. ${remaining}`}
-              />
-              <p className="text-[10.5px] text-white/25 mt-1">Enter 0 if no payment collected (waived or deferred).</p>
+              <p className="text-[10px] uppercase tracking-wider text-white/30 font-semibold mb-1.5">
+                Amount to Collect (Fixed)
+              </p>
+              <div className="flex items-center justify-between bg-white/4 border border-white/8 rounded-xl px-4 py-2.5">
+                <span className="text-[13px] text-amber-400 font-bold">৳{remaining.toLocaleString()}</span>
+                <span className="text-[10px] text-white/25 uppercase tracking-wider">Exact due amount</span>
+              </div>
+              <p className="text-[10.5px] text-amber-400/70 mt-1">Full payment must be collected before check-in can proceed.</p>
             </div>
 
             {/* Payment method */}

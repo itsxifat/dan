@@ -177,7 +177,13 @@ function RoomCard({ room }) {
           Arriving today
         </span>
       )}
-      {room._todayCheckOut && !room._todayCheckIn && (
+      {room._checkedInToday && !room._todayCheckIn && (
+        <span className="inline-flex items-center gap-1 text-[9px] text-blue-400 font-semibold mt-0.5">
+          <span className="w-1 h-1 rounded-full bg-blue-400" />
+          Checked in today
+        </span>
+      )}
+      {room._todayCheckOut && !room._todayCheckIn && !room._checkedInToday && (
         <span className="inline-flex items-center gap-1 text-[9px] text-amber-400 font-semibold mt-0.5">
           <span className="w-1 h-1 rounded-full bg-amber-400" />
           Departing today

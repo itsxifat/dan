@@ -3,7 +3,16 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { updateBookingStatus } from "@/actions/accommodation/bookingActions";
+import { updateBookingStatus, recordCheckInPayment } from "@/actions/accommodation/bookingActions";
+
+const PAYMENT_METHODS = [
+  { value: "cash",        label: "Cash" },
+  { value: "card",        label: "Card" },
+  { value: "bkash",      label: "bKash" },
+  { value: "nagad",      label: "Nagad" },
+  { value: "bank",        label: "Bank Transfer" },
+  { value: "sslcommerz",  label: "Online (SSLCommerz)" },
+];
 
 const STATUS_STYLE = {
   pending:     "bg-amber-400/10 text-amber-400 border-amber-400/25",
@@ -38,6 +47,12 @@ export default function BookingsTable({
   const [search, setSearch]     = useState(currentSearch);
   const [isPending, startTransition] = useTransition();
 
+  // Check-in modal state (list view)
+  const [checkinTarget,  setCheckinTarget]  = useState(null); // { _id, remaining, totalAmount, paidAmount }
+  const [checkinMethod,  setCheckinMethod]  = useState("cash");
+  const [checkinLoading, setCheckinLoading] = useState(false);
+  const [checkinError,   setCheckinError]   = useState("");
+
   function applyFilter(updates) {
     const p = new URLSearchParams(qs.toString());
     Object.entries(updates).forEach(([k, v]) => (v ? p.set(k, v) : p.delete(k)));
@@ -50,13 +65,60 @@ export default function BookingsTable({
     applyFilter({ search });
   }
 
-  function handleStatusChange(bookingId, status) {
+  function handleStatusChange(bookingId, newStatus) {
+    if (newStatus === "checked_in") {
+      const booking = bookings.find((b) => b._id === bookingId);
+      if (booking && (booking.remainingAmount ?? 0) > 0) {
+        // Intercept: open payment modal instead of directly updating
+        setCheckinTarget({
+          _id:         booking._id,
+          remaining:   booking.remainingAmount,
+          totalAmount: booking.totalAmount,
+          paidAmount:  booking.paidAmount ?? 0,
+          name:        booking.primaryGuest?.name || "Guest",
+        });
+        setCheckinMethod("cash");
+        setCheckinError("");
+        return;
+      }
+    }
     startTransition(async () => {
-      await updateBookingStatus(bookingId, status);
-      setBookings((prev) =>
-        prev.map((b) => b._id === bookingId ? { ...b, status } : b)
-      );
+      try {
+        await updateBookingStatus(bookingId, newStatus);
+        setBookings((prev) =>
+          prev.map((b) => b._id === bookingId
+            ? { ...b, status: newStatus, ...(newStatus === "checked_in" ? { paymentStatus: "paid" } : {}) }
+            : b
+          )
+        );
+      } catch (err) {
+        alert(err.message || "Failed to update status.");
+      }
     });
+  }
+
+  async function handleCheckinConfirm() {
+    if (!checkinTarget) return;
+    setCheckinError("");
+    setCheckinLoading(true);
+    try {
+      await recordCheckInPayment(checkinTarget._id, {
+        paidAmount:    checkinTarget.remaining,
+        paymentMethod: checkinMethod,
+      });
+      setBookings((prev) =>
+        prev.map((b) =>
+          b._id === checkinTarget._id
+            ? { ...b, status: "checked_in", paymentStatus: "paid", remainingAmount: 0 }
+            : b
+        )
+      );
+      setCheckinTarget(null);
+    } catch (err) {
+      setCheckinError(err.message || "Failed to record payment.");
+    } finally {
+      setCheckinLoading(false);
+    }
   }
 
   return (
@@ -200,6 +262,91 @@ export default function BookingsTable({
               {p}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Check-in Payment Modal */}
+      {checkinTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="bg-[#1a1a2e] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-5">
+            <div>
+              <h3 className="text-[16px] font-semibold text-white/85 mb-1">Collect Payment to Check In</h3>
+              <p className="text-[12px] text-white/40">
+                {checkinTarget.name} — full due amount must be collected before check-in.
+              </p>
+            </div>
+
+            {/* Amount summary */}
+            <div className="bg-white/[0.04] border border-white/[0.07] rounded-xl p-4 space-y-2 text-[12.5px]">
+              <div className="flex justify-between text-white/50">
+                <span>Total booking amount</span>
+                <span>৳{checkinTarget.totalAmount?.toLocaleString()}</span>
+              </div>
+              {checkinTarget.paidAmount > 0 && (
+                <div className="flex justify-between text-emerald-400">
+                  <span>Already paid</span>
+                  <span>৳{checkinTarget.paidAmount?.toLocaleString()}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-amber-400 font-semibold border-t border-white/5 pt-2">
+                <span>Collecting now (fixed)</span>
+                <span>৳{checkinTarget.remaining?.toLocaleString()}</span>
+              </div>
+            </div>
+
+            {checkinError && (
+              <p className="text-[11.5px] text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-xl">
+                {checkinError}
+              </p>
+            )}
+
+            {/* Payment method */}
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-white/30 font-semibold mb-2">Payment Method</p>
+              <div className="grid grid-cols-3 gap-2">
+                {PAYMENT_METHODS.map((m) => (
+                  <button
+                    key={m.value}
+                    type="button"
+                    onClick={() => setCheckinMethod(m.value)}
+                    className={`py-2 px-2 rounded-xl border text-[11px] font-medium transition-all
+                      ${checkinMethod === m.value
+                        ? "border-[#7A2267]/60 bg-[#7A2267]/20 text-[#c05aae]"
+                        : "border-white/[0.07] text-white/30 hover:text-white/55 hover:border-white/15"
+                      }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setCheckinTarget(null)}
+                disabled={checkinLoading}
+                className="flex-1 py-3 rounded-xl border border-white/[0.08] text-white/40 text-[12.5px]
+                  hover:text-white/65 hover:border-white/15 transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCheckinConfirm}
+                disabled={checkinLoading}
+                className="flex-[2] py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[12.5px]
+                  font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {checkinLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Recording…
+                  </>
+                ) : (
+                  `Confirm Check-in · Collect ৳${checkinTarget.remaining?.toLocaleString()}`
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
