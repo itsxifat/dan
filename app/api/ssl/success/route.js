@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Booking from "@/models/Booking";
+import { createAdminNotification } from "@/actions/notifications/adminNotificationActions";
+import { incrementCouponUsage } from "@/actions/discount/discountActions";
 
 async function validateTransaction(val_id) {
   const isLive = process.env.SSLCOMMERZ_IS_LIVE === "true";
@@ -47,6 +49,18 @@ export async function POST(req) {
           remainingAmount: isPartial ? Math.max(0, booking.totalAmount - paid) : 0,
           updatedAt:       new Date(),
         });
+        // Increment coupon usage counter if a coupon was applied
+        if (booking.couponId) {
+          incrementCouponUsage(booking.couponId.toString()).catch(() => {});
+        }
+        // Notify admin
+        createAdminNotification({
+          type:    "payment",
+          title:   `Payment received: ${booking.bookingNumber}`,
+          message: `৳${paid.toLocaleString("en-BD")} via ${card_type || "Online"}${isPartial ? " (partial)" : ""}`,
+          link:    "/admin/bookings",
+          metadata: { bookingId: booking._id.toString(), bookingNumber: booking.bookingNumber, paid },
+        }).catch(() => {});
       }
     }
 

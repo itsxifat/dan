@@ -70,6 +70,16 @@ const BookingSchema = new mongoose.Schema({
   basePrice:      { type: Number, required: true },
   subtotal:       { type: Number, required: true },
   taxes:          { type: Number, default: 0 },
+
+  // Auto-applied offer discount (no code required)
+  offerId:        { type: mongoose.Schema.Types.ObjectId, ref: "Discount", default: null },
+  offerDiscount:  { type: Number, default: 0 },
+
+  // Coupon / discount applied at checkout
+  couponId:       { type: mongoose.Schema.Types.ObjectId, ref: "Discount", default: null },
+  couponCode:     { type: String, default: "" },
+  couponDiscount: { type: Number, default: 0 },
+
   totalAmount:    { type: Number, required: true },
   advancePercent: { type: Number, default: 100 },
   advanceAmount:  { type: Number, default: 0 },

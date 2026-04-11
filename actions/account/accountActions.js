@@ -1,20 +1,30 @@
 "use server";
 
-import dbConnect from "@/lib/db";
-import User from "@/models/User";
 import Booking from "@/models/Booking";
+import User from "@/models/User";
+import dbConnect from "@/lib/db";
+import { isValidPhoneNumber, normalizePhoneNumber } from "@/lib/phone";
+import "@/models/Property";
+import "@/models/RoomCategory";
+import "@/models/Room";
 
 /**
- * Get account data for a user — profile, recent bookings, stats.
+ * Get account data for a user: profile, recent bookings, stats.
  */
 export async function getAccountData(userId) {
-  if (!userId) throw new Error("User ID required.");
+  if (!userId) {
+    throw new Error("User ID required.");
+  }
+
   await dbConnect();
 
   const user = await User.findById(userId)
     .select("name email image phone address role createdAt password")
     .lean();
-  if (!user) throw new Error("User not found.");
+
+  if (!user) {
+    throw new Error("User not found.");
+  }
 
   const bookings = await Booking.find({ bookedBy: userId })
     .populate("property", "name location coverImage")
@@ -29,12 +39,12 @@ export async function getAccountData(userId) {
     .select("totalAmount paidAmount bookingMode status")
     .lean();
 
-  const totalBookings   = allBookings.length;
-  const totalSpent      = allBookings.reduce((sum, b) => sum + (b.paidAmount || 0), 0);
-  const nightStayCount  = allBookings.filter((b) => b.bookingMode !== "day_long").length;
-  const dayLongCount    = allBookings.filter((b) => b.bookingMode === "day_long").length;
+  const totalBookings = allBookings.length;
+  const totalSpent = allBookings.reduce((sum, booking) => sum + (booking.paidAmount || 0), 0);
+  const nightStayCount = allBookings.filter((booking) => booking.bookingMode !== "day_long").length;
+  const dayLongCount = allBookings.filter((booking) => booking.bookingMode === "day_long").length;
 
-  const hasPassword = !!user.password;
+  const hasPassword = Boolean(user.password);
   delete user.password;
 
   return JSON.parse(
@@ -50,13 +60,38 @@ export async function getAccountData(userId) {
  * Update user profile fields.
  */
 export async function updateProfile({ userId, name, phone, address }) {
-  if (!userId) throw new Error("User ID required.");
-  if (!name?.trim()) throw new Error("Name is required.");
+  if (!userId) {
+    throw new Error("User ID required.");
+  }
+
+  if (!name?.trim()) {
+    throw new Error("Name is required.");
+  }
+
+  const phoneDisplay = (phone || "").trim();
+  const phoneNormalized = phoneDisplay ? normalizePhoneNumber(phoneDisplay) : "";
+
+  if (phoneDisplay && !isValidPhoneNumber(phoneDisplay)) {
+    throw new Error("Please enter a valid mobile number.");
+  }
 
   await dbConnect();
+
+  if (phoneNormalized) {
+    const existingOwner = await User.findOne({
+      phoneNormalized,
+      _id: { $ne: userId },
+    });
+
+    if (existingOwner) {
+      throw new Error("This mobile number is already linked to another account.");
+    }
+  }
+
   await User.findByIdAndUpdate(userId, {
     name: name.trim(),
-    phone: (phone || "").trim(),
+    phone: phoneDisplay,
+    phoneNormalized,
     address: (address || "").trim(),
   });
 
@@ -67,8 +102,13 @@ export async function updateProfile({ userId, name, phone, address }) {
  * Update user profile image.
  */
 export async function updateProfileImage({ userId, imageUrl }) {
-  if (!userId) throw new Error("User ID required.");
-  if (!imageUrl) throw new Error("Image URL required.");
+  if (!userId) {
+    throw new Error("User ID required.");
+  }
+
+  if (!imageUrl) {
+    throw new Error("Image URL required.");
+  }
 
   await dbConnect();
   await User.findByIdAndUpdate(userId, { image: imageUrl });

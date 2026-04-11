@@ -7,6 +7,7 @@ import dbConnect from "@/lib/db";
 import CorporateVisitRequest from "@/models/CorporateVisitRequest";
 import CorporateEvent from "@/models/CorporateEvent";
 import { hasPermission } from "@/lib/permissions";
+import { createAdminNotification } from "@/actions/notifications/adminNotificationActions";
 
 async function requireCorporate(permission = "corporate.read") {
   const session = await getServerSession(authOptions);
@@ -38,6 +39,15 @@ export async function submitVisitRequest(data) {
       visitorCount: Number(data.visitorCount) || 1,
       message:      data.message || "",
     });
+    // Notify admin activity feed (non-blocking)
+    createAdminNotification({
+      type:    "corporate",
+      title:   `Corporate visit request`,
+      message: `${data.fullName} · ${data.company} · ${data.visitDate}`,
+      link:    "/admin/corporate/visits",
+      metadata: { company: data.company, visitDate: data.visitDate },
+    }).catch(() => {});
+
     return { success: true };
   } catch {
     return { success: false, error: "Failed to submit. Please try again." };

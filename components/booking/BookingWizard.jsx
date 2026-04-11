@@ -14,6 +14,7 @@ import { getCategoriesByProperty } from "@/actions/accommodation/categoryActions
 import { getAvailableRoomsForBooking } from "@/actions/accommodation/bookingActions";
 import { createPendingBooking } from "@/actions/accommodation/bookingActions";
 import { getActiveDayLongPackages } from "@/actions/accommodation/dayLongPackageActions";
+import { validateCoupon, getActiveOffers } from "@/actions/discount/discountActions";
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
 const playfair   = Playfair_Display({ subsets: ["latin"], weight: ["400", "500", "600"] });
@@ -435,6 +436,16 @@ export default function BookingWizard({ settings, preselect }) {
   // Payment
   const [paymentType, setPaymentType] = useState("full");  // "full" | "partial"
 
+  // Auto-offers (no code required)
+  const [activeOffers,   setActiveOffers]   = useState([]);
+  const [autoOffer,      setAutoOffer]      = useState(null); // best applicable offer
+
+  // Coupon
+  const [couponInput,   setCouponInput]   = useState("");
+  const [couponApplied, setCouponApplied] = useState(null); // { id, name, discountAmount, code }
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError,   setCouponError]   = useState("");
+
   // Upload-prompt warnings (room._id or "nid" or null)
   const [uploadWarn, setUploadWarn] = useState(null); // "nid" | roomId string
   // Child→adult reclassification warnings: key = `${roomId}-${guestIdx}`
@@ -459,10 +470,28 @@ export default function BookingWizard({ settings, preselect }) {
     if (a.discountType === "fixed")   return sum + (a.discountValue || 0);
     return sum;
   }, 0);
-  const subtotal    = totalPrice + dayLongSvcTotal;
-  const taxes       = Math.round((subtotal * taxPercent) / 100);
-  const total       = Math.max(0, subtotal + taxes - dayLongDiscount);
-  const partialPct  = settings?.advancePaymentPercent ?? 30;
+  const subtotal      = totalPrice + dayLongSvcTotal;
+  const taxes         = Math.round((subtotal * taxPercent) / 100);
+
+  // Compute auto-offer discount based on order total after day-long discount
+  const autoOfferDiscount = useMemo(() => {
+    if (!autoOffer) return 0;
+    const orderForOffer = subtotal + taxes - dayLongDiscount;
+    if (orderForOffer <= 0) return 0;
+    if (autoOffer.minOrderAmount > 0 && orderForOffer < autoOffer.minOrderAmount) return 0;
+    let disc = 0;
+    if (autoOffer.discountType === "percentage") {
+      disc = Math.round((orderForOffer * autoOffer.discountValue) / 100);
+      if (autoOffer.maxDiscountAmount > 0) disc = Math.min(disc, autoOffer.maxDiscountAmount);
+    } else {
+      disc = autoOffer.discountValue;
+    }
+    return Math.min(disc, orderForOffer);
+  }, [autoOffer, subtotal, taxes, dayLongDiscount]);
+
+  const couponDiscount = couponApplied?.discountAmount || 0;
+  const total         = Math.max(0, subtotal + taxes - dayLongDiscount - autoOfferDiscount - couponDiscount);
+  const partialPct    = settings?.advancePaymentPercent ?? 30;
   const partialAmt  = Math.round((total * partialPct) / 100);
   const partialRem  = total - partialAmt;
   const advancePct  = paymentType === "full" ? 100 : partialPct;
@@ -502,6 +531,27 @@ export default function BookingWizard({ settings, preselect }) {
     if (bookingMode === "day_long") {
       getActiveDayLongPackages().then(setPackages).catch(() => {});
     }
+  }, [bookingMode]);
+
+  // Fetch active auto-offers whenever bookingMode changes
+  useEffect(() => {
+    getActiveOffers(bookingMode).then((offers) => {
+      setActiveOffers(offers);
+      // Pick the best offer: highest effective discount rate
+      if (offers.length > 0) {
+        const best = offers.reduce((prev, curr) => {
+          const prevVal = prev.discountType === "percentage" ? prev.discountValue : 0;
+          const currVal = curr.discountType === "percentage" ? curr.discountValue : 0;
+          // For fixed, compare raw values
+          const prevEff = prev.discountType === "percentage" ? prevVal : prev.discountValue;
+          const currEff = curr.discountType === "percentage" ? currVal : curr.discountValue;
+          return currEff > prevEff ? curr : prev;
+        });
+        setAutoOffer(best);
+      } else {
+        setAutoOffer(null);
+      }
+    }).catch(() => {});
   }, [bookingMode]);
 
   useEffect(() => {
@@ -730,6 +780,7 @@ export default function BookingWizard({ settings, preselect }) {
       // Initialize room sub-step when entering step 3
       setRoomSubStep(bookingMode === "day_long" ? 0 : 1);
     }
+    setPreviewRoom(null);
     setStep((s) => s + 1);
   }
 
@@ -740,6 +791,7 @@ export default function BookingWizard({ settings, preselect }) {
       // Reset sub-step when leaving step 3
       setRoomSubStep(bookingMode === "day_long" ? 0 : 1);
     }
+    setPreviewRoom(null);
     setStep((s) => s - 1);
   }
 
@@ -808,6 +860,11 @@ export default function BookingWizard({ settings, preselect }) {
           specialRequests: specialReqs,
           paymentMethod,
           advancePercent: advancePct,
+          offerId:         autoOffer?._id || null,
+          offerDiscount:   autoOfferDiscount,
+          couponId:        couponApplied?.id       || null,
+          couponCode:      couponApplied?.code      || "",
+          couponDiscount:  couponApplied?.discountAmount || 0,
         });
 
         if (!result.success) {
@@ -852,10 +909,138 @@ export default function BookingWizard({ settings, preselect }) {
   const ciTime = bookingMode === "day_long" ? settings?.dayLongCheckInTime  : settings?.checkInTime;
   const coTime = bookingMode === "day_long" ? settings?.dayLongCheckOutTime : settings?.checkOutTime;
 
+  // ── Apply coupon (clears auto-offer — only one discount allowed at a time) ────
+  async function applyCoupon() {
+    if (!couponInput.trim()) return;
+    setCouponLoading(true);
+    setCouponError("");
+    try {
+      const result = await validateCoupon({
+        code:       couponInput,
+        bookingMode,
+        orderTotal: subtotal + taxes - dayLongDiscount,
+        userId:     session?.user?.id,
+      });
+      // One discount at a time: coupon overrides auto-offer
+      setAutoOffer(null);
+      setCouponApplied(result);
+      setCouponInput("");
+    } catch (err) {
+      setCouponError(err.message || "Invalid coupon.");
+      setCouponApplied(null);
+    } finally {
+      setCouponLoading(false);
+    }
+  }
+
+  // Restore best auto-offer when coupon is removed
+  function removeCoupon() {
+    setCouponApplied(null);
+    if (activeOffers.length > 0) {
+      const best = activeOffers.reduce((prev, curr) => {
+        const prevEff = prev.discountType === "percentage" ? prev.discountValue : prev.discountValue;
+        const currEff = curr.discountType === "percentage" ? curr.discountValue : curr.discountValue;
+        return currEff > prevEff ? curr : prev;
+      });
+      setAutoOffer(best);
+    }
+  }
+
+  // ── Price summary bar (shown at steps 3–5) ────────────────────────────────────
+  const showPriceBar = step >= 3 && (totalPrice > 0 || dayLongSvcTotal > 0);
+
+  function PriceBar() {
+    if (!showPriceBar) return null;
+    const hasDiscount = dayLongDiscount > 0 || autoOfferDiscount > 0 || couponDiscount > 0;
+    return (
+      <div className={`${montserrat.className} bg-white border border-[#EDE5F0] rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.05)] p-4 mb-4`}>
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[9.5px] uppercase tracking-[0.2em] text-[#9B8BAB] font-semibold">Price Summary</p>
+          {hasDiscount && (
+            <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full">
+              Discount applied!
+            </span>
+          )}
+        </div>
+        <div className="space-y-1 text-[12px]">
+          {cartRooms.length > 0 && (
+            <div className="flex justify-between">
+              <span className="text-[#9B8BAB]">
+                {cartRooms.length} room{cartRooms.length > 1 ? "s" : ""}
+                {bookingMode === "night_stay" && nights > 0 ? ` × ${nights} night${nights > 1 ? "s" : ""}` : ""}
+              </span>
+              <span className="font-medium text-[#1a1410]">৳{totalPrice.toLocaleString()}</span>
+            </div>
+          )}
+          {selectedEntry && (
+            <div className="flex justify-between">
+              <span className="text-[#9B8BAB]">{selectedEntry.name}</span>
+              <span className="font-medium text-[#1a1410]">৳{selectedEntry.price.toLocaleString()}</span>
+            </div>
+          )}
+          {selectedAddons.map((a) => (
+            <div key={a._id} className="flex justify-between">
+              <span className="text-[#9B8BAB] flex items-center gap-1">
+                {a.name}
+                {(a.discountType === "percent" || a.discountType === "percentage") && a.discountValue > 0 && (
+                  <span className="text-[9px] bg-emerald-50 text-emerald-600 border border-emerald-100 px-1.5 rounded-full font-bold">{a.discountValue}% off</span>
+                )}
+                {a.discountType === "fixed" && a.discountValue > 0 && (
+                  <span className="text-[9px] bg-emerald-50 text-emerald-600 border border-emerald-100 px-1.5 rounded-full font-bold">−৳{a.discountValue}</span>
+                )}
+              </span>
+              <span className="font-medium text-[#1a1410]">৳{a.price.toLocaleString()}</span>
+            </div>
+          ))}
+          {taxPercent > 0 && (
+            <div className="flex justify-between text-[#9B8BAB]">
+              <span>Tax ({taxPercent}%)</span>
+              <span>৳{taxes.toLocaleString()}</span>
+            </div>
+          )}
+          {dayLongDiscount > 0 && (
+            <div className="flex justify-between text-emerald-600 font-semibold">
+              <span>Package discount</span>
+              <span>−৳{dayLongDiscount.toLocaleString()}</span>
+            </div>
+          )}
+          {autoOfferDiscount > 0 && autoOffer && (
+            <div className="flex justify-between text-emerald-600 font-semibold">
+              <span className="flex items-center gap-1.5">
+                <span className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-100 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">Offer</span>
+                {autoOffer.name}
+              </span>
+              <span>−৳{autoOfferDiscount.toLocaleString()}</span>
+            </div>
+          )}
+          {couponDiscount > 0 && couponApplied && (
+            <div className="flex justify-between text-emerald-600 font-semibold">
+              <span className="flex items-center gap-1.5">
+                Coupon <code className="text-[9px] bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-lg font-mono">{couponApplied.code}</code>
+              </span>
+              <span>−৳{couponDiscount.toLocaleString()}</span>
+            </div>
+          )}
+        </div>
+        <div className="flex justify-between items-center pt-2 mt-2 border-t border-[#F0E8F4]">
+          <span className="text-[13px] font-bold text-[#1a1410]">Total</span>
+          <div className="text-right">
+            {hasDiscount && (
+              <p className="text-[10.5px] text-[#C4B3CE] line-through">৳{(subtotal + taxes).toLocaleString()}</p>
+            )}
+            <p className="text-[18px] font-bold text-[#7A2267]">৳{total.toLocaleString()}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div className={`${montserrat.className}`}>
       <StepIndicator step={step} total={5} />
+
+      <PriceBar />
 
       <AnimatePresence mode="wait">
         {/* ── STEP 1: Mode Selection ── */}
@@ -1500,21 +1685,31 @@ export default function BookingWizard({ settings, preselect }) {
                     </div>
                   </div>
 
-                  {/* Cart summary */}
+                  {/* Cart summary — rooms only, no total (total is in PriceBar above) */}
                   {cart.size > 0 && (
                     <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
                       <div className="p-4 sm:p-5">
-                        <p className="text-[10px] uppercase tracking-[0.2em] text-[#9B8BAB] font-semibold mb-2.5">Your Selection</p>
+                        <div className="flex items-center justify-between mb-2.5">
+                          <p className="text-[10px] uppercase tracking-[0.2em] text-[#9B8BAB] font-semibold">Selected Rooms</p>
+                          <span className="text-[10px] text-[#C4B3CE]">{cart.size} room{cart.size > 1 ? "s" : ""}</span>
+                        </div>
                         {cartRooms.map((r) => (
-                          <div key={r._id} className="flex items-center justify-between text-[12.5px] py-1.5">
-                            <span className="text-[#1a1410] font-medium">Room {r.roomNumber} · Floor {r.floor}</span>
-                            <div className="flex items-center gap-3">
-                              <span className="text-[#7A2267] font-semibold">
-                                ৳{(bookingMode === "day_long" ? r.resolvedDayPrice : r.resolvedNightPrice * nights).toLocaleString()}
-                                <span className="text-[9px] text-[#C4B3CE] font-normal ml-0.5">/{bookingMode === "day_long" ? "day" : `${nights}n`}</span>
+                          <div key={r._id} className="flex items-center justify-between text-[12.5px] py-1.5 border-b border-[#F8F4FB] last:border-0">
+                            <div>
+                              <span className="text-[#1a1410] font-medium">Room {r.roomNumber}</span>
+                              <span className="text-[10px] text-[#C4B3CE] ml-1.5">Floor {r.floor}{r.block ? ` · ${r.block}` : ""}</span>
+                              {(r.variantName || r.bedType) && (
+                                <span className="text-[9.5px] text-[#9B8BAB] ml-1.5">{r.variantName || r.bedType}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-[#7A2267] font-semibold text-[12px]">
+                                ৳{Number(bookingMode === "day_long" ? r.resolvedDayPrice : r.resolvedNightPrice).toLocaleString()}
+                                <span className="text-[9px] text-[#C4B3CE] font-normal ml-0.5">/{bookingMode === "day_long" ? "day" : "night"}</span>
                               </span>
                               <button onClick={() => { toggleRoom(r); if (previewRoom?._id === r._id) setPreviewRoom(null); }}
-                                className="w-5 h-5 rounded-full bg-[#F0E8F4] flex items-center justify-center text-[#C4B3CE] hover:bg-red-100 hover:text-red-500 transition-colors">
+                                className="w-5 h-5 rounded-full bg-[#F0E8F4] flex items-center justify-center text-[#C4B3CE] hover:bg-red-100 hover:text-red-500 transition-colors"
+                                title="Remove room">
                                 <svg viewBox="0 0 8 8" width="7" height="7" fill="none">
                                   <path d="M1.5 1.5l5 5M6.5 1.5l-5 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
                                 </svg>
@@ -1522,28 +1717,6 @@ export default function BookingWizard({ settings, preselect }) {
                             </div>
                           </div>
                         ))}
-                        {bookingMode === "day_long" && selectedEntry && (
-                          <div className="flex items-center justify-between text-[12.5px] py-1.5 border-t border-[#F0E8F4] mt-1">
-                            <span className="text-[#1a1410]">{selectedEntry.name} <span className="text-[#C4B3CE] text-[10px]">Entry</span></span>
-                            <span className="text-[#7A2267] font-semibold">৳{Number(selectedEntry.price).toLocaleString()}</span>
-                          </div>
-                        )}
-                        {selectedAddons.map((a) => (
-                          <div key={a._id} className="flex items-center justify-between text-[12.5px] py-1">
-                            <span className="text-[#1a1410]">{a.name} <span className="text-[#C4B3CE] text-[10px]">Add-on</span></span>
-                            <span className="text-[#7A2267] font-semibold">৳{Number(a.price).toLocaleString()}</span>
-                          </div>
-                        ))}
-                        {dayLongDiscount > 0 && (
-                          <div className="flex items-center justify-between text-[12px] py-1 text-emerald-600">
-                            <span>Discount</span>
-                            <span className="font-semibold">−৳{dayLongDiscount.toLocaleString()}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between text-[14px] font-bold mt-2 pt-2.5 border-t border-[#EDE5F0]">
-                          <span className="text-[#1a1410]">Total</span>
-                          <span className="text-[#7A2267]">৳{total.toLocaleString()}</span>
-                        </div>
                       </div>
                     </div>
                   )}
@@ -1569,7 +1742,7 @@ export default function BookingWizard({ settings, preselect }) {
           );
         })()}
 
-        {/* ── STEP 4: Guest Info ── */}
+        {/* ── STEP 4: Guest Info (simplified) ── */}
         {step === 4 && (
           <motion.div key="step4"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
@@ -1577,331 +1750,252 @@ export default function BookingWizard({ settings, preselect }) {
             <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
               <div className="h-[3px] bg-[#7A2267]" />
               <div className="p-6 sm:p-8">
-                <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>Guest information</h2>
-                <p className="text-[12px] text-[#9B8BAB] mb-6">Provide details for the primary guest and assign guests to each room.</p>
+                <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>Your details</h2>
+                <p className="text-[12px] text-[#9B8BAB] mb-6">Just a few details to complete your reservation.</p>
 
                 {/* Primary Guest */}
-                <div className="mb-6">
-                  <p className="text-[10px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold mb-3">Primary Guest (Booking Person)</p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {[
-                      { label: "Full Name *", key: "name", placeholder: "Full name" },
-                      { label: "Email *",     key: "email", placeholder: "name@example.com", type: "email" },
-                      { label: "Phone *",     key: "phone", placeholder: "+880 1X..." },
-                      { label: "WhatsApp",    key: "whatsapp", placeholder: "+880 1X..." },
-                      { label: "Age *",       key: "age", placeholder: "Age", type: "number" },
-                    ].map(({ label, key, placeholder, type = "text" }) => (
-                      <div key={key}>
-                        <label className="block text-[10px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold mb-1">{label}</label>
-                        <input type={type} placeholder={placeholder} value={primaryGuest[key]}
-                          onChange={(e) => setPrimaryGuest((p) => ({ ...p, [key]: e.target.value }))}
-                          className="w-full border border-[#EDE5F0] rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a1a1a] placeholder:text-[#C4B3CE] outline-none focus:border-[#7A2267]/40 transition-all" />
-                      </div>
-                    ))}
+                <div className="mb-5">
+                  <p className="text-[10px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold mb-3">Your Contact Details</p>
+
+                  {/* Row 1: Name + Phone */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                     <div>
-                      <label className="block text-[10px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold mb-1">Gender *</label>
+                      <label className="block text-[9.5px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold mb-1">Full Name *</label>
+                      <input placeholder="Your full name" value={primaryGuest.name}
+                        onChange={(e) => setPrimaryGuest((p) => ({ ...p, name: e.target.value }))}
+                        className="w-full border border-[#EDE5F0] rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a1a1a] placeholder:text-[#C4B3CE] outline-none focus:border-[#7A2267]/40 transition-all" />
+                    </div>
+                    <div>
+                      <label className="block text-[9.5px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold mb-1">Phone *</label>
+                      <input placeholder="+880 1X..." value={primaryGuest.phone}
+                        onChange={(e) => setPrimaryGuest((p) => ({ ...p, phone: e.target.value }))}
+                        className="w-full border border-[#EDE5F0] rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a1a1a] placeholder:text-[#C4B3CE] outline-none focus:border-[#7A2267]/40 transition-all" />
+                    </div>
+                  </div>
+
+                  {/* Row 2: Email */}
+                  <div className="mb-3">
+                    <label className="block text-[9.5px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold mb-1">Email *</label>
+                    <input type="email" placeholder="name@example.com" value={primaryGuest.email}
+                      onChange={(e) => setPrimaryGuest((p) => ({ ...p, email: e.target.value }))}
+                      className="w-full border border-[#EDE5F0] rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a1a1a] placeholder:text-[#C4B3CE] outline-none focus:border-[#7A2267]/40 transition-all" />
+                  </div>
+
+                  {/* Row 3: Age + Gender */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[9.5px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold mb-1">Age *</label>
+                      <input type="number" placeholder="Your age" min="1" max="120" value={primaryGuest.age}
+                        onChange={(e) => setPrimaryGuest((p) => ({ ...p, age: e.target.value }))}
+                        className="w-full border border-[#EDE5F0] rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a1a1a] placeholder:text-[#C4B3CE] outline-none focus:border-[#7A2267]/40 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                    </div>
+                    <div>
+                      <label className="block text-[9.5px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold mb-1">Gender *</label>
                       <CustomSelect
                         value={primaryGuest.gender}
                         onChange={(v) => setPrimaryGuest((p) => ({ ...p, gender: v }))}
                         options={GENDER_OPTIONS} />
                     </div>
-
-                    {/* NID / Passport */}
-                    <div className="sm:col-span-2">
-                      <label className="block text-[10px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold mb-2">NID / Passport *</label>
-                      <div className="grid grid-cols-2 gap-2 mb-2.5">
-                        {[
-                          { v: "upload",  label: "Upload from Device" },
-                          { v: "at_desk", label: "Provide at Desk" },
-                        ].map(({ v, label }) => (
-                          <button key={v} type="button" onClick={() => setNidMethod(v)}
-                            className={`py-2.5 rounded-xl border-2 text-[11.5px] font-semibold transition-all
-                              ${nidMethod === v
-                                ? "bg-[#7A2267] border-[#7A2267] text-white shadow-sm"
-                                : "bg-white border-[#EDE5F0] text-[#9B8BAB] hover:border-[#C4B3CE]"}`}>
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-                      {nidMethod === "upload" && (
-                        nidUrl ? (
-                          <div className="flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-2.5">
-                            <svg viewBox="0 0 12 12" width="14" height="14" fill="none">
-                              <circle cx="6" cy="6" r="5.5" fill="#10b981"/>
-                              <path d="M3.5 6L5 7.5 8.5 4" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                            <span className="text-[12px] text-emerald-700 font-medium flex-1">Document uploaded successfully</span>
-                            <button type="button" onClick={() => setNidUrl("")}
-                              className="text-[10.5px] text-emerald-600 hover:text-red-500 font-semibold transition-colors">Remove</button>
-                          </div>
-                        ) : (
-                          <label className="flex items-center gap-3 border-2 border-dashed border-[#EDE5F0] rounded-xl px-4 py-3.5 cursor-pointer hover:border-[#7A2267]/40 hover:bg-[#FAF7FC] transition-all group">
-                            <div className="w-9 h-9 rounded-xl bg-[#F0E8F4] flex items-center justify-center shrink-0 group-hover:bg-[#E4D5F0] transition-colors">
-                              <svg viewBox="0 0 20 20" width="18" height="18" fill="none">
-                                <path d="M10 3v9M6.5 6.5L10 3l3.5 3.5" stroke="#7A2267" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                                <path d="M3 14v2a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2" stroke="#7A2267" strokeWidth="1.4" strokeLinecap="round"/>
-                              </svg>
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-[12.5px] font-semibold text-[#7A2267]">Click to upload NID / Passport</p>
-                              <p className="text-[10.5px] text-[#C4B3CE] mt-0.5">JPG, PNG, PDF · max 1 MB</p>
-                            </div>
-                            <input type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" className="hidden"
-                              onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(f, setNidUrl); }} />
-                          </label>
-                        )
-                      )}
-                      {nidMethod === "at_desk" && (
-                        <p className="text-[11.5px] text-[#9B8BAB] bg-[#FAF7FC] border border-[#EDE5F0] rounded-xl px-3.5 py-2.5">
-                          Please bring your original NID or Passport when you check in.
-                        </p>
-                      )}
-                    </div>
                   </div>
                 </div>
 
-                {/* Per-room guest assignment */}
-                {cartRooms.map((room) => {
-                  const info    = getGuestInfo(room._id);
-                  const maxFCA  = settings?.maxFreeChildAge ?? 5;
-                  const curAdults   = info.guests.filter((g) => !guestIsChild(g, maxFCA)).length;
-                  const curChildren = info.guests.filter((g) =>  guestIsChild(g, maxFCA)).length;
-                  const atAdultLimit   = room.maxAdults   > 0  && curAdults   >= room.maxAdults;
-                  const atChildLimit   = room.maxChildren >= 0  && curChildren >= room.maxChildren;
-                  const hasOpposite = (() => {
-                    const adultList = info.guests.filter((g) => g.age !== "" && g.age !== null && g.age !== undefined && !isNaN(Number(g.age)) && Number(g.age) > maxFCA);
-                    return adultList.some((g) => g.gender === "male") && adultList.some((g) => g.gender === "female");
-                  })();
-                  const primaryUsedInAnyRoom = cartRooms.some((r) =>
-                    getGuestInfo(r._id).guests.some(
-                      (g) => g.name && g.name.toLowerCase().trim() === primaryGuest.name.toLowerCase().trim()
-                    )
-                  );
-                  const canFill = primaryGuest.name && !primaryUsedInAnyRoom && !atAdultLimit;
-
-                  return (
-                    <div key={room._id} className="mb-5">
-                      {/* Room header */}
-                      <div className="flex items-start justify-between gap-2 mb-2.5">
-                        <div>
-                          <p className="text-[11px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold">
-                            Room {room.roomNumber} · Floor {room.floor}
-                            {room.variantName && <span className="ml-1.5 text-[#C4B3CE] normal-case tracking-normal">({room.variantName})</span>}
-                          </p>
-                          <p className="text-[10px] text-[#C4B3CE] mt-0.5">
-                            Up to {room.maxAdults} adult{room.maxAdults !== 1 ? "s" : ""}
-                            {room.maxChildren > 0 ? ` · ${room.maxChildren} child${room.maxChildren !== 1 ? "ren" : ""}` : " · no children"}
-                          </p>
-                        </div>
-                        {canFill && (
-                          <button type="button" onClick={() => fillFromPrimaryGuest(room._id)}
-                            className="shrink-0 flex items-center gap-1.5 text-[10.5px] font-semibold text-[#7A2267] bg-[#F0E8F4] hover:bg-[#E4D5F0] px-2.5 py-1.5 rounded-lg transition-colors">
-                            <svg viewBox="0 0 12 12" width="10" height="10" fill="none">
-                              <circle cx="6" cy="4" r="2.5" stroke="#7A2267" strokeWidth="1.2"/>
-                              <path d="M1.5 10.5c0-2.5 2-4 4.5-4" stroke="#7A2267" strokeWidth="1.2" strokeLinecap="round"/>
-                              <path d="M9 8v3M7.5 9.5h3" stroke="#7A2267" strokeWidth="1.2" strokeLinecap="round"/>
-                            </svg>
-                            Use my info
-                          </button>
-                        )}
+                {/* NID — simplified: at_desk by default, upload optional */}
+                <div className="mb-5 bg-[#FAF7FC] border border-[#EDE5F0] rounded-xl px-4 py-3.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <svg viewBox="0 0 18 14" width="16" height="13" fill="none">
+                        <rect x="1" y="1" width="16" height="12" rx="2" stroke="#9B8BAB" strokeWidth="1.2"/>
+                        <circle cx="5.5" cy="5.5" r="1.8" stroke="#9B8BAB" strokeWidth="1.1"/>
+                        <path d="M2.5 11c0-1.657 1.343-3 3-3M9 5h5M9 8h3" stroke="#9B8BAB" strokeWidth="1.1" strokeLinecap="round"/>
+                      </svg>
+                      <div>
+                        <p className="text-[12px] font-semibold text-[#1a1410]">NID / Passport</p>
+                        <p className="text-[10.5px] text-[#9B8BAB] mt-0.5">
+                          {nidMethod === "upload" && nidUrl
+                            ? "Document uploaded"
+                            : nidMethod === "upload"
+                            ? "Upload your document below"
+                            : "Show original at check-in"}
+                        </p>
                       </div>
-
-                      {info.guests.length === 0 ? (
-                        <div className="bg-[#FAF7FC] rounded-xl p-4 text-center text-[12px] text-[#C4B3CE] mb-2.5">
-                          No guests assigned yet. Add adults or children below.
+                    </div>
+                    <button type="button"
+                      onClick={() => setNidMethod(nidMethod === "at_desk" ? "upload" : "at_desk")}
+                      className="shrink-0 text-[10.5px] font-semibold text-[#7A2267] underline underline-offset-2 hover:no-underline transition-all">
+                      {nidMethod === "at_desk" ? "Upload now" : "Show at desk"}
+                    </button>
+                  </div>
+                  {nidMethod === "upload" && (
+                    <div className="mt-3">
+                      {nidUrl ? (
+                        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-2.5">
+                          <svg viewBox="0 0 12 12" width="13" height="13" fill="none">
+                            <circle cx="6" cy="6" r="5.5" fill="#10b981"/>
+                            <path d="M3.5 6L5 7.5 8.5 4" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                          <span className="text-[11.5px] text-emerald-700 font-medium flex-1">Uploaded</span>
+                          <button type="button" onClick={() => setNidUrl("")}
+                            className="text-[10px] text-emerald-600 hover:text-red-500 font-semibold">Remove</button>
                         </div>
                       ) : (
-                        <div className="space-y-2.5 mb-2.5">
-                          {info.guests.map((g, gi) => {
-                            const isChild  = guestIsChild(g, maxFCA);
-                            const warnMsg  = childReclassifyMsg[`${room._id}-${gi}`];
-                            return (
-                              <div key={gi}>
-                                <div className="grid grid-cols-[1fr_80px_auto_auto] gap-2 items-end">
-                                  <div>
-                                    {gi === 0 && <label className="block text-[9px] uppercase tracking-wider text-[#C4B3CE] font-semibold mb-1">Name</label>}
-                                    <input placeholder="Name" value={g.name || ""}
-                                      onChange={(e) => updateGuest(room._id, gi, "name", e.target.value)}
-                                      className="w-full border border-[#EDE5F0] rounded-xl px-3 py-2 text-[12.5px] outline-none focus:border-[#7A2267]/40 text-[#1a1a1a] placeholder:text-[#C4B3CE] transition-all" />
-                                  </div>
-                                  <div>
-                                    {gi === 0 && <label className="block text-[9px] uppercase tracking-wider text-[#C4B3CE] font-semibold mb-1">Age *</label>}
-                                    <div className={`relative flex items-center border rounded-xl overflow-hidden transition-all bg-white
-                                      ${warnMsg ? "border-amber-400 focus-within:border-amber-500" : "border-[#EDE5F0] focus-within:border-[#7A2267]/40"}`}>
-                                      <button type="button"
-                                        onClick={() => updateGuest(room._id, gi, "age", Math.max(0, (Number(g.age) || 1) - 1))}
-                                        className="px-2 py-2 text-[#9B8BAB] hover:text-[#7A2267] hover:bg-[#FAF7FC] transition-colors text-base leading-none font-bold select-none">−</button>
-                                      <input type="number" placeholder="—" min="0" max="120" value={g.age ?? ""}
-                                        onChange={(e) => updateGuest(room._id, gi, "age", e.target.value === "" ? "" : Math.min(120, Math.max(0, Number(e.target.value))))}
-                                        className="w-full text-center text-[12.5px] outline-none text-[#1a1a1a] placeholder:text-[#C4B3CE] bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                                      <button type="button"
-                                        onClick={() => updateGuest(room._id, gi, "age", Math.min(120, (Number(g.age) || 0) + 1))}
-                                        className="px-2 py-2 text-[#9B8BAB] hover:text-[#7A2267] hover:bg-[#FAF7FC] transition-colors text-base leading-none font-bold select-none">+</button>
-                                      {isChild && (
-                                        <span className="absolute -top-1.5 -right-1 text-[8px] font-bold bg-amber-400 text-white px-1.5 py-0.5 rounded-full leading-none pointer-events-none">
-                                          {g.age === "" || g.age === null ? "Child*" : "Child"}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div>
-                                    {gi === 0 && <label className="block text-[9px] uppercase tracking-wider text-[#C4B3CE] font-semibold mb-1">Gender</label>}
-                                    <CustomSelect
-                                      value={g.gender || "male"}
-                                      onChange={(v) => updateGuest(room._id, gi, "gender", v)}
-                                      options={GENDER_SHORT_OPTIONS} />
-                                  </div>
-                                  <button type="button" onClick={() => removeGuest(room._id, gi)}
-                                    className="text-[#C4B3CE] hover:text-red-400 transition-colors pb-1 text-lg leading-none">×</button>
+                        <label className="flex items-center gap-3 border-2 border-dashed border-[#C4B3CE]/50 rounded-xl px-4 py-3 cursor-pointer hover:border-[#7A2267]/40 hover:bg-white/60 transition-all">
+                          <svg viewBox="0 0 18 18" width="16" height="16" fill="none">
+                            <path d="M9 2v10M5.5 6L9 2l3.5 4" stroke="#7A2267" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M2 14v1.5a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5V14" stroke="#7A2267" strokeWidth="1.3" strokeLinecap="round"/>
+                          </svg>
+                          <span className="text-[12px] font-semibold text-[#7A2267]">Click to upload NID / Passport</span>
+                          <input type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" className="hidden"
+                            onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(f, setNidUrl); }} />
+                        </label>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Additional Guests per room — collapsible, optional */}
+                {cartRooms.length > 0 && (
+                  <div className="mb-5">
+                    <p className="text-[10px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold mb-3">
+                      Additional Guests
+                      <span className="ml-2 normal-case text-[#C4B3CE] font-normal tracking-normal text-[11px]">(optional)</span>
+                    </p>
+                    <div className="space-y-3">
+                      {cartRooms.map((room) => {
+                        const info   = getGuestInfo(room._id);
+                        const maxFCA = settings?.maxFreeChildAge ?? 5;
+                        const curAdults   = info.guests.filter((g) => !guestIsChild(g, maxFCA)).length;
+                        const curChildren = info.guests.filter((g) =>  guestIsChild(g, maxFCA)).length;
+                        const atAdultLimit   = room.maxAdults   > 0 && curAdults   >= room.maxAdults;
+                        const atChildLimit   = room.maxChildren >= 0 && curChildren >= room.maxChildren;
+                        const hasOpposite = (() => {
+                          const adultList = info.guests.filter((g) =>
+                            g.age !== "" && g.age !== null && g.age !== undefined &&
+                            !isNaN(Number(g.age)) && Number(g.age) > maxFCA
+                          );
+                          return adultList.some((g) => g.gender === "male") && adultList.some((g) => g.gender === "female");
+                        })();
+
+                        return (
+                          <div key={room._id} className="border border-[#EDE5F0] rounded-xl overflow-hidden">
+                            {/* Room header */}
+                            <div className="flex items-center justify-between px-4 py-3 bg-[#FAF7FC]">
+                              <div>
+                                <p className="text-[11.5px] font-semibold text-[#1a1410]">Room {room.roomNumber}</p>
+                                <p className="text-[10px] text-[#C4B3CE]">Up to {room.maxAdults} adults{room.maxChildren > 0 ? `, ${room.maxChildren} children` : ""}</p>
+                              </div>
+                              <span className="text-[10px] text-[#9B8BAB]">{info.guests.length} guest{info.guests.length !== 1 ? "s" : ""} added</span>
+                            </div>
+
+                            <div className="p-4">
+                              {/* Guest rows */}
+                              {info.guests.length > 0 && (
+                                <div className="space-y-2 mb-3">
+                                  {info.guests.map((g, gi) => {
+                                    const isChild = guestIsChild(g, maxFCA);
+                                    const warnMsg = childReclassifyMsg[`${room._id}-${gi}`];
+                                    return (
+                                      <div key={gi}>
+                                        <div className="grid grid-cols-[1fr_72px_auto_auto] gap-2 items-center">
+                                          <input placeholder="Name" value={g.name || ""}
+                                            onChange={(e) => updateGuest(room._id, gi, "name", e.target.value)}
+                                            className="border border-[#EDE5F0] rounded-xl px-3 py-2 text-[12.5px] outline-none focus:border-[#7A2267]/40 text-[#1a1a1a] placeholder:text-[#C4B3CE] transition-all" />
+                                          <div className="relative">
+                                            <input type="number" placeholder="Age" min="0" max="120" value={g.age ?? ""}
+                                              onChange={(e) => updateGuest(room._id, gi, "age", e.target.value === "" ? "" : Math.min(120, Math.max(0, Number(e.target.value))))}
+                                              className={`w-full border rounded-xl px-2.5 py-2 text-[12.5px] outline-none text-center text-[#1a1a1a] placeholder:text-[#C4B3CE] transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
+                                                ${warnMsg ? "border-amber-400" : "border-[#EDE5F0] focus:border-[#7A2267]/40"}`} />
+                                            {isChild && g.age !== "" && (
+                                              <span className="absolute -top-1.5 -right-1 text-[7.5px] font-bold bg-amber-400 text-white px-1 py-0.5 rounded-full leading-none pointer-events-none">C</span>
+                                            )}
+                                          </div>
+                                          <CustomSelect value={g.gender || "male"}
+                                            onChange={(v) => updateGuest(room._id, gi, "gender", v)}
+                                            options={GENDER_SHORT_OPTIONS} className="w-14" />
+                                          <button type="button" onClick={() => removeGuest(room._id, gi)}
+                                            className="text-[#C4B3CE] hover:text-red-400 transition-colors text-lg leading-none">×</button>
+                                        </div>
+                                        {warnMsg && (
+                                          <p className="text-[10.5px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mt-1">{warnMsg}</p>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
                                 </div>
-                                {/* Reclassification warning */}
-                                {warnMsg && (
-                                  <div className="mt-1.5 flex items-start gap-1.5 px-2.5 py-2 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800">
-                                    <svg viewBox="0 0 12 12" width="13" height="13" fill="none" className="shrink-0 mt-0.5">
-                                      <path d="M5.13 1.87L1.05 9a1 1 0 0 0 .87 1.5h8.16A1 1 0 0 0 10.95 9L6.87 1.87a1 1 0 0 0-1.74 0z" stroke="#d97706" strokeWidth="1.1"/>
-                                      <path d="M6 4.5v2.5M6 8.5v.25" stroke="#d97706" strokeWidth="1.2" strokeLinecap="round"/>
-                                    </svg>
-                                    <span>{warnMsg}</span>
-                                  </div>
+                              )}
+
+                              {/* Add buttons */}
+                              <div className="flex gap-2">
+                                <button type="button" onClick={() => addGuest(room._id, "adult")} disabled={atAdultLimit}
+                                  className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg border-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed border-[#EDE5F0] text-[#7A2267] hover:border-[#7A2267]/40 hover:bg-[#FAF7FC] disabled:hover:bg-white disabled:hover:border-[#EDE5F0]">
+                                  + Adult
+                                </button>
+                                {room.maxChildren > 0 && (
+                                  <button type="button" onClick={() => addGuest(room._id, "child")} disabled={atChildLimit}
+                                    className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg border-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed border-[#EDE5F0] text-amber-600 hover:border-amber-300 hover:bg-amber-50 disabled:hover:bg-white disabled:hover:border-[#EDE5F0]">
+                                    + Child
+                                  </button>
                                 )}
                               </div>
-                            );
-                          })}
-                        </div>
-                      )}
 
-                      {/* Add adult / child buttons */}
-                      <div className="flex gap-2">
-                        <button type="button" onClick={() => addGuest(room._id, "adult")}
-                          disabled={atAdultLimit}
-                          className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg border-2 transition-all
-                            disabled:opacity-40 disabled:cursor-not-allowed
-                            border-[#EDE5F0] text-[#7A2267] hover:border-[#7A2267]/40 hover:bg-[#FAF7FC] disabled:hover:bg-white disabled:hover:border-[#EDE5F0]">
-                          + Adult
-                          <span className="text-[9.5px] text-[#C4B3CE] font-normal">{curAdults}/{room.maxAdults}</span>
-                        </button>
-                        {room.maxChildren > 0 && (
-                          <button type="button" onClick={() => addGuest(room._id, "child")}
-                            disabled={atChildLimit}
-                            className="flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg border-2 transition-all
-                              disabled:opacity-40 disabled:cursor-not-allowed
-                              border-[#EDE5F0] text-amber-600 hover:border-amber-300 hover:bg-amber-50 disabled:hover:bg-white disabled:hover:border-[#EDE5F0]">
-                            + Child
-                            <span className="text-[9.5px] text-amber-400 font-normal">{curChildren}/{room.maxChildren}</span>
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Group type selector — appears when opposite-gender adults detected */}
-                      {hasOpposite && settings?.requireCoupleDoc && (
-                        <div className="mt-4 rounded-2xl overflow-hidden border border-[#E8D5B7]">
-                          <div className="flex items-center gap-2.5 px-4 py-3 bg-amber-50 border-b border-[#E8D5B7]">
-                            <div className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                              <WarningIcon />
-                            </div>
-                            <p className="text-[12px] font-bold text-amber-800">This room has male and female guests</p>
-                          </div>
-                          <div className="p-4 bg-[#FFFBF5]">
-                            <p className="text-[11.5px] text-amber-700 mb-3">
-                              Please let us know the relationship so we know if a marriage certificate is needed.
-                            </p>
-                            <div className="grid grid-cols-2 gap-2 mb-3">
-                              {[
-                                { v: "couple", label: "💑 Couple / Married" },
-                                { v: "family", label: "👨‍👩‍👧 Family / Relatives" },
-                              ].map(({ v, label }) => (
-                                <button key={v} type="button"
-                                  onClick={() => updateGuestInfo(room._id, { groupType: v, coupleDocumentUrl: "", coupleDocMethod: "at_desk" })}
-                                  className={`py-2.5 rounded-xl border-2 text-[11.5px] font-semibold transition-all text-center
-                                    ${info.groupType === v
-                                      ? "bg-amber-600 border-amber-600 text-white shadow-sm"
-                                      : "bg-white border-amber-200 text-amber-700 hover:border-amber-400"}`}>
-                                  {label}
-                                </button>
-                              ))}
-                            </div>
-
-                            {/* Family — no cert needed */}
-                            {info.groupType === "family" && (
-                              <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-2.5">
-                                <svg viewBox="0 0 12 12" width="13" height="13" fill="none">
-                                  <circle cx="6" cy="6" r="5.5" fill="#10b981"/>
-                                  <path d="M3.5 6L5 7.5 8.5 4" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                                </svg>
-                                <p className="text-[11.5px] text-emerald-700">No certificate needed for family / relatives.</p>
-                              </div>
-                            )}
-
-                            {/* Couple — marriage cert required */}
-                            {info.groupType === "couple" && (
-                              <>
-                                <p className="text-[11.5px] text-amber-700 mb-2.5">
-                                  Please provide your marriage certificate.
-                                </p>
-                                <div className="grid grid-cols-2 gap-2 mb-3">
-                                  {[
-                                    { v: "at_desk", label: "Show at Desk" },
-                                    { v: "upload",  label: "Upload from Device" },
-                                  ].map(({ v, label }) => (
-                                    <button key={v} type="button"
-                                      onClick={() => updateGuestInfo(room._id, { coupleDocMethod: v })}
-                                      className={`py-2 rounded-xl border-2 text-[11px] font-semibold transition-all
-                                        ${info.coupleDocMethod === v
-                                          ? "bg-[#7A2267] border-[#7A2267] text-white shadow-sm"
-                                          : "bg-white border-[#EDE5F0] text-[#9B8BAB] hover:border-[#C4B3CE]"}`}>
-                                      {label}
-                                    </button>
-                                  ))}
-                                </div>
-                                {info.coupleDocMethod === "upload" && (
-                                  info.coupleDocumentUrl ? (
-                                    <div className="flex items-center gap-2.5 bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-2.5">
-                                      <svg viewBox="0 0 12 12" width="14" height="14" fill="none">
+                              {/* Couple documentation (only when detected) */}
+                              {hasOpposite && settings?.requireCoupleDoc && (
+                                <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                                  <p className="text-[11.5px] font-semibold text-amber-800 mb-2">Male &amp; female guests in same room</p>
+                                  <p className="text-[11px] text-amber-700 mb-3">Please select your relationship type.</p>
+                                  <div className="flex gap-2 mb-2">
+                                    {[["couple", "Married Couple"], ["family", "Family / Relatives"]].map(([v, label]) => (
+                                      <button key={v} type="button"
+                                        onClick={() => updateGuestInfo(room._id, { groupType: v, coupleDocumentUrl: "", coupleDocMethod: "at_desk" })}
+                                        className={`flex-1 py-2 rounded-xl border-2 text-[11px] font-semibold transition-all
+                                          ${info.groupType === v ? "bg-amber-600 border-amber-600 text-white" : "bg-white border-amber-200 text-amber-700 hover:border-amber-400"}`}>
+                                        {label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  {info.groupType === "couple" && (
+                                    <div className="flex items-center gap-2 bg-white border border-amber-200 rounded-xl px-3 py-2.5">
+                                      <svg viewBox="0 0 12 12" width="12" height="12" fill="none">
+                                        <path d="M5.13 1.87L1.05 9a1 1 0 0 0 .87 1.5h8.16A1 1 0 0 0 10.95 9L6.87 1.87a1 1 0 0 0-1.74 0z" stroke="#d97706" strokeWidth="1.1"/>
+                                        <path d="M6 4.5v2M6 7.5v.25" stroke="#d97706" strokeWidth="1.2" strokeLinecap="round"/>
+                                      </svg>
+                                      <p className="text-[11px] text-amber-700 flex-1">Please bring your marriage certificate to check-in.</p>
+                                      <label className="text-[10px] font-semibold text-[#7A2267] cursor-pointer underline underline-offset-2">
+                                        Upload
+                                        <input type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" className="hidden"
+                                          onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(f, (url) => updateGuestInfo(room._id, { coupleDocumentUrl: url, coupleDocMethod: "upload" })); }} />
+                                      </label>
+                                    </div>
+                                  )}
+                                  {info.groupType === "couple" && info.coupleDocumentUrl && (
+                                    <div className="mt-2 flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+                                      <svg viewBox="0 0 12 12" width="12" height="12" fill="none">
                                         <circle cx="6" cy="6" r="5.5" fill="#10b981"/>
                                         <path d="M3.5 6L5 7.5 8.5 4" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                                       </svg>
-                                      <span className="text-[12px] text-emerald-700 font-medium flex-1">Certificate uploaded successfully</span>
+                                      <span className="text-[11px] text-emerald-700 flex-1 font-medium">Certificate uploaded</span>
                                       <button type="button" onClick={() => updateGuestInfo(room._id, { coupleDocumentUrl: "" })}
-                                        className="text-[10.5px] text-emerald-600 hover:text-red-500 font-semibold transition-colors">Remove</button>
+                                        className="text-[10px] text-emerald-600 hover:text-red-500 font-semibold">Remove</button>
                                     </div>
-                                  ) : (
-                                    <label className="flex items-center gap-3 border-2 border-dashed border-amber-200 rounded-xl px-4 py-3.5 cursor-pointer hover:border-amber-400 hover:bg-amber-50/60 transition-all group">
-                                      <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 group-hover:bg-amber-200 transition-colors">
-                                        <svg viewBox="0 0 20 20" width="18" height="18" fill="none">
-                                          <path d="M10 3v9M6.5 6.5L10 3l3.5 3.5" stroke="#d97706" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                                          <path d="M3 14v2a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2" stroke="#d97706" strokeWidth="1.4" strokeLinecap="round"/>
-                                        </svg>
-                                      </div>
-                                      <div className="flex-1">
-                                        <p className="text-[12.5px] font-semibold text-amber-700">Click to upload marriage certificate</p>
-                                        <p className="text-[10.5px] text-amber-400 mt-0.5">JPG, PNG, PDF · max 1 MB</p>
-                                      </div>
-                                      <input type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" className="hidden"
-                                        onChange={(e) => {
-                                          const f = e.target.files?.[0];
-                                          if (f) uploadDoc(f, (url) => updateGuestInfo(room._id, { coupleDocumentUrl: url }));
-                                        }} />
-                                    </label>
-                                  )
-                                )}
-                                {info.coupleDocMethod === "at_desk" && (
-                                  <p className="text-[11.5px] text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3.5 py-2.5">
-                                    Please bring the original marriage certificate when checking in.
-                                  </p>
-                                )}
-                              </>
-                            )}
+                                  )}
+                                  {info.groupType === "family" && (
+                                    <p className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+                                      No marriage certificate needed for family groups.
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })}
                     </div>
-                  );
-                })}
+                  </div>
+                )}
 
                 {/* Special requests */}
                 <div>
-                  <label className="block text-[10px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold mb-1.5">Special Requests</label>
-                  <textarea rows={2} placeholder="Any special requests or notes…" value={specialReqs}
+                  <label className="block text-[9.5px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold mb-1.5">Special Requests <span className="normal-case font-normal text-[#C4B3CE]">(optional)</span></label>
+                  <textarea rows={2} placeholder="Dietary requirements, accessibility needs, room preferences…" value={specialReqs}
                     onChange={(e) => setSpecialReqs(e.target.value)}
                     className="w-full border border-[#EDE5F0] rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a1a1a] placeholder:text-[#C4B3CE] outline-none focus:border-[#7A2267]/40 resize-none transition-all" />
                 </div>
@@ -2063,9 +2157,27 @@ export default function BookingWizard({ settings, preselect }) {
                         </div>
                       ))}
                       {dayLongDiscount > 0 && (
-                        <div className="flex justify-between text-emerald-600">
-                          <span>Discount</span>
+                        <div className="flex justify-between text-emerald-600 font-medium">
+                          <span>Package discount</span>
                           <span>−৳{dayLongDiscount.toLocaleString()}</span>
+                        </div>
+                      )}
+                      {autoOfferDiscount > 0 && autoOffer && (
+                        <div className="flex justify-between text-emerald-600 font-medium">
+                          <span className="flex items-center gap-1.5">
+                            <span className="text-[9px] bg-emerald-50 text-emerald-700 border border-emerald-100 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">Offer</span>
+                            {autoOffer.name}
+                          </span>
+                          <span>−৳{autoOfferDiscount.toLocaleString()}</span>
+                        </div>
+                      )}
+                      {couponDiscount > 0 && couponApplied && (
+                        <div className="flex justify-between text-emerald-600 font-medium">
+                          <span className="flex items-center gap-1.5">
+                            Coupon
+                            <code className="text-[9px] bg-emerald-50 border border-emerald-100 px-1.5 py-0.5 rounded-lg font-mono">{couponApplied.code}</code>
+                          </span>
+                          <span>−৳{couponDiscount.toLocaleString()}</span>
                         </div>
                       )}
                       {taxPercent > 0 && (
@@ -2076,9 +2188,77 @@ export default function BookingWizard({ settings, preselect }) {
                       )}
                       <div className="flex justify-between font-bold text-[14px] pt-2 border-t border-[#F0E8F4]">
                         <span className="text-[#1a1410]">Total</span>
-                        <span className="text-[#7A2267]">৳{total.toLocaleString()}</span>
+                        <div className="text-right">
+                          {(dayLongDiscount > 0 || autoOfferDiscount > 0 || couponDiscount > 0) && (
+                            <p className="text-[10.5px] text-[#C4B3CE] line-through">৳{(subtotal + taxes).toLocaleString()}</p>
+                          )}
+                          <span className="text-[#7A2267]">৳{total.toLocaleString()}</span>
+                        </div>
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                {/* Auto-offer banner */}
+                {autoOffer && autoOfferDiscount > 0 && (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 mb-4 flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                      <svg viewBox="0 0 16 16" width="16" height="16" fill="none">
+                        <path d="M8 1L9.8 5.8H15L10.6 8.8L12.4 13.6L8 10.6L3.6 13.6L5.4 8.8L1 5.8H6.2L8 1Z" fill="#10b981"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[12px] font-semibold text-emerald-800">{autoOffer.name}</p>
+                      <p className="text-[11px] text-emerald-600 mt-0.5">
+                        {autoOffer.discountType === "percentage"
+                          ? `${autoOffer.discountValue}% off`
+                          : `৳${autoOffer.discountValue} off`
+                        }
+                        {autoOffer.maxDiscountAmount > 0 ? ` (up to ৳${autoOffer.maxDiscountAmount.toLocaleString()})` : ""}
+                        {" · "}Saving <strong>৳{autoOfferDiscount.toLocaleString()}</strong>
+                      </p>
+                      <p className="text-[10px] text-emerald-500/70 mt-0.5">Applying a coupon code will replace this offer.</p>
+                    </div>
+                    <span className="text-[9px] bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-bold uppercase tracking-wide whitespace-nowrap">Applied</span>
+                  </div>
+                )}
+
+                {/* Coupon code input */}
+                <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+                  <div className="p-5">
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-[#9B8BAB] font-semibold mb-3">Have a coupon?</p>
+                    {couponApplied ? (
+                      <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
+                        <svg viewBox="0 0 14 14" width="14" height="14" fill="none">
+                          <circle cx="7" cy="7" r="6" fill="#10b981"/>
+                          <path d="M4 7l2 2 4-4" stroke="white" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                        <div className="flex-1">
+                          <p className="text-[12.5px] font-semibold text-emerald-700">{couponApplied.name}</p>
+                          <p className="text-[11px] text-emerald-600">Saving ৳{couponDiscount.toLocaleString()}</p>
+                        </div>
+                        <button type="button" onClick={removeCoupon}
+                          className="text-[10.5px] font-semibold text-emerald-600 hover:text-red-500 transition-colors">Remove</button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex gap-2">
+                          <input
+                            placeholder="Enter coupon code"
+                            value={couponInput}
+                            onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponError(""); }}
+                            onKeyDown={(e) => e.key === "Enter" && applyCoupon()}
+                            className="flex-1 border border-[#EDE5F0] rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a1a1a] placeholder:text-[#C4B3CE] outline-none focus:border-[#7A2267]/40 transition-all uppercase tracking-wider font-mono" />
+                          <button type="button" onClick={applyCoupon} disabled={!couponInput.trim() || couponLoading}
+                            className="px-4 py-2.5 rounded-xl bg-[#7A2267] hover:bg-[#8e2878] text-white text-[12.5px] font-semibold transition-all disabled:opacity-50 whitespace-nowrap">
+                            {couponLoading ? "…" : "Apply"}
+                          </button>
+                        </div>
+                        {couponError && (
+                          <p className="text-[11.5px] text-red-600 mt-2">{couponError}</p>
+                        )}
+                      </>
+                    )}
                   </div>
                 </div>
 

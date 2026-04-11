@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getMedia } from "@/actions/admin/mediaActions";
+import { getMedia, getFolders } from "@/actions/admin/mediaActions";
 
 const EASE = [0.16, 1, 0.3, 1];
 
@@ -15,29 +15,41 @@ function formatBytes(bytes) {
  * MediaPicker — modal for selecting images from the media library or uploading new ones.
  *
  * Props:
- *   open       – boolean
- *   onClose    – () => void
- *   onSelect   – (url: string) => void    (single pick)
- *   onSelectMultiple – (urls: string[]) => void   (multi pick — enables multi mode)
- *   multiple   – boolean (default false)
+ *   open             – boolean
+ *   onClose          – () => void
+ *   onSelect         – (url: string) => void        (single pick)
+ *   onSelectMultiple – (urls: string[]) => void     (multi pick — enables multi mode)
+ *   multiple         – boolean (default false)
  */
 export default function MediaPicker({ open, onClose, onSelect, onSelectMultiple, multiple = false }) {
-  const [tab, setTab]           = useState("library"); // "library" | "upload"
-  const [items, setItems]       = useState([]);
-  const [loading, setLoading]   = useState(false);
-  const [page, setPage]         = useState(1);
-  const [totalPages, setTotal]  = useState(1);
-  const [selected, setSelected] = useState(new Set());
-  const [search, setSearch]     = useState("");
+  const [tab, setTab]             = useState("library");
+  const [items, setItems]         = useState([]);
+  const [loading, setLoading]     = useState(false);
+  const [page, setPage]           = useState(1);
+  const [totalPages, setTotal]    = useState(1);
+  const [selected, setSelected]   = useState(new Set());
+  const [search, setSearch]       = useState("");
+
+  // Folder state
+  const [folders, setFolders]         = useState([]);
+  const [activeFolder, setActiveFolder] = useState(null); // null = all
+  const [uploadFolder, setUploadFolder] = useState("general");
 
   const [uploading, setUploading] = useState(false);
   const [upProgress, setUpProg]   = useState([]);
   const inputRef = useRef(null);
 
-  async function fetchLibrary(p = 1) {
+  async function fetchFolders() {
+    try {
+      const data = await getFolders();
+      setFolders(data);
+    } catch { /* non-fatal */ }
+  }
+
+  async function fetchLibrary(p = 1, folder = activeFolder) {
     setLoading(true);
     try {
-      const data = await getMedia({ page: p, limit: 40 });
+      const data = await getMedia({ page: p, limit: 40, folder });
       setItems(data.items);
       setPage(data.page);
       setTotal(data.pages);
@@ -49,14 +61,24 @@ export default function MediaPicker({ open, onClose, onSelect, onSelectMultiple,
   useEffect(() => {
     if (open) {
       setSelected(new Set());
+      setSearch("");
+      setActiveFolder(null);
       setTab("library");
-      fetchLibrary(1);
+      setUploadFolder("general");
+      fetchFolders();
+      fetchLibrary(1, null);
     }
   }, [open]);
 
+  async function handleFolderClick(name) {
+    const next = name === activeFolder ? null : name;
+    setActiveFolder(next);
+    setSearch("");
+    await fetchLibrary(1, next);
+  }
+
   function toggleItem(item) {
     if (!multiple) {
-      // Single mode: select and close
       onSelect?.(item.url);
       onClose();
       return;
@@ -74,9 +96,10 @@ export default function MediaPicker({ open, onClose, onSelect, onSelectMultiple,
     onClose();
   }
 
-  const uploadFile = useCallback(async (file) => {
+  const uploadFile = useCallback(async (file, folder) => {
     const fd = new FormData();
     fd.append("file", file);
+    fd.append("folder", folder || "general");
     const res  = await fetch("/api/upload", { method: "POST", body: fd });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Upload failed");
@@ -90,7 +113,7 @@ export default function MediaPicker({ open, onClose, onSelect, onSelectMultiple,
 
     const results = await Promise.allSettled(
       files.map((file, i) =>
-        uploadFile(file).then((data) => {
+        uploadFile(file, uploadFolder).then((data) => {
           setUpProg((prev) => {
             const next = [...prev];
             next[i] = { ...next[i], status: "done", url: data.url };
@@ -110,8 +133,9 @@ export default function MediaPicker({ open, onClose, onSelect, onSelectMultiple,
     setUploading(false);
     const uploaded = results.filter((r) => r.status === "fulfilled" && r.value);
     if (uploaded.length) {
-      // Refresh library and switch to it
-      await fetchLibrary(1);
+      await fetchFolders();
+      await fetchLibrary(1, null);
+      setActiveFolder(null);
       setTab("library");
       setTimeout(() => setUpProg([]), 1500);
     }
@@ -130,17 +154,13 @@ export default function MediaPicker({ open, onClose, onSelect, onSelectMultiple,
     <AnimatePresence>
       <motion.div
         key="picker-overlay"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
         className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center p-0 sm:p-4"
         onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       >
-        {/* Backdrop */}
         <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
-        {/* Panel */}
         <motion.div
           initial={{ opacity: 0, y: 30, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -163,19 +183,15 @@ export default function MediaPicker({ open, onClose, onSelect, onSelectMultiple,
             </div>
             <div className="flex items-center gap-3">
               {multiple && selected.size > 0 && (
-                <button
-                  onClick={confirmMultiple}
+                <button onClick={confirmMultiple}
                   className="px-4 py-1.5 rounded-xl bg-[#7A2267] text-white text-[11.5px] font-semibold
-                    hover:bg-[#8e2878] transition-colors"
-                >
+                    hover:bg-[#8e2878] transition-colors">
                   Insert {selected.size}
                 </button>
               )}
-              <button
-                onClick={onClose}
+              <button onClick={onClose}
                 className="w-7 h-7 rounded-full bg-white/6 flex items-center justify-center
-                  text-white/40 hover:text-white/80 hover:bg-white/10 transition-all"
-              >
+                  text-white/40 hover:text-white/80 hover:bg-white/10 transition-all">
                 <svg viewBox="0 0 10 10" width="10" height="10" fill="none">
                   <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
                 </svg>
@@ -186,12 +202,9 @@ export default function MediaPicker({ open, onClose, onSelect, onSelectMultiple,
           {/* Tabs */}
           <div className="flex gap-1 px-5 pt-3 pb-0 shrink-0">
             {["library", "upload"].map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
+              <button key={t} onClick={() => setTab(t)}
                 className={`relative px-4 py-1.5 text-[11.5px] font-medium capitalize rounded-full transition-all
-                  ${tab === t ? "text-white bg-white/8" : "text-white/35 hover:text-white/60"}`}
-              >
+                  ${tab === t ? "text-white bg-white/8" : "text-white/35 hover:text-white/60"}`}>
                 {t === "library" ? `Library (${items.length})` : "Upload New"}
               </button>
             ))}
@@ -199,8 +212,10 @@ export default function MediaPicker({ open, onClose, onSelect, onSelectMultiple,
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-5 min-h-0">
+
+            {/* ── Library tab ── */}
             {tab === "library" && (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Search */}
                 <div className="relative">
                   <svg viewBox="0 0 16 16" width="13" height="13" fill="none"
@@ -218,26 +233,55 @@ export default function MediaPicker({ open, onClose, onSelect, onSelectMultiple,
                   />
                 </div>
 
+                {/* Folder pills */}
+                {folders.length > 0 && !search && (
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      onClick={() => handleFolderClick(null)}
+                      className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all border
+                        ${!activeFolder
+                          ? "bg-white/10 text-white/80 border-white/15"
+                          : "text-white/35 border-white/6 hover:border-white/15 hover:text-white/60"
+                        }`}
+                    >
+                      All
+                    </button>
+                    {folders.map((f) => (
+                      <button
+                        key={f.name}
+                        onClick={() => handleFolderClick(f.name)}
+                        className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all border
+                          ${activeFolder === f.name
+                            ? "bg-[#7A2267]/20 text-[#7A2267]/90 border-[#7A2267]/35"
+                            : "text-white/35 border-white/6 hover:border-[#7A2267]/25 hover:text-white/60"
+                          }`}
+                      >
+                        {f.name}
+                        <span className="ml-1 text-[9.5px] opacity-50">{f.count}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {loading ? (
                   <div className="flex items-center justify-center py-16">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                      className="w-6 h-6 rounded-full border-2 border-white/10 border-t-[#7A2267]"
-                    />
+                    <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="w-6 h-6 rounded-full border-2 border-white/10 border-t-[#7A2267]" />
                   </div>
                 ) : filtered.length === 0 ? (
                   <div className="text-center py-16 text-white/25 text-[13px]">
-                    {search ? "No matching images found." : "No media yet. Upload some files first."}
+                    {search
+                      ? "No matching images found."
+                      : activeFolder
+                        ? `No images in "${activeFolder}" yet.`
+                        : "No media yet. Upload some files first."}
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2.5">
                     {filtered.map((item) => {
                       const isSel = selected.has(item._id);
                       return (
-                        <div
-                          key={item._id}
-                          onClick={() => toggleItem(item)}
+                        <div key={item._id} onClick={() => toggleItem(item)}
                           className={`relative rounded-xl overflow-hidden cursor-pointer border transition-all duration-150
                             aspect-square group
                             ${isSel
@@ -245,12 +289,8 @@ export default function MediaPicker({ open, onClose, onSelect, onSelectMultiple,
                               : "border-white/8 hover:border-white/25"
                             }`}
                         >
-                          <img
-                            src={item.url}
-                            alt={item.alt || item.originalName}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
+                          <img src={item.url} alt={item.alt || item.originalName}
+                            className="w-full h-full object-cover" loading="lazy" />
                           {isSel && (
                             <div className="absolute inset-0 bg-[#7A2267]/25 flex items-center justify-center">
                               <div className="w-6 h-6 rounded-full bg-[#7A2267] flex items-center justify-center shadow-lg">
@@ -260,7 +300,12 @@ export default function MediaPicker({ open, onClose, onSelect, onSelectMultiple,
                               </div>
                             </div>
                           )}
-                          {/* Tooltip on hover */}
+                          {/* Folder label */}
+                          {item.folder && item.folder !== "general" && (
+                            <div className="absolute top-1.5 right-1.5 bg-black/65 rounded px-1.5 py-0.5">
+                              <p className="text-[8px] text-[#7A2267]/80 leading-none truncate max-w-[45px]">{item.folder}</p>
+                            </div>
+                          )}
                           <div className="absolute bottom-0 inset-x-0 bg-black/70 px-2 py-1
                             opacity-0 group-hover:opacity-100 transition-opacity duration-150">
                             <p className="text-[9px] text-white/70 truncate">{item.originalName}</p>
@@ -276,12 +321,9 @@ export default function MediaPicker({ open, onClose, onSelect, onSelectMultiple,
                 {totalPages > 1 && !search && (
                   <div className="flex items-center justify-center gap-1.5 pt-2">
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                      <button
-                        key={p}
-                        onClick={() => fetchLibrary(p)}
+                      <button key={p} onClick={() => fetchLibrary(p, activeFolder)}
                         className={`w-7 h-7 rounded-lg text-[11px] transition-all
-                          ${p === page ? "bg-[#7A2267] text-white" : "bg-white/5 text-white/35 hover:bg-white/10 hover:text-white/60"}`}
-                      >
+                          ${p === page ? "bg-[#7A2267] text-white" : "bg-white/5 text-white/35 hover:bg-white/10 hover:text-white/60"}`}>
                         {p}
                       </button>
                     ))}
@@ -290,8 +332,26 @@ export default function MediaPicker({ open, onClose, onSelect, onSelectMultiple,
               </div>
             )}
 
+            {/* ── Upload tab ── */}
             {tab === "upload" && (
               <div className="space-y-4">
+                {/* Folder selector for upload */}
+                {folders.length > 0 && (
+                  <div className="flex items-center gap-3">
+                    <label className="text-[11.5px] text-white/40 shrink-0">Upload to folder:</label>
+                    <select
+                      value={uploadFolder}
+                      onChange={(e) => setUploadFolder(e.target.value)}
+                      className="bg-white/5 border border-white/10 rounded-xl text-[11.5px] text-white/70
+                        px-3 py-1.5 focus:outline-none focus:border-[#7A2267]/40 transition-all cursor-pointer"
+                    >
+                      {folders.map((f) => (
+                        <option key={f.name} value={f.name}>{f.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <motion.div
                   onClick={() => !uploading && inputRef.current?.click()}
                   onDragOver={(e) => e.preventDefault()}
@@ -306,11 +366,8 @@ export default function MediaPicker({ open, onClose, onSelect, onSelectMultiple,
                 >
                   {uploading ? (
                     <div className="flex flex-col items-center gap-2">
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        className="w-6 h-6 rounded-full border-2 border-[#7A2267]/25 border-t-[#7A2267]"
-                      />
+                      <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="w-6 h-6 rounded-full border-2 border-[#7A2267]/25 border-t-[#7A2267]" />
                       <p className="text-[12px] text-white/35">Uploading…</p>
                     </div>
                   ) : (
@@ -320,15 +377,12 @@ export default function MediaPicker({ open, onClose, onSelect, onSelectMultiple,
                         <path d="M3 15v1a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
                       </svg>
                       <p className="text-[12.5px] text-white/40">Click or drag to upload images</p>
-                      <p className="text-[10.5px] text-white/20">Uploaded files will appear in the library</p>
+                      <p className="text-[10.5px] text-white/20">
+                        → <span className="text-[#7A2267]/60">{uploadFolder}</span>
+                      </p>
                     </div>
                   )}
-                  <input
-                    ref={inputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="hidden"
+                  <input ref={inputRef} type="file" accept="image/*" multiple className="hidden"
                     onChange={(e) => {
                       const files = Array.from(e.target.files || []);
                       e.target.value = "";
@@ -348,11 +402,8 @@ export default function MediaPicker({ open, onClose, onSelect, onSelectMultiple,
                       >
                         <span className="shrink-0 w-3 h-3 flex items-center justify-center">
                           {p.status === "uploading" && (
-                            <motion.span
-                              animate={{ rotate: 360 }}
-                              transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
-                              className="inline-block w-3 h-3 rounded-full border border-current border-t-transparent"
-                            />
+                            <motion.span animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                              className="inline-block w-3 h-3 rounded-full border border-current border-t-transparent" />
                           )}
                           {p.status === "done"  && "✓"}
                           {p.status === "error" && "✕"}

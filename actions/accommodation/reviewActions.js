@@ -5,6 +5,7 @@ import dbConnect from "@/lib/db";
 import Review from "@/models/Review";
 import Booking from "@/models/Booking";
 import Room from "@/models/Room";
+import { createAdminNotification } from "@/actions/notifications/adminNotificationActions";
 
 /**
  * Fetch all approved reviews for a room, newest first.
@@ -95,6 +96,15 @@ export async function submitReview({ roomId, bookingId, rating, title, body, use
     avgRating: Math.round(avg * 10) / 10,
     reviewCount: count,
   });
+
+  // Notify admin activity feed (non-blocking)
+  createAdminNotification({
+    type:    "review",
+    title:   `New review: ${Number(rating)}★`,
+    message: title ? `"${(title || "").trim()}"` : `Rating submitted for room`,
+    link:    "/admin/accommodation",
+    metadata: { roomId, bookingId, rating },
+  }).catch(() => {});
 
   return { success: true };
 }

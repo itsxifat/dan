@@ -92,6 +92,37 @@ const NAV = [
         ),
       },
       {
+        label: "Room Management",
+        href: "/admin/rooms",
+        permission: "bookings.read",
+        Icon: ({ active }) => (
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
+            <rect x="1.5" y="5" width="7" height="10" rx="1.2" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.1" : "0"} />
+            <rect x="9.5" y="5" width="7" height="10" rx="1.2" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.1" : "0"} />
+            <path d="M4.5 5V3.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V5" stroke="currentColor" strokeWidth="1.3"
+              strokeLinecap="round" />
+            <circle cx="5" cy="10" r="1" fill={active ? "currentColor" : "none"}
+              fillOpacity={active ? "0.6" : "0"} stroke="currentColor" strokeWidth="1" />
+            <circle cx="13" cy="10" r="1" fill={active ? "currentColor" : "none"}
+              fillOpacity={active ? "0.6" : "0"} stroke="currentColor" strokeWidth="1" />
+          </svg>
+        ),
+      },
+      {
+        label: "Amenities",
+        href: "/admin/amenities",
+        permission: "accommodation.write",
+        Icon: ({ active }) => (
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
+            <path d="M9 1l2.09 4.26L16 6.18l-3.5 3.41.83 4.82L9 12.15 5.67 14.41l.83-4.82L3 6.18l4.91-.92L9 1z"
+              stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.12" : "0"} />
+          </svg>
+        ),
+      },
+      {
         label: "Day Long Packages",
         href: "/admin/daylong-packages",
         permission: "accommodation.write",
@@ -202,6 +233,40 @@ const NAV = [
             <rect x="6" y="10" width="6" height="6" rx="0.8" stroke="currentColor" strokeWidth="1.2"
               fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.15" : "0"} />
             <path d="M9 10v6" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" opacity={active ? "1" : "0.5"} />
+          </svg>
+        ),
+      },
+    ],
+  },
+  {
+    group: "Marketing",
+    items: [
+      {
+        label: "Discounts",
+        href: "/admin/discounts",
+        permission: "settings.write",
+        Icon: ({ active }) => (
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
+            <circle cx="5" cy="5" r="1.8" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.25" : "0"} />
+            <circle cx="13" cy="13" r="1.8" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.25" : "0"} />
+            <path d="M3 15L15 3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+            <rect x="1" y="1" width="16" height="16" rx="3" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.05" : "0"} />
+          </svg>
+        ),
+      },
+      {
+        label: "Notifications",
+        href: "/admin/send-notification",
+        permission: "settings.write",
+        Icon: ({ active }) => (
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
+            <path d="M9 1.5C6.5 1.5 4.5 3.5 4.5 6v4.5l-1.5 2h12l-1.5-2V6C13.5 3.5 11.5 1.5 9 1.5z"
+              stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.12" : "0"} />
+            <path d="M7.5 12.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
           </svg>
         ),
       },

@@ -7,6 +7,7 @@ const MediaSchema = new mongoose.Schema({
   size:         { type: Number, required: true },
   mimeType:     { type: String, required: true },
   alt:          { type: String, default: "" },
+  folder:       { type: String, default: "general", index: true },
   uploadedAt:   { type: Date, default: Date.now },
 });
 

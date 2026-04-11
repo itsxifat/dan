@@ -57,7 +57,7 @@ function PropertyCard({ property }) {
           <p className="text-[12.5px] text-neutral-500 mb-3 line-clamp-2">{property.tagline}</p>
         )}
         {property.location && (
-          <p className="text-[11.5px] text-neutral-400 flex items-center gap-1.5">
+          <p className="text-[11.5px] text-neutral-400 flex items-center gap-1.5 mb-3">
             <svg viewBox="0 0 12 16" width="9" height="11" fill="none">
               <path d="M6 1a5 5 0 0 1 5 5c0 3.5-5 9-5 9S1 9.5 1 6a5 5 0 0 1 5-5Z" stroke="currentColor" strokeWidth="1.3" />
               <circle cx="6" cy="6" r="1.5" fill="currentColor" />
@@ -65,7 +65,24 @@ function PropertyCard({ property }) {
             {property.location}
           </p>
         )}
-        <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between">
+
+        {/* Amenity chips — first 4 */}
+        {property.amenities?.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {property.amenities.slice(0, 4).map((a) => (
+              <span key={a} className="text-[10.5px] text-neutral-500 bg-neutral-50 border border-neutral-200 px-2.5 py-1 rounded-full">
+                {a}
+              </span>
+            ))}
+            {property.amenities.length > 4 && (
+              <span className="text-[10.5px] text-neutral-400 bg-neutral-50 border border-neutral-100 px-2.5 py-1 rounded-full">
+                +{property.amenities.length - 4} more
+              </span>
+            )}
+          </div>
+        )}
+
+        <div className="mt-auto pt-3 border-t border-neutral-100 flex items-center justify-between">
           {property.type === "building" ? (
             <span className="text-[12px] text-neutral-400">
               {property.roomStats?.available ?? 0} rooms available

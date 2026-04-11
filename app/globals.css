@@ -41,7 +41,7 @@ body {
 }
 
 /* AGGRESSIVE SCROLLBAR HIDING
-  Applying to '*' ensures Next.js root wrappers also lose their scrollbars 
+  Applying to '*' ensures Next.js root wrappers also lose their scrollbars
 */
 * {
   -ms-overflow-style: none;  /* IE and Edge */
@@ -50,4 +50,26 @@ body {
 
 *::-webkit-scrollbar {
   display: none; /* Chrome, Safari and Opera */
+}
+
+/* ── Animation performance: isolate sections into their own compositor layers ── */
+/* Prevents adjacent-section repaints from bleeding into one another during scroll */
+section {
+  isolation: isolate;
+}
+
+/* GPU-promote elements with will-change so the browser pre-allocates a layer.
+   Tailwind's will-change-transform applies will-change:transform — these rules
+   ensure the element is always on its own composited layer during animation. */
+.will-change-transform {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Prevent subpixel font flicker during transform animations */
+.will-change-transform * {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }

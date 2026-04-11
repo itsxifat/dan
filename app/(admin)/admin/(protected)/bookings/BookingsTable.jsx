@@ -129,8 +129,18 @@ export default function BookingsTable({
                     <p className="text-white/45">{fmtDate(b.checkIn)}</p>
                     <p className="text-[10.5px] text-white/25">{fmtDate(b.checkOut)} · {b.nights}n</p>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap text-white/55">
-                    ৳{b.totalAmount?.toLocaleString()}
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <p className="text-white/55">৳{b.totalAmount?.toLocaleString()}</p>
+                    {(b.couponDiscount > 0 || b.offerDiscount > 0) && (
+                      <p className="text-[10px] text-emerald-400 mt-0.5">
+                        −৳{((b.couponDiscount || 0) + (b.offerDiscount || 0)).toLocaleString()} discount
+                      </p>
+                    )}
+                    {b.remainingAmount > 0 && b.status !== "cancelled" && b.status !== "no_show" && (
+                      <p className="text-[10px] text-amber-400 mt-0.5">
+                        ৳{b.remainingAmount.toLocaleString()} due
+                      </p>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     {canWrite ? (

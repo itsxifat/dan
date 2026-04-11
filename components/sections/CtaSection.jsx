@@ -21,8 +21,8 @@ export default function CtaSection() {
     show: { transition: { staggerChildren: 0.14, delayChildren: 0.1 } },
   };
   const lineUp = {
-    hidden: { opacity: 0, y: 36 },
-    show:   { opacity: 1, y: 0, transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] } },
+    hidden: { opacity: 0, y: 18 },
+    show:   { opacity: 1, y: 0, transition: { duration: 0.85, ease: [0.22, 1, 0.36, 1] } },
   };
 
   return (
@@ -33,7 +33,7 @@ export default function CtaSection() {
     >
       {/* ── Parallax background ── */}
       <motion.div
-        className="absolute z-0 inset-0"
+        className="absolute z-0 inset-0 will-change-transform"
         style={{ y: bgY, scale: 1.2 }}
       >
         <Image
@@ -63,7 +63,8 @@ export default function CtaSection() {
       <motion.div
         variants={stagger}
         initial="hidden"
-        animate={isInView ? "show" : "hidden"}
+        whileInView="show"
+        viewport={{ once: true, margin: "-80px" }}
         className="relative z-10 max-w-3xl mx-auto px-6 sm:px-10 text-center py-20 sm:py-28"
       >
         {/* Eyebrow */}

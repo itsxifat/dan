@@ -172,26 +172,34 @@ export default function RoomsSection({ properties }) {
     const mm = gsap.matchMedia();
 
     mm.add("(min-width: 768px)", () => {
-      gsap.from(cards, {
-        opacity: 0, y: 65, duration: 1, ease: "power3.out", stagger: 0.14,
-        scrollTrigger: {
-          trigger: cardsRef.current,
-          start: "top 82%",
-          toggleActions: "play none none none",
-        },
-      });
+      gsap.fromTo(cards,
+        { opacity: 0, y: 32 },
+        {
+          opacity: 1, y: 0, duration: 0.9, ease: "power3.out", stagger: 0.12,
+          immediateRender: false,
+          scrollTrigger: {
+            trigger: cardsRef.current,
+            start: "top 85%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
     });
 
     mm.add("(max-width: 767px)", () => {
       cards.forEach((card) => {
-        gsap.from(card, {
-          opacity: 0, y: 40, duration: 0.8, ease: "power3.out",
-          scrollTrigger: {
-            trigger: card,
-            start: "top 92%",
-            toggleActions: "play none none none",
-          },
-        });
+        gsap.fromTo(card,
+          { opacity: 0, y: 24 },
+          {
+            opacity: 1, y: 0, duration: 0.75, ease: "power3.out",
+            immediateRender: false,
+            scrollTrigger: {
+              trigger: card,
+              start: "top 93%",
+              toggleActions: "play none none none",
+            },
+          }
+        );
       });
     });
   });

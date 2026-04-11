@@ -104,27 +104,35 @@ function FeatureCard({ feature, index }) {
 
     // Mobile: alternate left/right slide-in on scroll
     mm.add("(max-width: 767px)", () => {
-      const fromX = index % 2 === 0 ? -40 : 40;
-      gsap.from(card, {
-        opacity: 0, x: fromX, duration: 0.75, ease: "power3.out",
-        scrollTrigger: {
-          trigger: card,
-          start: "top 92%",
-          toggleActions: "play none none none",
-        },
-      });
+      const fromX = index % 2 === 0 ? -24 : 24;
+      gsap.fromTo(card,
+        { opacity: 0, x: fromX },
+        {
+          opacity: 1, x: 0, duration: 0.7, ease: "power3.out",
+          immediateRender: false,
+          scrollTrigger: {
+            trigger: card,
+            start: "top 93%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
     });
 
     // Desktop: fade up on scroll + hover corner draw
     mm.add("(min-width: 768px)", () => {
-      gsap.from(card, {
-        opacity: 0, y: 45, duration: 0.85, ease: "power3.out",
-        scrollTrigger: {
-          trigger: card,
-          start: "top 85%",
-          toggleActions: "play none none none",
-        },
-      });
+      gsap.fromTo(card,
+        { opacity: 0, y: 28 },
+        {
+          opacity: 1, y: 0, duration: 0.8, ease: "power3.out",
+          immediateRender: false,
+          scrollTrigger: {
+            trigger: card,
+            start: "top 87%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
 
       // Corner hover
       gsap.set(h, { scaleX: 0 });

@@ -462,10 +462,11 @@ export default function Hero() {
 
       {/* ── Background with Ken Burns ── */}
       <motion.div
-        initial={{ scale: 1.07 }}
+        initial={{ scale: 1.06 }}
         animate={{ scale: 1 }}
-        transition={{ duration: 14, ease: "easeOut" }}
-        className="absolute inset-0 z-0"
+        transition={{ duration: 12, ease: "easeOut" }}
+        className="absolute inset-0 z-0 will-change-transform"
+        style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
       >
         <Image src="/hero.png" alt="Dhali's Amber Nivaas" fill priority quality={100}
           className="object-cover object-center" />

@@ -57,7 +57,7 @@ const TABS = {
   ],
 };
 
-export default function PropertyEditTabs({ property, categories, roomsByCategory, canWrite }) {
+export default function PropertyEditTabs({ property, categories, roomsByCategory, canWrite, amenities = [] }) {
   const tabs    = TABS[property.type] ?? TABS.cottage;
   const [tab, setTab] = useState("details");
 
@@ -158,7 +158,7 @@ export default function PropertyEditTabs({ property, categories, roomsByCategory
       <div>
         {tab === "details" && (
           canWrite
-            ? <PropertyForm property={property} />
+            ? <PropertyForm property={property} availableAmenities={amenities} />
             : (
               <div className="flex items-center gap-3 bg-white/2 border border-white/6
                 rounded-2xl p-6">

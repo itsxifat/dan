@@ -5,18 +5,12 @@ import { useRouter } from "next/navigation";
 import { createProperty, updateProperty } from "@/actions/accommodation/propertyActions";
 import ImageUpload from "@/components/ui/ImageUpload";
 import MultiImageUpload from "@/components/ui/MultiImageUpload";
-
-const COMMON_AMENITIES = [
-  "WiFi", "Air Conditioning", "Hot Water", "TV", "Parking",
-  "Room Service", "Laundry", "Generator", "Security", "CCTV",
-  "Swimming Pool", "Garden", "Restaurant", "Bar", "Gym",
-  "Balcony", "River View", "Mountain View", "Pet Friendly", "Non-smoking",
-];
+import AmenityPicker from "./AmenityPicker";
 
 const INPUT = "w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-2.5 text-[13px] text-white placeholder-white/20 focus:outline-none focus:border-[#7A2267]/60 focus:bg-white/[0.06] transition-all duration-200";
 const LABEL = "block text-[10px] uppercase tracking-wider text-white/35 font-semibold mb-1.5";
 
-export default function PropertyForm({ property = null }) {
+export default function PropertyForm({ property = null, availableAmenities = [] }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
@@ -47,15 +41,6 @@ export default function PropertyForm({ property = null }) {
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const setNum = (key) => (e) => setForm((f) => ({ ...f, [key]: Number(e.target.value) }));
   const setBool = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.checked }));
-
-  function toggleAmenity(a) {
-    setForm((f) => ({
-      ...f,
-      amenities: f.amenities.includes(a)
-        ? f.amenities.filter((x) => x !== a)
-        : [...f.amenities, a],
-    }));
-  }
 
   function handleSubmit(e) {
     e.preventDefault();
@@ -278,24 +263,21 @@ export default function PropertyForm({ property = null }) {
 
       {/* Amenities */}
       <div className="bg-white/2 border border-white/6 rounded-2xl p-6 space-y-4">
-        <h3 className="text-[11px] uppercase tracking-[0.18em] text-white/30 font-semibold">Amenities</h3>
-        <div className="flex flex-wrap gap-2">
-          {COMMON_AMENITIES.map((a) => (
-            <button
-              key={a}
-              type="button"
-              onClick={() => toggleAmenity(a)}
-              className={`text-[11px] px-3 py-1.5 rounded-full border transition-all duration-200
-                ${form.amenities.includes(a)
-                  ? "bg-[#7A2267]/20 border-[#7A2267]/50 text-[#c05aae]"
-                  : "border-white/[0.08] text-white/30 hover:text-white/55 hover:border-white/15"
-                }`}
-            >
-              {a}
-            </button>
-          ))}
+        <div className="flex items-center justify-between">
+          <h3 className="text-[11px] uppercase tracking-[0.18em] text-white/30 font-semibold">Amenities</h3>
+          <a
+            href="/admin/amenities"
+            target="_blank"
+            className="text-[10px] text-[#c05aae]/60 hover:text-[#c05aae] transition-colors"
+          >
+            Manage amenities ↗
+          </a>
         </div>
-        <p className="text-[10px] text-white/20">Selected: {form.amenities.length > 0 ? form.amenities.join(", ") : "None"}</p>
+        <AmenityPicker
+          amenities={availableAmenities}
+          selected={form.amenities}
+          onChange={(names) => setForm((f) => ({ ...f, amenities: names }))}
+        />
       </div>
 
       {/* Flags */}

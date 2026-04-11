@@ -6,6 +6,7 @@ import dbConnect from "@/lib/db";
 import Property from "@/models/Property";
 import { getCategoriesByProperty } from "@/actions/accommodation/categoryActions";
 import { getRoomsByCategory } from "@/actions/accommodation/roomActions";
+import { getAmenities } from "@/actions/accommodation/amenityActions";
 import PropertyEditTabs from "./PropertyEditTabs";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +30,8 @@ export default async function PropertyEditPage({ params }) {
 
   const canWrite = hasPermission(session.user.role, "accommodation.write");
   const serialised = JSON.parse(JSON.stringify(property));
+
+  const amenities = await getAmenities();
 
   // For buildings, load categories + all rooms
   let categories = [];
@@ -54,6 +57,7 @@ export default async function PropertyEditPage({ params }) {
         categories={serialisedCategories}
         roomsByCategory={serialisedRoomsByCategory}
         canWrite={canWrite}
+        amenities={amenities}
       />
     </div>
   );

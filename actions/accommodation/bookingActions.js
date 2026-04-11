@@ -10,6 +10,7 @@ import RoomCategory from "@/models/RoomCategory";
 import Settings from "@/models/Settings";
 import BookingLock from "@/models/BookingLock";
 import { hasPermission } from "@/lib/permissions";
+import { createAdminNotification } from "@/actions/notifications/adminNotificationActions";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -215,6 +216,13 @@ export async function createPendingBooking(bookingData) {
     specialRequests,
     paymentMethod,
     advancePercent,
+    // Coupon fields (optional)
+    couponId,
+    couponCode,
+    couponDiscount: clientCouponDiscount,
+    // Auto-offer fields (optional)
+    offerId,
+    offerDiscount: clientOfferDiscount,
   } = bookingData;
 
   const taxPercent   = settings.taxPercent ?? 0;
@@ -291,7 +299,44 @@ export async function createPendingBooking(bookingData) {
   const multiplier  = bookingMode === "day_long" ? 1 : (nights || 1);
   const subtotal    = basePrice * multiplier + dayLongSvcPrice;
   const taxes       = Math.round((subtotal * taxPercent) / 100);
-  const totalAmount = Math.max(0, subtotal + taxes - dayLongDiscountAmt);
+
+  // Auto-offer discount (validate server-side)
+  let offerDiscountAmt = 0;
+  if (offerId) {
+    const Discount = (await import("@/models/Discount")).default;
+    const offer = await Discount.findOne({ _id: offerId, type: "offer", isActive: true }).lean();
+    if (offer) {
+      const now = new Date();
+      if (now >= new Date(offer.validFrom) && now <= new Date(offer.validTo)) {
+        const orderForOffer = subtotal + taxes - dayLongDiscountAmt;
+        const meetsMin = offer.minOrderAmount === 0 || orderForOffer >= offer.minOrderAmount;
+        const modeOk = offer.applicableTo === "all" || offer.applicableTo === bookingMode;
+        if (meetsMin && modeOk) {
+          if (offer.discountType === "percentage") {
+            offerDiscountAmt = Math.round((orderForOffer * offer.discountValue) / 100);
+            if (offer.maxDiscountAmount > 0) offerDiscountAmt = Math.min(offerDiscountAmt, offer.maxDiscountAmount);
+          } else {
+            offerDiscountAmt = offer.discountValue;
+          }
+          offerDiscountAmt = Math.min(offerDiscountAmt, orderForOffer);
+        }
+      }
+    }
+  }
+
+  // One discount at a time: if coupon is provided, skip offer (coupon takes priority)
+  if (couponId && offerDiscountAmt > 0) {
+    offerDiscountAmt = 0;
+  }
+
+  // Coupon discount (validate server-side: cap at remaining after day-long discount)
+  const afterOffer = Math.max(0, subtotal + taxes - dayLongDiscountAmt - offerDiscountAmt);
+  const couponDiscountAmt = Math.max(
+    0,
+    Math.min(clientCouponDiscount || 0, afterOffer)
+  );
+
+  const totalAmount = Math.max(0, subtotal + taxes - dayLongDiscountAmt - offerDiscountAmt - couponDiscountAmt);
 
   const advancePct = advancePercent ?? (paymentMethod === "pay_at_desk" ? 0 : (settings.advancePaymentPercent ?? 100));
   const advanceAmt = Math.round((totalAmount * advancePct) / 100);
@@ -310,6 +355,11 @@ export async function createPendingBooking(bookingData) {
     dayLongPackage:  dayLongPackageId || null,
     dayLongAddons:   dayLongAddonIds  || [],
     dayLongDiscount: dayLongDiscountAmt,
+    offerId:         offerId || null,
+    offerDiscount:   offerDiscountAmt,
+    couponId:        couponId  || null,
+    couponCode:      couponCode || "",
+    couponDiscount:  couponDiscountAmt,
     checkIn:   new Date(checkIn),
     checkOut:  new Date(checkOut),
     nights:    nights ?? 0,
@@ -332,6 +382,15 @@ export async function createPendingBooking(bookingData) {
     status:    "pending",
     bookedBy:  session?.user?.id || null,
   });
+
+  // Notify admin activity feed (non-blocking)
+  createAdminNotification({
+    type:    "booking",
+    title:   `New booking: ${bookingNumber}`,
+    message: `${primaryGuest?.name || "Guest"} · ${bookingMode === "day_long" ? "Day Long" : `${nights || 1} night(s)`} · ৳${totalAmount.toLocaleString("en-BD")}`,
+    link:    "/admin/bookings",
+    metadata: { bookingId: booking._id.toString(), bookingNumber },
+  }).catch(() => {});
 
   return {
     success: true,
@@ -468,6 +527,56 @@ export async function addAdminNote(bookingId, note) {
   await Booking.findByIdAndUpdate(bookingId, { adminNotes: note, updatedAt: new Date() });
   revalidatePath(`/admin/bookings/${bookingId}`);
   return { success: true };
+}
+
+export async function recordCheckInPayment(bookingId, { paidAmount, paymentMethod }) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.role || !hasPermission(session.user.role, "bookings.write")) {
+    throw new Error("Unauthorized");
+  }
+
+  await dbConnect();
+
+  const booking = await Booking.findById(bookingId);
+  if (!booking) throw new Error("Booking not found");
+
+  const paid = parseFloat(paidAmount) || 0;
+  const total = booking.totalAmount || 0;
+  const alreadyPaid = booking.paidAmount || 0;
+  const newTotalPaid = alreadyPaid + paid;
+  const newRemaining = Math.max(0, total - newTotalPaid);
+  const newPaymentStatus = newRemaining <= 0 ? "paid" : "partial";
+
+  await Booking.findByIdAndUpdate(bookingId, {
+    status:          "checked_in",
+    paymentMethod:   paymentMethod || booking.paymentMethod,
+    paymentStatus:   newPaymentStatus,
+    paidAmount:      newTotalPaid,
+    remainingAmount: newRemaining,
+    updatedAt:       new Date(),
+  });
+
+  // Mark rooms as occupied
+  const roomIds = [
+    ...(booking.room ? [booking.room] : []),
+    ...(booking.roomBookings?.map((rb) => rb.room) || []),
+  ];
+  if (roomIds.length > 0) {
+    await Room.updateMany({ _id: { $in: roomIds } }, { status: "occupied" });
+  }
+
+  // Notify admin
+  createAdminNotification({
+    type:    "payment",
+    title:   `Check-in payment: ${booking.bookingNumber}`,
+    message: `৳${paid.toLocaleString("en-BD")} received at desk · Guest checked in`,
+    link:    `/admin/bookings/${bookingId}`,
+    metadata: { bookingId: bookingId.toString(), bookingNumber: booking.bookingNumber, paid },
+  }).catch(() => {});
+
+  revalidatePath(`/admin/bookings/${bookingId}`);
+  revalidatePath("/admin/bookings");
+  return { success: true, paymentStatus: newPaymentStatus, remainingAmount: newRemaining };
 }
 
 export async function getUnviewedBookingCount() {

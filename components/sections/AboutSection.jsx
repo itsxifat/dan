@@ -14,8 +14,8 @@ const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style:
 const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 const fadeUp = {
-  hidden: { opacity: 0, y: 32 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.85, ease: [0.22, 1, 0.36, 1] } },
+  hidden: { opacity: 0, y: 18 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] } },
 };
 const stagger = {
   hidden: {},
@@ -36,7 +36,7 @@ function FeatureCard({ number, title, desc }) {
 
 export default function AboutSection() {
   const ref      = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-80px" });
+  const isInView = useInView(ref, { once: true, margin: "-60px 0px -60px 0px" });
 
   const imgMobile = useRef(null);
   const imgLeft   = useRef(null);
@@ -47,40 +47,46 @@ export default function AboutSection() {
     const triggerOpts = (el) => ({
       scrollTrigger: {
         trigger: el,
-        start: "top 88%",
+        start: "top 90%",
         toggleActions: "play none none none",
       },
     });
 
-    gsap.from(imgMobile.current, {
-      opacity: 0, y: 50, duration: 1.1, ease: "power3.out",
-      ...triggerOpts(imgMobile.current),
-    });
-    gsap.from(imgLeft.current, {
-      opacity: 0, x: -55, duration: 1.1, ease: "power3.out",
-      ...triggerOpts(imgLeft.current),
-    });
-    gsap.from(imgCenter.current, {
-      opacity: 0, y: 55, duration: 1.2, ease: "power3.out",
-      ...triggerOpts(imgCenter.current),
-    });
-    gsap.from(imgRight.current, {
-      opacity: 0, x: 55, duration: 1.1, ease: "power3.out",
-      ...triggerOpts(imgRight.current),
-    });
+    const shared = { immediateRender: false, ease: "power3.out" };
 
-    // Hover animations
+    gsap.fromTo(imgMobile.current,
+      { opacity: 0, y: 28 },
+      { opacity: 1, y: 0, duration: 1.0, ...shared, ...triggerOpts(imgMobile.current) }
+    );
+    gsap.fromTo(imgLeft.current,
+      { opacity: 0, x: -28 },
+      { opacity: 1, x: 0, duration: 1.0, ...shared, ...triggerOpts(imgLeft.current) }
+    );
+    gsap.fromTo(imgCenter.current,
+      { opacity: 0, y: 28 },
+      { opacity: 1, y: 0, duration: 1.1, ...shared, ...triggerOpts(imgCenter.current) }
+    );
+    gsap.fromTo(imgRight.current,
+      { opacity: 0, x: 28 },
+      { opacity: 1, x: 0, duration: 1.0, ...shared, ...triggerOpts(imgRight.current) }
+    );
+
+    // Hover animations — attach and track for cleanup
+    const cleanups = [];
     [imgLeft, imgCenter, imgRight, imgMobile].forEach((r) => {
       const el = r.current;
       if (!el) return;
-      el.addEventListener("mouseenter", () =>
-        gsap.to(el, { y: -8, scale: 1.02, duration: 0.45, ease: "power2.out" })
-      );
-      el.addEventListener("mouseleave", () =>
-        gsap.to(el, { y: 0, scale: 1, duration: 0.5, ease: "power2.inOut" })
-      );
+      const onEnter = () => gsap.to(el, { y: -6, scale: 1.02, duration: 0.4, ease: "power2.out" });
+      const onLeave = () => gsap.to(el, { y: 0,  scale: 1,    duration: 0.45, ease: "power2.inOut" });
+      el.addEventListener("mouseenter", onEnter);
+      el.addEventListener("mouseleave", onLeave);
+      cleanups.push(() => {
+        el.removeEventListener("mouseenter", onEnter);
+        el.removeEventListener("mouseleave", onLeave);
+      });
     });
-  });
+    return () => cleanups.forEach((fn) => fn());
+  }, { scope: ref });
 
   return (
     <section ref={ref} className="relative bg-[#f8f4ee] overflow-hidden">
@@ -113,7 +119,7 @@ export default function AboutSection() {
       <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
 
         {/* Mobile: single hero image */}
-        <div ref={imgMobile} className="sm:hidden relative rounded-2xl overflow-hidden h-70">
+        <div ref={imgMobile} className="sm:hidden relative rounded-2xl overflow-hidden h-70 will-change-transform">
           <Image
             src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=900&q=80"
             alt="Resort exterior"
@@ -137,13 +143,13 @@ export default function AboutSection() {
         <div className="hidden sm:flex items-end gap-3 sm:gap-4 h-90 lg:h-115">
 
           {/* Left — shorter, bottom-aligned */}
-          <div ref={imgLeft} className="relative flex-1 h-4/5 rounded-2xl sm:rounded-3xl overflow-hidden">
+          <div ref={imgLeft} className="relative flex-1 h-4/5 rounded-2xl sm:rounded-3xl overflow-hidden will-change-transform">
             <Image
               src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=600&q=80"
               alt="Luxury room interior"
               fill
               sizes="(max-width: 1024px) 33vw, 28vw"
-              className="object-cover hover:scale-105 transition-transform duration-[2.5s] ease-out"
+              className="object-cover will-change-transform"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#1a1309]/55 to-transparent" />
             <div className="absolute bottom-4 left-4">
@@ -152,13 +158,13 @@ export default function AboutSection() {
           </div>
 
           {/* Center — full height */}
-          <div ref={imgCenter} className="relative flex-[1.2] h-full rounded-2xl sm:rounded-3xl overflow-hidden">
+          <div ref={imgCenter} className="relative flex-[1.2] h-full rounded-2xl sm:rounded-3xl overflow-hidden will-change-transform">
             <Image
               src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=800&q=80"
               alt="Resort exterior"
               fill
               sizes="(max-width: 1024px) 40vw, 34vw"
-              className="object-cover hover:scale-105 transition-transform duration-[2.5s] ease-out"
+              className="object-cover will-change-transform"
               priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#1a1309]/40 via-transparent to-transparent" />
@@ -173,13 +179,13 @@ export default function AboutSection() {
           </div>
 
           {/* Right — shorter, bottom-aligned */}
-          <div ref={imgRight} className="relative flex-1 h-4/5 rounded-2xl sm:rounded-3xl overflow-hidden">
+          <div ref={imgRight} className="relative flex-1 h-4/5 rounded-2xl sm:rounded-3xl overflow-hidden will-change-transform">
             <Image
               src="https://images.unsplash.com/photo-1571896349842-33c89424de2d?auto=format&fit=crop&w=600&q=80"
               alt="Resort garden and recreation"
               fill
               sizes="(max-width: 1024px) 33vw, 28vw"
-              className="object-cover hover:scale-105 transition-transform duration-[2.5s] ease-out"
+              className="object-cover will-change-transform"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#1a1309]/55 to-transparent" />
             <div className="absolute bottom-4 left-4">
@@ -262,9 +268,10 @@ export default function AboutSection() {
 
       {/* ── STATS STRIP ─────────────────────────────────────────── */}
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={isInView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.7, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        initial={{ opacity: 0, y: 18 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-40px" }}
+        transition={{ duration: 0.7, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
         className="mx-5 sm:mx-8 lg:mx-12 mb-16 md:mb-24 max-w-7xl lg:mx-auto"
       >
         <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden">

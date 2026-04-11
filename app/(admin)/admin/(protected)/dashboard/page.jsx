@@ -34,20 +34,20 @@ export default async function DashboardPage() {
                     (roleDist.moderator || 0) + (roleDist.viewer || 0);
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-7 max-w-6xl mx-auto w-full">
+    <div className="p-6 lg:p-8 max-w-6xl mx-auto w-full space-y-6">
 
       {/* Greeting */}
-      <div className="mb-7">
-        <h2 className="text-[11px] uppercase tracking-widest text-white/25 mb-1">
+      <div>
+        <p className="text-[10px] uppercase tracking-widest text-white/22 mb-1 font-medium">
           Welcome back, {session.user.name?.split(" ")[0]}
-        </h2>
-        <p className="text-[22px] font-light text-white leading-tight">
-          Here's what's happening today.
         </p>
+        <h1 className="text-[20px] font-semibold text-white/90 leading-tight">
+          Here's what's happening today.
+        </h1>
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
         <StatCard
           label="Total Users"
           value={totalUsers.toLocaleString()}

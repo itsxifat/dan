@@ -109,12 +109,95 @@ export default async function BookingDetailPage({ params }) {
       <div className="bg-white/2 border border-white/6 rounded-2xl p-6 grid grid-cols-2 sm:grid-cols-4 gap-5">
         <Field label="Property"    value={booking.property?.name} />
         <Field label="Category"    value={booking.category?.name || (booking.bookingType === "cottage" ? "Cottage" : "–")} />
-        <Field label="Room"        value={booking.room?.roomNumber || "–"} />
-        <Field label="Nights"      value={`${booking.nights} nights`} />
+        <Field label="Room"        value={booking.room?.roomNumber || (booking.roomBookings?.map(rb => rb.room?.roomNumber).filter(Boolean).join(", ") || "–")} />
+        <Field label="Stay Type"   value={booking.bookingMode === "day_long" ? "Day Long" : `${booking.nights} night${booking.nights !== 1 ? "s" : ""}`} />
         <Field label="Check In"    value={fmtDate(booking.checkIn)} />
         <Field label="Check Out"   value={fmtDate(booking.checkOut)} />
-        <Field label="Total"       value={`৳${booking.totalAmount?.toLocaleString()}`} />
-        <Field label="Payment Method" value={booking.paymentMethod?.replace("_", " ")} />
+        <Field label="Payment Method" value={booking.paymentMethod?.replace(/_/g, " ")} />
+        <Field label="Booking Mode" value={booking.bookingMode?.replace("_", " ")} />
+      </div>
+
+      {/* Pricing Breakdown */}
+      <div className="bg-white/2 border border-white/6 rounded-2xl p-6">
+        <h3 className="text-[11px] uppercase tracking-[0.18em] text-white/30 font-semibold mb-4">Pricing Breakdown</h3>
+        <div className="space-y-2 text-[13px]">
+          <div className="flex justify-between">
+            <span className="text-white/40">Subtotal</span>
+            <span className="text-white/70">৳{booking.subtotal?.toLocaleString()}</span>
+          </div>
+          {booking.taxes > 0 && (
+            <div className="flex justify-between">
+              <span className="text-white/40">Tax</span>
+              <span className="text-white/70">৳{booking.taxes?.toLocaleString()}</span>
+            </div>
+          )}
+          {booking.dayLongDiscount > 0 && (
+            <div className="flex justify-between text-emerald-400">
+              <span>Package discount</span>
+              <span>−৳{booking.dayLongDiscount?.toLocaleString()}</span>
+            </div>
+          )}
+          {booking.offerDiscount > 0 && (
+            <div className="flex justify-between text-emerald-400">
+              <span className="flex items-center gap-1.5">
+                Auto-offer discount
+                <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wide">Offer</span>
+              </span>
+              <span>−৳{booking.offerDiscount?.toLocaleString()}</span>
+            </div>
+          )}
+          {booking.couponDiscount > 0 && (
+            <div className="flex justify-between text-emerald-400">
+              <span className="flex items-center gap-1.5">
+                Coupon discount
+                {booking.couponCode && (
+                  <code className="text-[9px] bg-white/[0.06] border border-white/10 px-1.5 py-0.5 rounded font-mono">{booking.couponCode}</code>
+                )}
+              </span>
+              <span>−৳{booking.couponDiscount?.toLocaleString()}</span>
+            </div>
+          )}
+          <div className="flex justify-between pt-2 border-t border-white/5 font-bold">
+            <span className="text-white/70">Total</span>
+            <span className="text-[#c05aae] text-[15px]">৳{booking.totalAmount?.toLocaleString()}</span>
+          </div>
+        </div>
+
+        {/* Payment status breakdown */}
+        <div className="mt-4 pt-4 border-t border-white/5 grid grid-cols-2 sm:grid-cols-3 gap-4 text-[12px]">
+          <div>
+            <p className="text-[9.5px] uppercase tracking-wider text-white/25 font-semibold mb-1">Advance %</p>
+            <p className="text-white/60">{booking.advancePercent ?? 100}%</p>
+          </div>
+          <div>
+            <p className="text-[9.5px] uppercase tracking-wider text-white/25 font-semibold mb-1">Advance Amount</p>
+            <p className="text-white/60">৳{booking.advanceAmount?.toLocaleString() ?? "–"}</p>
+          </div>
+          <div>
+            <p className="text-[9.5px] uppercase tracking-wider text-white/25 font-semibold mb-1">Paid Amount</p>
+            <p className={booking.paidAmount > 0 ? "text-emerald-400 font-semibold" : "text-white/40"}>
+              {booking.paidAmount > 0 ? `৳${booking.paidAmount?.toLocaleString()}` : "৳0"}
+            </p>
+          </div>
+          <div>
+            <p className="text-[9.5px] uppercase tracking-wider text-white/25 font-semibold mb-1">Remaining Due</p>
+            <p className={booking.remainingAmount > 0 ? "text-amber-400 font-semibold" : "text-white/40"}>
+              {booking.remainingAmount > 0 ? `৳${booking.remainingAmount?.toLocaleString()}` : "Paid in full"}
+            </p>
+          </div>
+          <div>
+            <p className="text-[9.5px] uppercase tracking-wider text-white/25 font-semibold mb-1">Payment Status</p>
+            <span className={`text-[10.5px] font-semibold capitalize ${PAYMENT_COLOR[booking.paymentStatus]}`}>
+              {booking.paymentStatus}
+            </span>
+          </div>
+          {booking.transactionId && (
+            <div>
+              <p className="text-[9.5px] uppercase tracking-wider text-white/25 font-semibold mb-1">Transaction ID</p>
+              <p className="text-white/50 text-[11px] font-mono break-all">{booking.transactionId}</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Guest Info */}
@@ -187,18 +270,13 @@ export default async function BookingDetailPage({ params }) {
         </div>
       )}
 
-      {/* Payment Info */}
+      {/* Online Payment Gateway Details */}
       {(booking.valId || booking.bankTxnId) && (
         <div className="bg-white/2 border border-white/6 rounded-2xl p-6 grid grid-cols-2 sm:grid-cols-3 gap-5">
-          <h3 className="col-span-full text-[11px] uppercase tracking-[0.18em] text-white/30 font-semibold">Payment Details</h3>
-          <Field label="Transaction ID" value={booking.transactionId} />
-          <Field label="Val ID"         value={booking.valId} />
-          <Field label="Bank Txn ID"    value={booking.bankTxnId} />
-          <Field label="Card Type"      value={booking.cardType} />
-          <Field label="Paid Amount"      value={booking.paidAmount ? `৳${booking.paidAmount?.toLocaleString()}` : null} />
-          {booking.paymentStatus === "partial" && booking.remainingAmount > 0 && (
-            <Field label="Due at Check-in" value={`৳${booking.remainingAmount.toLocaleString()}`} />
-          )}
+          <h3 className="col-span-full text-[11px] uppercase tracking-[0.18em] text-white/30 font-semibold">Online Payment Details</h3>
+          <Field label="Val ID"      value={booking.valId} />
+          <Field label="Bank Txn ID" value={booking.bankTxnId} />
+          <Field label="Card Type"   value={booking.cardType} />
         </div>
       )}
 
