@@ -45,6 +45,35 @@ function resolveDayPrice(room, category) {
   return category?.pricePerDay ?? 0;
 }
 
+/**
+ * Generate the next booking number atomically.
+ * Finds the highest existing DAN-XXXX number and increments it.
+ * Retries up to `maxRetries` times on a duplicate-key collision (race condition).
+ */
+async function generateBookingNumber(maxRetries = 8) {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    // Find the document with the lexicographically largest booking number
+    const last = await Booking.findOne({}, "bookingNumber")
+      .sort({ bookingNumber: -1 })
+      .lean();
+
+    let nextNum = 1;
+    if (last?.bookingNumber) {
+      const match = last.bookingNumber.match(/(\d+)$/);
+      if (match) nextNum = parseInt(match[1], 10) + 1;
+    }
+
+    const candidate = `DAN-${String(nextNum).padStart(4, "0")}`;
+
+    // Verify the candidate is not already taken (handles gaps/deletions)
+    const taken = await Booking.exists({ bookingNumber: candidate });
+    if (!taken) return candidate;
+
+    // Collision detected — loop and re-query for the new max
+  }
+  throw new Error("Could not generate a unique booking number. Please try again.");
+}
+
 // ─── Check Availability ───────────────────────────────────────────────────────
 
 export async function checkAvailability({ roomId, propertyId, checkIn, checkOut, bookingMode }) {
@@ -349,8 +378,7 @@ export async function createPendingBooking(bookingData) {
   const advanceAmt = Math.round((totalAmount * advancePct) / 100);
   const remaining  = totalAmount - advanceAmt;
 
-  const bookingCount = await Booking.countDocuments();
-  const bookingNumber = `DAN-${String(bookingCount + 1).padStart(4, "0")}`;
+  const bookingNumber = await generateBookingNumber();
 
   const booking = await Booking.create({
     bookingNumber,
