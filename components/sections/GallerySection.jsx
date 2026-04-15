@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { Lora, Josefin_Sans } from "next/font/google";
@@ -53,11 +53,169 @@ const LAYOUT = [
   [1, 1], [1, 1], [1, 1], [1, 1], [1, 1], // row 3
 ];
 
+// ── Lightbox ──────────────────────────────────────────────────────────────────
+function Lightbox({ photos, idx, onClose, onNav }) {
+  const photo = photos[idx];
+  const [zoomed, setZoomed] = useState(false);
+  const [pan, setPan]       = useState({ x: 0, y: 0 });
+  const dragging  = useRef(false);
+  const dragStart = useRef(null);
+
+  // Reset zoom/pan when image changes
+  useEffect(() => { setZoomed(false); setPan({ x: 0, y: 0 }); }, [idx]);
+
+  const handleKey = useCallback((e) => {
+    if (e.key === "Escape")                { setZoomed(false); onClose(); }
+    if (e.key === "ArrowRight" && !zoomed)   onNav(1);
+    if (e.key === "ArrowLeft"  && !zoomed)   onNav(-1);
+  }, [onClose, onNav, zoomed]);
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.body.style.overflow = "";
+    };
+  }, [handleKey]);
+
+  function onMouseDown(e) {
+    if (!zoomed) return;
+    dragging.current = true;
+    dragStart.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+  }
+  function onMouseMove(e) {
+    if (!dragging.current || !dragStart.current) return;
+    setPan({ x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y });
+  }
+  function onMouseUp() { dragging.current = false; }
+
+  if (!photo) return null;
+
+  const btnBase = "w-8 h-8 rounded-full bg-white/10 hover:bg-white/22 flex items-center justify-center transition-colors duration-150 cursor-default shrink-0";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.22 }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/88"
+      onClick={onClose}
+    >
+      {/* Image frame */}
+      <motion.div
+        initial={{ scale: 0.96, opacity: 0 }}
+        animate={{ scale: 1,    opacity: 1 }}
+        exit={{    scale: 0.96, opacity: 0 }}
+        transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
+        className="relative overflow-hidden rounded-xl"
+        style={{
+          width: "min(68vw, 860px)",
+          height: "min(70vh, 640px)",
+          cursor: zoomed ? "grab" : "default",
+        }}
+      >
+        <div
+          style={{
+            width: "100%", height: "100%",
+            transform: zoomed
+              ? `scale(2.2) translate(${pan.x / 2.2}px, ${pan.y / 2.2}px)`
+              : "scale(1)",
+            transition: dragging.current ? "none" : "transform 0.3s ease",
+            transformOrigin: "center center",
+          }}
+        >
+          <Image
+            src={photo.image}
+            alt={photo.altText || photo.title || "Gallery photo"}
+            fill
+            sizes="68vw"
+            className="object-contain select-none"
+            quality={95}
+            draggable={false}
+          />
+        </div>
+      </motion.div>
+
+      {/* Top-right: zoom + close */}
+      <div
+        className="absolute top-19 right-4 flex items-center gap-2"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={() => { setZoomed((z) => !z); setPan({ x: 0, y: 0 }); }}
+          className={btnBase}
+          aria-label={zoomed ? "Zoom out" : "Zoom in"}
+        >
+          {zoomed ? (
+            <svg viewBox="0 0 14 14" width="13" height="13" fill="none">
+              <circle cx="6" cy="6" r="4.5" stroke="white" strokeWidth="1.4" />
+              <path d="M4 6h4" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
+              <path d="M9.5 9.5L12.5 12.5" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 14 14" width="13" height="13" fill="none">
+              <circle cx="6" cy="6" r="4.5" stroke="white" strokeWidth="1.4" />
+              <path d="M6 4v4M4 6h4" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
+              <path d="M9.5 9.5L12.5 12.5" stroke="white" strokeWidth="1.4" strokeLinecap="round" />
+            </svg>
+          )}
+        </button>
+
+        <button onClick={onClose} className={btnBase} aria-label="Close">
+          <svg viewBox="0 0 14 14" width="12" height="12" fill="none">
+            <path d="M2 2l10 10M12 2L2 12" stroke="white" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Prev */}
+      {idx > 0 && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onNav(-1); }}
+          className={`absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 ${btnBase}`}
+          aria-label="Previous"
+        >
+          <svg viewBox="0 0 8 14" width="7" height="13" fill="none">
+            <path d="M7 1L1 7l6 6" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
+
+      {/* Next */}
+      {idx < photos.length - 1 && (
+        <button
+          onClick={(e) => { e.stopPropagation(); onNav(1); }}
+          className={`absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 ${btnBase}`}
+          aria-label="Next"
+        >
+          <svg viewBox="0 0 8 14" width="7" height="13" fill="none">
+            <path d="M1 1l6 6-6 6" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      )}
+
+      {/* Counter */}
+      <p className={`${josefin.className} absolute bottom-4 left-1/2 -translate-x-1/2
+        text-[10px] tracking-[0.18em] text-white/35 select-none`}>
+        {idx + 1} / {photos.length}
+      </p>
+    </motion.div>
+  );
+}
+
 // ── Single photo tile ─────────────────────────────────────────────────────────
-function PhotoTile({ photo, colSpan, rowSpan }) {
+function PhotoTile({ photo, colSpan, rowSpan, onClick }) {
   return (
     <motion.div
       variants={itemAnim}
+      onClick={onClick}
       className="group relative overflow-hidden rounded-2xl cursor-pointer bg-[#e8e0d4]"
       style={{ gridColumn: `span ${colSpan}`, gridRow: `span ${rowSpan}` }}
     >
@@ -70,13 +228,6 @@ function PhotoTile({ photo, colSpan, rowSpan }) {
       />
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-black/0
         opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
-      <div className="absolute top-3.5 left-3.5 opacity-0 group-hover:opacity-100
-        translate-y-1 group-hover:translate-y-0 transition-all duration-300">
-        <span className={`${josefin.className} text-[8.5px] uppercase tracking-[0.18em] font-semibold
-          px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md text-white border border-white/20`}>
-          {photo.category}
-        </span>
-      </div>
       {photo.title && (
         <div className="absolute bottom-0 inset-x-0 p-4
           translate-y-2 group-hover:translate-y-0 opacity-0 group-hover:opacity-100
@@ -107,6 +258,13 @@ export default function GallerySection({ photos = [], categories = [] }) {
   const tabs = ["All", ...allCatNames];
   const [active, setActive] = useState("All");
   const isAllTab = active === "All";
+
+  const [lightbox, setLightbox] = useState(null); // { photos, idx }
+  const openLightbox = useCallback((photos, idx) => setLightbox({ photos, idx }), []);
+  const closeLightbox = useCallback(() => setLightbox(null), []);
+  const navLightbox = useCallback((dir) =>
+    setLightbox((prev) => prev ? { ...prev, idx: Math.max(0, Math.min(prev.photos.length - 1, prev.idx + dir)) } : null)
+  , []);
 
   // Placed photos sorted for the hierarchical homepage grid
   const placedPhotos = [...source]
@@ -218,7 +376,7 @@ export default function GallerySection({ photos = [], categories = [] }) {
                   >
                     {filtered.map((photo, i) => {
                       const [colSpan, rowSpan] = LAYOUT[i] ?? [1, 1];
-                      return <PhotoTile key={photo._id} photo={photo} colSpan={colSpan} rowSpan={rowSpan} />;
+                      return <PhotoTile key={photo._id} photo={photo} colSpan={colSpan} rowSpan={rowSpan} onClick={() => openLightbox(filtered, i)} />;
                     })}
                   </motion.div>
                 ) : (
@@ -229,9 +387,9 @@ export default function GallerySection({ photos = [], categories = [] }) {
                     className="hidden md:grid gap-3"
                     style={{ gridTemplateColumns: "repeat(4, 1fr)", gridAutoRows: "200px" }}
                   >
-                    {filtered.map((photo) => {
+                    {filtered.map((photo, i) => {
                       const size = IMAGE_SIZES[photo.imageSize] || IMAGE_SIZES.square;
-                      return <PhotoTile key={photo._id} photo={photo} colSpan={size.colSpan} rowSpan={size.rowSpan} />;
+                      return <PhotoTile key={photo._id} photo={photo} colSpan={size.colSpan} rowSpan={size.rowSpan} onClick={() => openLightbox(filtered, i)} />;
                     })}
                   </motion.div>
                 )}
@@ -242,10 +400,11 @@ export default function GallerySection({ photos = [], categories = [] }) {
                   initial="hidden" animate="show"
                   className="grid md:hidden grid-cols-2 gap-2.5"
                 >
-                  {filtered.map((photo) => (
+                  {filtered.map((photo, i) => (
                     <motion.div
                       key={photo._id}
                       variants={itemAnim}
+                      onClick={() => openLightbox(filtered, i)}
                       className="relative aspect-square rounded-xl overflow-hidden group cursor-pointer bg-[#e8e0d4]"
                     >
                       <Image src={photo.image} alt={photo.altText || photo.title || "Gallery photo"}
@@ -277,6 +436,17 @@ export default function GallerySection({ photos = [], categories = [] }) {
         </>
 
       </div>
+
+      <AnimatePresence>
+        {lightbox && (
+          <Lightbox
+            photos={lightbox.photos}
+            idx={lightbox.idx}
+            onClose={closeLightbox}
+            onNav={navLightbox}
+          />
+        )}
+      </AnimatePresence>
     </section>
   );
 }

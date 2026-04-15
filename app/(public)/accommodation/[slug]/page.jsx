@@ -111,9 +111,9 @@ function CategoryCard({ category, propertySlug }) {
           {bedTypes.length > 0 && <span>{bedTypes.join(", ")} bed</span>}
           {category.size && <span>· {category.size}</span>}
           {category.maxAdults && <span>· Up to {category.maxAdults} adults</span>}
-          {category.roomStats && (
-            <span className={`font-medium ${category.roomStats.available > 0 ? "text-emerald-600" : "text-red-400"}`}>
-              · {category.roomStats.available > 0 ? `${category.roomStats.available} available` : "Fully booked"}
+          {category.roomStats && category.roomStats.available > 0 && (
+            <span className="font-medium text-emerald-600">
+              · {category.roomStats.available} of {category.roomStats.total} available
             </span>
           )}
         </div>

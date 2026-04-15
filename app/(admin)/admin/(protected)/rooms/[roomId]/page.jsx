@@ -11,6 +11,7 @@ import {
 import PageHeader from "@/components/admin/PageHeader";
 import RoomDetailClient from "./RoomDetailClient";
 import Link from "next/link";
+import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
@@ -58,18 +59,20 @@ export default async function RoomDetailPage({ params }) {
         }
       />
 
-      <RoomDetailClient
-        room={room}
-        currentOnline={currentOnline}
-        currentOffline={currentOffline}
-        nextOnline={nextOnline}
-        nextOffline={nextOffline}
-        hasConflict={hasConflict}
-        history={history}
-        logs={logs}
-        offlineBookings={offlineBookings}
-        canWrite={canWrite}
-      />
+      <Suspense fallback={null}>
+        <RoomDetailClient
+          room={room}
+          currentOnline={currentOnline}
+          currentOffline={currentOffline}
+          nextOnline={nextOnline}
+          nextOffline={nextOffline}
+          hasConflict={hasConflict}
+          history={history}
+          logs={logs}
+          offlineBookings={offlineBookings}
+          canWrite={canWrite}
+        />
+      </Suspense>
     </div>
   );
 }

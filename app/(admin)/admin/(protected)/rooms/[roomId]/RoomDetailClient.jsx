@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useTransition, useEffect, useCallback, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   changeRoomStatus,
@@ -16,6 +16,7 @@ import {
   resolveMaintenanceIssue,
   resolveConflict,
   markRoomMaintenance,
+  getRoomBookingsForRange,
 } from "@/actions/admin/roomManagementActions";
 import { updateBookingStatus } from "@/actions/accommodation/bookingActions";
 import { DatePickerInput, CustomSelect } from "../RoomUIComponents";
@@ -503,13 +504,385 @@ function IssueModal({ bookingId, onClose, onSuccess }) {
   );
 }
 
+// ─── Room Calendar ────────────────────────────────────────────────────────────
+
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const DAY_ABBR    = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+// Booking colors (online = purple, offline = amber), cycled per booking index
+const BOOKING_COLORS = [
+  { bg: "bg-[#7A2267]/70",   border: "border-[#7A2267]",   text: "text-white",         dot: "bg-[#c05aae]"  },
+  { bg: "bg-blue-600/60",    border: "border-blue-500",    text: "text-white",         dot: "bg-blue-400"   },
+  { bg: "bg-amber-600/55",   border: "border-amber-500",   text: "text-white",         dot: "bg-amber-400"  },
+  { bg: "bg-emerald-700/55", border: "border-emerald-500", text: "text-white",         dot: "bg-emerald-400"},
+  { bg: "bg-rose-700/55",    border: "border-rose-500",    text: "text-white",         dot: "bg-rose-400"   },
+  { bg: "bg-cyan-700/55",    border: "border-cyan-500",    text: "text-white",         dot: "bg-cyan-400"   },
+];
+
+function getBookingColor(booking, index) {
+  if (booking.source === "online") return BOOKING_COLORS[index % 2 === 0 ? 0 : 1];
+  return BOOKING_COLORS[(index % 2 === 0 ? 2 : 3)];
+}
+
+function ymd(date) {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function ymdLocal(y, m, d) {
+  return `${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+}
+
+function RoomCalendar({ roomId }) {
+  const today     = new Date();
+  const [year, setYear]       = useState(today.getFullYear());
+  const [month, setMonth]     = useState(today.getMonth());
+  const [bookings, setBookings] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState(null); // booking object
+  const fetchKey = useRef(0);
+
+  const fetchBookings = useCallback(() => {
+    const key = ++fetchKey.current;
+    const from = new Date(year, month, 1);
+    const to   = new Date(year, month + 1, 0, 23, 59, 59); // last day of month
+    setLoading(true);
+    getRoomBookingsForRange(roomId, from.toISOString(), to.toISOString())
+      .then((data) => { if (fetchKey.current === key) setBookings(data); })
+      .catch(() => {})
+      .finally(() => { if (fetchKey.current === key) setLoading(false); });
+  }, [roomId, year, month]);
+
+  useEffect(() => { fetchBookings(); }, [fetchBookings]);
+
+  function prevMonth() {
+    if (month === 0) { setYear(y => y - 1); setMonth(11); }
+    else setMonth(m => m - 1);
+    setSelected(null);
+  }
+  function nextMonth() {
+    if (month === 11) { setYear(y => y + 1); setMonth(0); }
+    else setMonth(m => m + 1);
+    setSelected(null);
+  }
+  function goToday() { setYear(today.getFullYear()); setMonth(today.getMonth()); setSelected(null); }
+
+  // Build calendar grid
+  const firstDay  = new Date(year, month, 1).getDay(); // 0=Sun
+  const daysInMon = new Date(year, month + 1, 0).getDate();
+  const totalCells = Math.ceil((firstDay + daysInMon) / 7) * 7;
+  const cells = Array.from({ length: totalCells }, (_, i) => {
+    const dayNum = i - firstDay + 1;
+    return dayNum >= 1 && dayNum <= daysInMon ? dayNum : null;
+  });
+
+  // Build a lookup: dayStr -> [bookingEntry, ...]
+  // Each entry: { booking, colorIdx, isStart, isEnd, isOnly }
+  const dayMap = {}; // "YYYY-MM-DD" -> [{booking, colorIdx, isStart, isEnd}]
+  bookings.forEach((b, idx) => {
+    const ciDate = new Date(b.checkIn);
+    const coDate = new Date(b.checkOut);
+    // Iterate through each day in this month that the booking covers
+    for (let d = 1; d <= daysInMon; d++) {
+      const cellDate = new Date(year, month, d);
+      if (cellDate >= coDate) break; // past checkout
+      if (cellDate < ciDate) continue;
+      const key = ymdLocal(year, month, d);
+      if (!dayMap[key]) dayMap[key] = [];
+      const isStart = ymd(ciDate) === key;
+      const coDay   = new Date(coDate.getFullYear(), coDate.getMonth(), coDate.getDate());
+      const prevDay = new Date(year, month, d - 1);
+      const isEnd   = ymd(coDay) === key || (d === daysInMon && coDate > cellDate);
+      const actualEnd = new Date(coDate); actualEnd.setDate(actualEnd.getDate() - 1);
+      const isEndActual = ymd(actualEnd) === key;
+      dayMap[key].push({ booking: b, colorIdx: idx, isStart, isEndActual });
+    }
+  });
+
+  const todayStr = ymd(today);
+
+  return (
+    <div className="space-y-4">
+      {/* Header: navigation */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <button onClick={prevMonth}
+            className="w-7 h-7 flex items-center justify-center rounded-lg
+              bg-white/5 border border-white/10 text-white/50 hover:text-white/80
+              hover:bg-white/10 transition-all text-[13px]">
+            ‹
+          </button>
+          <span className="text-[15px] font-semibold text-white/85 w-40 text-center">
+            {MONTH_NAMES[month]} {year}
+          </span>
+          <button onClick={nextMonth}
+            className="w-7 h-7 flex items-center justify-center rounded-lg
+              bg-white/5 border border-white/10 text-white/50 hover:text-white/80
+              hover:bg-white/10 transition-all text-[13px]">
+            ›
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          {loading && <span className="text-[10px] text-white/30 animate-pulse">Loading…</span>}
+          <button onClick={goToday}
+            className="px-3 py-1.5 rounded-lg text-[11px] font-medium
+              bg-[#7A2267]/20 border border-[#7A2267]/35 text-[#c05aae]
+              hover:bg-[#7A2267]/30 transition-all">
+            Today
+          </button>
+          <button onClick={fetchBookings}
+            className="px-3 py-1.5 rounded-lg text-[11px] font-medium
+              bg-white/5 border border-white/10 text-white/45
+              hover:bg-white/10 hover:text-white/70 transition-all">
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-3 text-[10px] text-white/40">
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm bg-[#7A2267]/70 border border-[#7A2267]" />
+          Online booking
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm bg-amber-600/55 border border-amber-500" />
+          Offline booking
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm bg-white/10 border border-white/20 ring-1 ring-[#c05aae]/40" />
+          Today
+        </span>
+      </div>
+
+      {/* Calendar grid */}
+      <div className="rounded-xl border border-white/[0.08] overflow-hidden">
+        {/* Day headers */}
+        <div className="grid grid-cols-7 bg-white/[0.03]">
+          {DAY_ABBR.map((d) => (
+            <div key={d} className="py-2 text-center text-[10px] font-semibold
+              uppercase tracking-wider text-white/25 border-b border-white/[0.07]">
+              {d}
+            </div>
+          ))}
+        </div>
+
+        {/* Weeks */}
+        <div className="grid grid-cols-7">
+          {cells.map((day, idx) => {
+            if (!day) {
+              return (
+                <div key={`empty-${idx}`}
+                  className="min-h-[88px] bg-white/[0.01] border-b border-r border-white/[0.05]" />
+              );
+            }
+            const key     = ymdLocal(year, month, day);
+            const isToday = key === todayStr;
+            const entries = dayMap[key] || [];
+            const isPast  = new Date(year, month, day) < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+            return (
+              <div key={key}
+                className={[
+                  "min-h-[88px] p-1 flex flex-col gap-0.5 border-b border-r border-white/[0.05]",
+                  "transition-colors duration-100",
+                  isToday ? "bg-[#7A2267]/[0.07] ring-1 ring-inset ring-[#7A2267]/30" : "",
+                  isPast && !isToday ? "bg-white/[0.008]" : "",
+                  entries.length > 0 ? "cursor-default" : "",
+                ].join(" ")}>
+                {/* Day number */}
+                <div className={`text-[11px] font-semibold w-6 h-6 flex items-center justify-center
+                  rounded-full mb-0.5 transition-colors ${
+                  isToday
+                    ? "bg-[#7A2267] text-white"
+                    : isPast
+                      ? "text-white/25"
+                      : "text-white/60"
+                }`}>
+                  {day}
+                </div>
+
+                {/* Booking bars */}
+                {entries.map((e, ei) => {
+                  const col = getBookingColor(e.booking, e.colorIdx);
+                  const isSelected = selected?._id === e.booking._id;
+                  return (
+                    <button
+                      key={`${e.booking._id}-${ei}`}
+                      onClick={() => setSelected(isSelected ? null : e.booking)}
+                      title={`${e.booking.guestName} · ${e.booking.ref}`}
+                      className={[
+                        "w-full text-left px-1.5 py-0.5 text-[9px] font-semibold leading-tight",
+                        "truncate transition-all duration-100",
+                        col.bg, col.text,
+                        e.isStart ? "rounded-l-md" : "rounded-l-none",
+                        e.isEndActual ? "rounded-r-md" : "rounded-r-none",
+                        isSelected ? "ring-1 ring-white/60 opacity-100" : "opacity-90 hover:opacity-100",
+                      ].join(" ")}
+                    >
+                      {e.isStart ? (
+                        <span className="flex items-center gap-1">
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${col.dot}`} />
+                          {e.booking.guestName}
+                        </span>
+                      ) : (
+                        <span className="opacity-0 select-none">·</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Selected booking detail panel */}
+      {selected && (
+        <div className={`rounded-xl border p-4 space-y-3 transition-all ${
+          selected.source === "online"
+            ? "border-[#7A2267]/35 bg-[#7A2267]/8"
+            : "border-amber-500/30 bg-amber-500/8"
+        }`}>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className={`text-[9px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded border ${
+                  selected.source === "online"
+                    ? "text-[#c05aae] bg-[#7A2267]/20 border-[#7A2267]/40"
+                    : "text-amber-400 bg-amber-500/15 border-amber-500/30"
+                }`}>
+                  {selected.source === "online" ? "Online" : "Offline"}
+                </span>
+                <span className="text-[13px] font-bold text-white/90">{selected.guestName}</span>
+                {selected.guestPhone && (
+                  <span className="text-[11px] text-white/40">{selected.guestPhone}</span>
+                )}
+              </div>
+              <p className="text-[11px] text-white/40 mt-0.5 font-mono">{selected.ref}</p>
+            </div>
+            <button onClick={() => setSelected(null)}
+              className="text-white/25 hover:text-white/60 text-[16px] leading-none mt-0.5">
+              ×
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
+            <div>
+              <p className="text-white/30 text-[9px] uppercase tracking-wider mb-0.5">Check-In</p>
+              <p className="text-white/80 font-medium">{fmt(selected.checkIn)}</p>
+            </div>
+            <div>
+              <p className="text-white/30 text-[9px] uppercase tracking-wider mb-0.5">Check-Out</p>
+              <p className="text-white/80 font-medium">{fmt(selected.checkOut)}</p>
+            </div>
+            <div>
+              <p className="text-white/30 text-[9px] uppercase tracking-wider mb-0.5">Nights</p>
+              <p className="text-white/80 font-medium">{selected.nights || nightsCount(selected.checkIn, selected.checkOut)}</p>
+            </div>
+            <div>
+              <p className="text-white/30 text-[9px] uppercase tracking-wider mb-0.5">Status</p>
+              <p className={`font-semibold capitalize ${
+                selected.status === "confirmed" ? "text-blue-400" :
+                selected.status === "checked_in" ? "text-emerald-400" :
+                selected.status === "checked_out" ? "text-white/40" :
+                "text-white/60"
+              }`}>{selected.status?.replace("_"," ")}</p>
+            </div>
+            <div>
+              <p className="text-white/30 text-[9px] uppercase tracking-wider mb-0.5">Total</p>
+              <p className="text-white/80 font-medium">৳{selected.totalAmount?.toLocaleString()}</p>
+            </div>
+            <div>
+              <p className="text-white/30 text-[9px] uppercase tracking-wider mb-0.5">Paid</p>
+              <p className="text-emerald-400 font-medium">৳{selected.paidAmount?.toLocaleString()}</p>
+            </div>
+            {selected.remainingAmount > 0 && (
+              <div>
+                <p className="text-white/30 text-[9px] uppercase tracking-wider mb-0.5">Due</p>
+                <p className="text-orange-400 font-semibold">৳{selected.remainingAmount?.toLocaleString()}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-white/30 text-[9px] uppercase tracking-wider mb-0.5">Payment</p>
+              <p className={`font-medium capitalize ${
+                selected.paymentStatus === "paid" ? "text-emerald-400" :
+                selected.paymentStatus === "partial" ? "text-amber-400" :
+                "text-red-400"
+              }`}>{selected.paymentStatus}</p>
+            </div>
+          </div>
+
+          {selected.source === "online" && (
+            <Link href={`/admin/bookings/${selected._id}`}
+              className="inline-flex items-center gap-1.5 text-[11px] font-medium
+                text-[#c05aae] hover:text-[#d06abf] transition-colors">
+              View Full Booking →
+            </Link>
+          )}
+        </div>
+      )}
+
+      {/* Monthly summary */}
+      {bookings.length > 0 && (
+        <div className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-4">
+          <p className="text-[10px] uppercase tracking-widest text-white/25 font-semibold mb-3">
+            {MONTH_NAMES[month]} Bookings
+          </p>
+          <div className="space-y-2">
+            {bookings.map((b, idx) => {
+              const col = getBookingColor(b, idx);
+              return (
+                <div key={b._id}
+                  className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer
+                    border transition-all duration-100 ${
+                    selected?._id === b._id
+                      ? "border-white/20 bg-white/[0.06]"
+                      : "border-transparent hover:bg-white/[0.03] hover:border-white/10"
+                  }`}
+                  onClick={() => setSelected(selected?._id === b._id ? null : b)}>
+                  <span className={`w-2.5 h-2.5 rounded-sm shrink-0 ${col.bg} border ${col.border}`} />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[11px] font-semibold text-white/75 truncate">{b.guestName}</span>
+                    <span className="text-[9.5px] text-white/30 ml-2">{b.ref}</span>
+                  </div>
+                  <div className="text-[10px] text-white/35 whitespace-nowrap">
+                    {fmt(b.checkIn)} → {fmt(b.checkOut)}
+                  </div>
+                  <div className="text-[10px]">
+                    <span className={`px-1.5 py-0.5 rounded-full border text-[9px] font-medium ${
+                      b.source === "online"
+                        ? "text-[#c05aae] bg-[#7A2267]/15 border-[#7A2267]/30"
+                        : "text-amber-400 bg-amber-500/10 border-amber-500/25"
+                    }`}>
+                      {b.source}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {!loading && bookings.length === 0 && (
+        <div className="py-12 text-center">
+          <p className="text-[13px] text-white/22">No bookings in {MONTH_NAMES[month]} {year}</p>
+          <p className="text-[10px] text-white/15 mt-1">This room is fully available this month</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main RoomDetailClient ────────────────────────────────────────────────────
 export default function RoomDetailClient({
   room, currentOnline, currentOffline, nextOnline, nextOffline,
   hasConflict, history, logs, offlineBookings, canWrite,
 }) {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState("overview");
+  const router      = useRouter();
+  const searchParams = useSearchParams();
+  const initialTab  = searchParams.get("tab") || "overview";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [pending, startTransition] = useTransition();
 
   // UI state
@@ -553,6 +926,7 @@ export default function RoomDetailClient({
 
   const TABS = [
     { id: "overview",  label: "Overview"  },
+    { id: "calendar",  label: "Calendar"  },
     { id: "offline",   label: `Offline (${activeOffline.length})` },
     { id: "history",   label: `History (${history.length})`  },
     { id: "log",       label: `Activity Log (${logs.length})` },
@@ -802,6 +1176,11 @@ export default function RoomDetailClient({
             </SectionCard>
           )}
         </div>
+      )}
+
+      {/* ═══════════ TAB: CALENDAR ═══════════════════════════════════════════ */}
+      {activeTab === "calendar" && (
+        <RoomCalendar roomId={room._id} />
       )}
 
       {/* ═══════════ TAB: OFFLINE BOOKINGS ══════════════════════════════════ */}

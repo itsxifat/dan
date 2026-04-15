@@ -3,36 +3,33 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 
-const ROOM_STATUS_DOT = {
-  available:   "bg-emerald-500",
-  occupied:    "bg-amber-400",
-  maintenance: "bg-orange-400",
-  blocked:     "bg-red-400",
-};
-
 const SORT_OPTIONS = [
-  { value: "price_asc",  label: "Price: Low → High" },
-  { value: "price_desc", label: "Price: High → Low" },
-  { value: "variant",    label: "By Room Type" },
-  { value: "bedtype",    label: "By Bed Type" },
-  { value: "floor_asc",  label: "Floor: Low → High" },
+  { value: "available_first", label: "Available First" },
+  { value: "price_asc",       label: "Price: Low → High" },
+  { value: "price_desc",      label: "Price: High → Low" },
+  { value: "variant",         label: "By Room Type"      },
+  { value: "bedtype",         label: "By Bed Type"       },
+  { value: "floor_asc",       label: "Floor: Low → High" },
 ];
 
-// Helper: effective price for a room
 function roomEffectivePrice(room, categoryPrice) {
   if (room.pricePerNight > 0) return room.pricePerNight;
   if (room.variant?.pricePerNight > 0) return room.variant.pricePerNight;
   return categoryPrice ?? 0;
 }
 
+function fmtShort(dateStr) {
+  if (!dateStr) return null;
+  return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
 export default function CategoryRoomsGrid({ rooms, category }) {
-  const [sortBy,          setSortBy]          = useState("price_asc");
+  const [sortBy,          setSortBy]          = useState("available_first");
   const [filterVariantId, setFilterVariantId] = useState("all");
   const [filterBedType,   setFilterBedType]   = useState("all");
 
   const categoryPrice = category?.pricePerNight ?? 0;
 
-  // Derive unique variants & bed types for filter chips
   const variantOptions = useMemo(() => {
     const seen = new Map();
     for (const r of rooms) {
@@ -52,25 +49,24 @@ export default function CategoryRoomsGrid({ rooms, category }) {
     return [...seen];
   }, [rooms, category]);
 
-  // Filter + sort
   const processed = useMemo(() => {
     let list = [...rooms];
 
-    // Available rooms first (always)
-    list = list.filter((r) => r.status === "available");
-
-    // Variant filter
     if (filterVariantId !== "all") {
       list = list.filter((r) => r.variant && String(r.variant._id) === filterVariantId);
     }
-
-    // Bed type filter
     if (filterBedType !== "all") {
       list = list.filter((r) => (r.variant?.bedType ?? category?.bedType) === filterBedType);
     }
 
-    // Sort
-    if (sortBy === "price_asc") {
+    if (sortBy === "available_first") {
+      const order = { available: 0, occupied: 1, maintenance: 2, blocked: 3 };
+      list.sort((a, b) => {
+        const diff = (order[a.status] ?? 9) - (order[b.status] ?? 9);
+        if (diff !== 0) return diff;
+        return roomEffectivePrice(a, categoryPrice) - roomEffectivePrice(b, categoryPrice);
+      });
+    } else if (sortBy === "price_asc") {
       list.sort((a, b) => roomEffectivePrice(a, categoryPrice) - roomEffectivePrice(b, categoryPrice));
     } else if (sortBy === "price_desc") {
       list.sort((a, b) => roomEffectivePrice(b, categoryPrice) - roomEffectivePrice(a, categoryPrice));
@@ -85,10 +81,8 @@ export default function CategoryRoomsGrid({ rooms, category }) {
     return list;
   }, [rooms, sortBy, filterVariantId, filterBedType, categoryPrice, category]);
 
-  // For "By Room Type" and "By Bed Type" sort: group rooms
   const grouped = useMemo(() => {
     if (sortBy !== "variant" && sortBy !== "bedtype") return null;
-
     const groups = {};
     for (const room of processed) {
       const key = sortBy === "variant"
@@ -100,7 +94,6 @@ export default function CategoryRoomsGrid({ rooms, category }) {
     return groups;
   }, [processed, sortBy, category]);
 
-  // For price/floor sort: group by block → floor → row
   const blockGroups = useMemo(() => {
     if (sortBy === "variant" || sortBy === "bedtype") return null;
     const hasBlocks = processed.some((r) => r.block);
@@ -110,29 +103,34 @@ export default function CategoryRoomsGrid({ rooms, category }) {
       const bk = room.block || (hasBlocks ? "Other" : "");
       const fk = String(room.floor ?? "");
       const rk = room.row || "";
-      if (!g[bk])     g[bk] = {};
-      if (!g[bk][fk]) g[bk][fk] = {};
-      if (!g[bk][fk][rk]) g[bk][fk][rk] = [];
+      if (!g[bk])          g[bk] = {};
+      if (!g[bk][fk])      g[bk][fk] = {};
+      if (!g[bk][fk][rk])  g[bk][fk][rk] = [];
       g[bk][fk][rk].push(room);
     }
     return { groups: g, hasBlocks, hasRows };
   }, [processed, sortBy]);
 
-  const totalAvailable = rooms.filter((r) => r.status === "available").length;
+  const availableCount = rooms.filter((r) => r.status === "available").length;
+
+  if (rooms.length === 0) return null;
 
   return (
     <div>
       {/* Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
-        <h3 className="text-[15px] font-bold text-neutral-800 shrink-0">
-          Room Availability
-          <span className="ml-2 text-[12px] font-normal text-neutral-400">
-            {processed.length} of {totalAvailable} shown
-          </span>
-        </h3>
+        <div className="shrink-0">
+          <h3 className="text-[15px] font-bold text-neutral-800">Rooms</h3>
+          <p className="text-[11.5px] text-neutral-400 mt-0.5">
+            {availableCount > 0
+              ? <><span className="text-emerald-600 font-medium">{availableCount} available</span><span className="mx-1 text-neutral-300">·</span></>
+              : null
+            }
+            {rooms.length} total
+          </p>
+        </div>
 
         <div className="flex flex-wrap gap-2 sm:ml-auto">
-          {/* Sort selector */}
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
@@ -144,7 +142,6 @@ export default function CategoryRoomsGrid({ rooms, category }) {
             ))}
           </select>
 
-          {/* Variant filter chips */}
           {variantOptions.length > 1 && (
             <div className="flex gap-1.5 flex-wrap">
               <button
@@ -152,8 +149,7 @@ export default function CategoryRoomsGrid({ rooms, category }) {
                 className={`text-[10.5px] px-2.5 py-1 rounded-full border transition-colors
                   ${filterVariantId === "all"
                     ? "bg-[#7A2267] text-white border-[#7A2267]"
-                    : "bg-white text-neutral-500 border-neutral-200 hover:border-[#7A2267]/40"
-                  }`}
+                    : "bg-white text-neutral-500 border-neutral-200 hover:border-[#7A2267]/40"}`}
               >
                 All Types
               </button>
@@ -164,8 +160,7 @@ export default function CategoryRoomsGrid({ rooms, category }) {
                   className={`text-[10.5px] px-2.5 py-1 rounded-full border transition-colors
                     ${filterVariantId === v.id
                       ? "bg-[#7A2267] text-white border-[#7A2267]"
-                      : "bg-white text-neutral-500 border-neutral-200 hover:border-[#7A2267]/40"
-                    }`}
+                      : "bg-white text-neutral-500 border-neutral-200 hover:border-[#7A2267]/40"}`}
                 >
                   {v.name}
                 </button>
@@ -173,7 +168,6 @@ export default function CategoryRoomsGrid({ rooms, category }) {
             </div>
           )}
 
-          {/* Bed type filter chips */}
           {bedTypeOptions.length > 1 && (
             <div className="flex gap-1.5 flex-wrap">
               {filterBedType !== "all" && (
@@ -191,8 +185,7 @@ export default function CategoryRoomsGrid({ rooms, category }) {
                   className={`text-[10.5px] px-2.5 py-1 rounded-full border transition-colors
                     ${filterBedType === bt
                       ? "bg-[#7A2267]/10 text-[#7A2267] border-[#7A2267]/30"
-                      : "bg-white text-neutral-500 border-neutral-200 hover:border-[#7A2267]/40"
-                    }`}
+                      : "bg-white text-neutral-500 border-neutral-200 hover:border-[#7A2267]/40"}`}
                 >
                   {bt}
                 </button>
@@ -203,9 +196,8 @@ export default function CategoryRoomsGrid({ rooms, category }) {
       </div>
 
       {processed.length === 0 ? (
-        <p className="text-[13px] text-neutral-400 py-6 text-center">No available rooms match your filters.</p>
+        <p className="text-[13px] text-neutral-400 py-6 text-center">No rooms match your filters.</p>
       ) : grouped ? (
-        /* ── Grouped by variant or bed type ── */
         <div className="space-y-6">
           {Object.entries(grouped).map(([groupKey, groupRooms]) => (
             <div key={groupKey}>
@@ -225,7 +217,6 @@ export default function CategoryRoomsGrid({ rooms, category }) {
           ))}
         </div>
       ) : blockGroups ? (
-        /* ── Grouped by block → floor → row ── */
         <div className="space-y-6">
           {Object.keys(blockGroups.groups).map((block) => (
             <div key={block}>
@@ -268,40 +259,64 @@ export default function CategoryRoomsGrid({ rooms, category }) {
 }
 
 function RoomCard({ room, categoryPrice }) {
-  const price = roomEffectivePrice(room, categoryPrice);
+  const price      = roomEffectivePrice(room, categoryPrice);
   const isOverride = room.pricePerNight > 0;
+  const isAvailable = room.status === "available";
+  const freeDate   = room.freeFrom ? fmtShort(room.freeFrom) : null;
 
   return (
     <Link
       href={`/rooms/${room._id}`}
-      className="group p-3 rounded-xl border text-center transition-all duration-200 block
-        bg-white border-neutral-200 hover:border-[#7A2267]/40 hover:shadow-md hover:-translate-y-0.5"
+      className={[
+        "group p-3 rounded-xl border text-center transition-all duration-200 block",
+        isAvailable
+          ? "bg-white border-neutral-200 hover:border-[#7A2267]/40 hover:shadow-md hover:-translate-y-0.5"
+          : "bg-neutral-50/80 border-neutral-150 hover:border-neutral-300 hover:shadow-sm",
+      ].join(" ")}
     >
+      {/* Room number + status dot */}
       <div className="flex items-center justify-center gap-1.5 mb-1">
-        <div className={`w-1.5 h-1.5 rounded-full ${ROOM_STATUS_DOT[room.status]}`} />
-        <span className="text-[13px] font-semibold text-neutral-700 font-mono group-hover:text-[#7A2267] transition-colors">
+        <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+          isAvailable ? "bg-emerald-500" : "bg-neutral-300"
+        }`} />
+        <span className={`text-[13px] font-semibold font-mono transition-colors
+          ${isAvailable ? "text-neutral-700 group-hover:text-[#7A2267]" : "text-neutral-500"}`}>
           {room.roomNumber}
         </span>
       </div>
+
+      {/* Variant name */}
       {room.variant && (
         <p className="text-[9.5px] text-[#7A2267]/70 truncate px-0.5 leading-none mb-0.5">{room.variant.name}</p>
       )}
+
+      {/* Bed type */}
       {room.variant?.bedType && (
         <p className="text-[9px] text-neutral-400 truncate px-0.5 leading-none mb-0.5">{room.variant.bedType}</p>
       )}
+
+      {/* Price */}
       {price > 0 && (
         <p className={`text-[10.5px] font-semibold ${isOverride ? "text-[#7A2267]" : "text-neutral-600"}`}>
           ৳{price.toLocaleString()}
           {isOverride && <span className="text-[8px] ml-0.5 opacity-70">*</span>}
         </p>
       )}
+
       {room.facing && (
         <p className="text-[9.5px] text-neutral-400 truncate px-0.5 mt-0.5">{room.facing}</p>
       )}
-      <p className="text-[10px] uppercase tracking-wide mt-0.5 font-medium text-emerald-600">
-        {room.status}
-      </p>
-      <p className="text-[9.5px] text-[#7A2267] mt-1 opacity-0 group-hover:opacity-100 transition-opacity font-medium">
+
+      {/* Bottom line — available: "Available", occupied: "Free from X" or nothing, maintenance/blocked: nothing */}
+      {isAvailable ? (
+        <p className="text-[10px] uppercase tracking-wide mt-1 font-medium text-emerald-600">Available</p>
+      ) : freeDate ? (
+        <p className="text-[10px] text-neutral-400 mt-1">Free from {freeDate}</p>
+      ) : null}
+
+      {/* Hover cue */}
+      <p className={`text-[9.5px] mt-1 opacity-0 group-hover:opacity-100 transition-opacity font-medium
+        ${isAvailable ? "text-[#7A2267]" : "text-neutral-400"}`}>
         View →
       </p>
     </Link>

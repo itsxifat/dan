@@ -6,6 +6,8 @@ import { revalidatePath } from "next/cache";
 import dbConnect from "@/lib/db";
 import RoomCategory from "@/models/RoomCategory";
 import Room from "@/models/Room";
+import Booking from "@/models/Booking";
+import OfflineBooking from "@/models/OfflineBooking";
 import { hasPermission } from "@/lib/permissions";
 import { slugify, uniqueSlug } from "@/lib/slugify";
 
@@ -60,9 +62,47 @@ export async function getCategoryBySlug(propertyId, slug) {
       variantsMap[v._id.toString()] = v;
     }
   }
+
+  // For occupied rooms, find the earliest checkout date so we can show "Free from X"
+  const occupiedIds = rooms.filter((r) => r.status === "occupied").map((r) => r._id);
+  const freeFromMap = {};
+
+  if (occupiedIds.length > 0) {
+    const now = new Date();
+    const [onlineCheckouts, offlineCheckouts] = await Promise.all([
+      Booking.find({
+        "roomBookings.room": { $in: occupiedIds },
+        status: { $in: ["confirmed", "checked_in"] },
+        checkOut: { $gt: now },
+      }).select("roomBookings checkOut").lean(),
+
+      OfflineBooking.find({
+        room: { $in: occupiedIds },
+        status: { $in: ["confirmed", "checked_in", "reserved"] },
+        checkOut: { $gt: now },
+      }).select("room checkOut").lean(),
+    ]);
+
+    for (const b of onlineCheckouts) {
+      for (const rb of b.roomBookings || []) {
+        const rid = rb.room?.toString();
+        if (!rid) continue;
+        const co = new Date(b.checkOut);
+        if (!freeFromMap[rid] || co < freeFromMap[rid]) freeFromMap[rid] = co;
+      }
+    }
+    for (const ob of offlineCheckouts) {
+      const rid = ob.room?.toString();
+      if (!rid) continue;
+      const co = new Date(ob.checkOut);
+      if (!freeFromMap[rid] || co < freeFromMap[rid]) freeFromMap[rid] = co;
+    }
+  }
+
   const roomsWithVariants = rooms.map((r) => ({
     ...r,
-    variant: r.variantId ? (variantsMap[r.variantId.toString()] || null) : null,
+    variant:  r.variantId ? (variantsMap[r.variantId.toString()] || null) : null,
+    freeFrom: freeFromMap[r._id.toString()] || null,
   }));
 
   return JSON.parse(JSON.stringify({ ...category, rooms: roomsWithVariants }));

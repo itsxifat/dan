@@ -510,7 +510,7 @@ export default function RoomManagementClient({
               <table className="w-full text-[12px]">
                 <thead>
                   <tr className="border-b border-white/[0.07] bg-white/2.5">
-                    {["Room","Floor / Block","Category","Status","Guest","Check-In","Check-Out",""].map((h) => (
+                    {["Room","Location","Category","Status","Current Guest","Stay","Next Booking","Payment",""].map((h) => (
                       <th key={h} className="px-3.5 py-3 text-left text-[9px] uppercase
                         tracking-[0.12em] text-white/25 font-semibold whitespace-nowrap">{h}</th>
                     ))}
@@ -521,43 +521,135 @@ export default function RoomManagementClient({
                     const cfg     = STATUS_CONFIG[room.status] || STATUS_CONFIG.available;
                     const booking = room._activeBooking;
                     const offline = room._activeOffline;
-                    const guest   = booking?.primaryGuest?.name || offline?.primaryGuest?.name || "—";
-                    const checkIn  = booking?.checkIn  || offline?.checkIn;
-                    const checkOut = booking?.checkOut || offline?.checkOut;
+                    const active  = booking || offline;
+                    const guest   = active?.primaryGuest?.name || null;
+                    const checkIn  = active?.checkIn;
+                    const checkOut = active?.checkOut;
+
+                    // Payment info from active booking
+                    const paid      = active?.paidAmount ?? 0;
+                    const total     = active?.totalAmount ?? active?._roomBooking?.price ?? 0;
+                    const remaining = total - paid;
+                    const isPaid    = remaining <= 0 && total > 0;
+                    const isPartial = !isPaid && paid > 0;
+
+                    // Next upcoming booking (online only in overview data)
+                    const nextIn  = room._todayCheckIn;
+                    const nextOut = room._todayCheckOut;
+
                     return (
                       <tr key={room._id} className={[
-                        "border-b border-white/4 transition-colors hover:bg-white/3",
+                        "border-b border-white/4 transition-colors hover:bg-white/[0.025]",
                         room._hasConflict ? "bg-orange-500/[0.04]" : "",
                       ].join(" ")}>
-                        <td className="px-3.5 py-2.5">
+                        {/* Room number */}
+                        <td className="px-3.5 py-3">
                           <div className="flex items-center gap-2">
                             <span className={`w-1.5 h-1.5 rounded-full shrink-0
                               ${room._hasConflict ? "bg-orange-400" : cfg.dot}`} />
-                            <span className="font-semibold text-white/80">{room.roomNumber}</span>
+                            <span className="font-bold text-white/85">{room.roomNumber}</span>
                             {room._hasConflict && (
-                              <span className="text-[7.5px] text-orange-400 font-bold uppercase">Conflict</span>
+                              <span className="text-[7.5px] text-orange-400 font-bold uppercase tracking-wider
+                                bg-orange-500/15 border border-orange-500/25 px-1 py-0.5 rounded">⚠ Conflict</span>
+                            )}
+                            {offline && !booking && (
+                              <span className="text-[7.5px] text-amber-400 font-bold uppercase tracking-wider
+                                bg-amber-500/12 border border-amber-500/20 px-1 py-0.5 rounded">Offline</span>
                             )}
                           </div>
                         </td>
-                        <td className="px-3.5 py-2.5 text-white/38">
-                          {room.floor}{room.block && <span className="ml-1.5">/ {room.block}</span>}
+                        {/* Floor / block */}
+                        <td className="px-3.5 py-3 text-white/38 whitespace-nowrap">
+                          F{room.floor}{room.block ? <span className="ml-1 opacity-60">· B{room.block}</span> : ""}
                         </td>
-                        <td className="px-3.5 py-2.5 text-white/50">{room.category?.name || "—"}</td>
-                        <td className="px-3.5 py-2.5">
+                        {/* Category */}
+                        <td className="px-3.5 py-3 text-white/50 max-w-[100px] truncate">
+                          {room.category?.name || "—"}
+                        </td>
+                        {/* Status badge */}
+                        <td className="px-3.5 py-3">
                           <span className={`inline-flex items-center gap-1.5 px-2 py-0.5
                             rounded-full text-[9.5px] font-medium border ${cfg.pill}`}>
                             <span className={`w-1 h-1 rounded-full ${cfg.dot}`} />
                             {cfg.label}
                           </span>
+                          {room._todayCheckIn && (
+                            <span className="ml-1.5 text-[8.5px] text-emerald-400 font-semibold animate-pulse">↓ Arriving</span>
+                          )}
+                          {room._checkedInToday && !room._todayCheckIn && (
+                            <span className="ml-1.5 text-[8.5px] text-blue-400 font-semibold">Checked-in today</span>
+                          )}
+                          {room._todayCheckOut && !room._todayCheckIn && !room._checkedInToday && (
+                            <span className="ml-1.5 text-[8.5px] text-amber-400 font-semibold">↑ Departing</span>
+                          )}
                         </td>
-                        <td className="px-3.5 py-2.5 text-white/65 max-w-[120px] truncate">{guest}</td>
-                        <td className="px-3.5 py-2.5 text-white/35">{fmt(checkIn)}</td>
-                        <td className="px-3.5 py-2.5 text-white/35">{fmt(checkOut)}</td>
-                        <td className="px-3.5 py-2.5">
-                          <Link href={`/admin/rooms/${room._id}`}
-                            className="text-[10px] font-medium text-[#c05aae]/70 hover:text-[#c05aae] transition-colors">
-                            Open →
-                          </Link>
+                        {/* Guest */}
+                        <td className="px-3.5 py-3">
+                          {guest ? (
+                            <span className="text-white/75 font-medium">{guest}</span>
+                          ) : (
+                            <span className="text-white/20 italic text-[11px]">Vacant</span>
+                          )}
+                        </td>
+                        {/* Stay dates */}
+                        <td className="px-3.5 py-3 whitespace-nowrap">
+                          {checkIn ? (
+                            <div>
+                              <span className="text-white/50">{fmt(checkIn)}</span>
+                              <span className="text-white/20 mx-1">→</span>
+                              <span className="text-white/50">{fmt(checkOut)}</span>
+                            </div>
+                          ) : (
+                            <span className="text-white/18">—</span>
+                          )}
+                        </td>
+                        {/* Next booking indicator */}
+                        <td className="px-3.5 py-3">
+                          {nextIn && !active ? (
+                            <span className="text-[10px] text-emerald-400 font-medium">
+                              Arriving {fmt(nextIn.checkIn || nextIn.checkIn)}
+                            </span>
+                          ) : nextOut && !nextIn ? (
+                            <span className="text-[10px] text-amber-400 font-medium">
+                              Departing {fmt(nextOut.checkOut || nextOut.checkOut)}
+                            </span>
+                          ) : (
+                            <span className="text-white/18 text-[10px]">—</span>
+                          )}
+                        </td>
+                        {/* Payment */}
+                        <td className="px-3.5 py-3">
+                          {total > 0 ? (
+                            <div>
+                              <span className={`text-[9.5px] font-semibold px-1.5 py-0.5 rounded-full border ${
+                                isPaid
+                                  ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+                                  : isPartial
+                                    ? "text-amber-400 bg-amber-500/10 border-amber-500/20"
+                                    : "text-red-400 bg-red-500/10 border-red-500/20"
+                              }`}>
+                                {isPaid ? "Paid" : isPartial ? "Partial" : "Unpaid"}
+                              </span>
+                              {remaining > 0 && (
+                                <p className="text-[9px] text-white/30 mt-0.5">৳{remaining.toLocaleString()} due</p>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-white/18">—</span>
+                          )}
+                        </td>
+                        {/* Actions */}
+                        <td className="px-3.5 py-3">
+                          <div className="flex items-center gap-2">
+                            <Link href={`/admin/rooms/${room._id}`}
+                              className="text-[10px] font-medium text-[#c05aae]/70 hover:text-[#c05aae] transition-colors whitespace-nowrap">
+                              Detail →
+                            </Link>
+                            <Link href={`/admin/rooms/${room._id}?tab=calendar`}
+                              className="text-[10px] font-medium text-white/28 hover:text-white/60 transition-colors whitespace-nowrap">
+                              Cal
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     );

@@ -457,7 +457,7 @@ export default function Hero() {
   };
 
   return (
-    <div className="relative h-[calc(100dvh-60px)] sm:h-[calc(100dvh-68px)] min-h-[560px] w-full bg-[#050308] overflow-hidden
+    <div className="relative h-[calc(100dvh-60px)] sm:h-[calc(100dvh-68px)] min-h-[560px] w-full overflow-hidden
       selection:bg-[#7A2267] selection:text-white">
 
       {/* ── Background with Ken Burns ── */}
@@ -472,13 +472,9 @@ export default function Hero() {
           className="object-cover object-center" />
       </motion.div>
 
-      {/* ── Gradient overlays ── */}
+      {/* ── Overlay (≤10%) ── */}
       <div className="absolute inset-0 z-10 pointer-events-none"
-        style={{ background: "linear-gradient(to right, rgba(10,6,2,0.72) 0%, rgba(10,6,2,0.35) 45%, transparent 75%)" }} />
-      <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none"
-        style={{ height: "55%", background: "linear-gradient(to top, rgba(10,6,2,0.55) 0%, rgba(10,6,2,0.15) 50%, transparent 100%)" }} />
-      <div className="absolute top-0 left-0 right-0 z-10 pointer-events-none"
-        style={{ height: "25%", background: "linear-gradient(to bottom, rgba(10,6,2,0.3) 0%, transparent 100%)" }} />
+        style={{ background: "rgba(0,0,0,0.08)" }} />
 
       {/* ── Main layout ── */}
       <div className="relative z-20 w-full h-full max-w-[90rem] mx-auto

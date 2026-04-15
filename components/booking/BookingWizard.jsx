@@ -136,32 +136,43 @@ const GENDER_SHORT_OPTIONS = [
 ];
 
 // ─── Step Indicator ───────────────────────────────────────────────────────────
-const STEPS_NIGHT = ["Stay Type", "Date & Guests", "Choose Rooms", "Guest Info", "Payment"];
-const STEPS_DAY   = ["Stay Type", "Date & Guests", "Choose Rooms", "Guest Info", "Payment"];
+const STEP_NAMES = ["Stay Type", "Dates", "Rooms", "Guests", "Payment"];
 
 function StepIndicator({ step, total }) {
   return (
-    <div className="flex items-center w-full mb-8">
-      {Array.from({ length: total }, (_, i) => {
-        const n = i + 1;
-        const done   = n < step;
-        const active = n === step;
-        return (
-          <div key={n} className="flex items-center flex-1">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 transition-all duration-300
-              ${done ? "bg-[#7A2267] text-white" : active ? "bg-[#7A2267] text-white shadow-[0_0_0_4px_rgba(122,34,103,0.15)]" : "bg-[#F0E8F4] text-[#C4B3CE]"}`}>
-              {done ? (
-                <svg viewBox="0 0 10 10" width="10" height="10" fill="none">
-                  <path d="M2 5l2.5 2.5 3.5-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              ) : n}
+    <div className="mb-8 px-6 sm:px-8">
+      <div className="flex items-start">
+        {Array.from({ length: total }, (_, i) => {
+          const n = i + 1;
+          const done   = n < step;
+          const active = n === step;
+          return (
+            <div key={n} className="flex items-start flex-1">
+              <div className="flex flex-col items-center shrink-0">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold transition-all duration-300
+                  ${done
+                    ? "bg-[#7A2267] text-white shadow-[0_2px_10px_rgba(122,34,103,0.35)]"
+                    : active
+                    ? "bg-[#7A2267] text-white shadow-[0_0_0_4px_rgba(122,34,103,0.18)]"
+                    : "bg-[#F0E8F4] text-[#C4B3CE]"}`}>
+                  {done ? (
+                    <svg viewBox="0 0 10 10" width="10" height="10" fill="none">
+                      <path d="M2 5l2.5 2.5 3.5-4" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  ) : n}
+                </div>
+                <span className={`mt-1.5 text-[8.5px] font-semibold tracking-wide whitespace-nowrap transition-colors duration-300
+                  ${active ? "text-[#7A2267]" : done ? "text-[#9B6B90]/60" : "text-[#D4C8DC]"}`}>
+                  {STEP_NAMES[i]}
+                </span>
+              </div>
+              {n < total && (
+                <div className={`flex-1 h-px mt-4 mx-2 transition-all duration-500 ${done ? "bg-[#7A2267]" : "bg-[#EDE5F0]"}`} />
+              )}
             </div>
-            {n < total && (
-              <div className={`flex-1 h-0.5 mx-1 transition-colors duration-300 ${done ? "bg-[#7A2267]" : "bg-[#EDE5F0]"}`} />
-            )}
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -239,20 +250,23 @@ function Calendar({ mode, selected, onSelect, minDate }) {
 
   return (
     <div className={`bg-white rounded-2xl border border-[#EDE5F0] p-4 ${montserrat.className}`}>
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <button onClick={() => setMonth((m) => {
           if (m.m === 0) return { y: m.y - 1, m: 11 };
           return { y: m.y, m: m.m - 1 };
-        })} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#F0E8F4] transition-colors">
+        })} className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-[#F0E8F4] transition-colors">
           <svg viewBox="0 0 8 14" width="7" height="12" fill="none">
             <path d="M7 1L1 7l6 6" stroke="#9B8BAB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
-        <span className="text-[12.5px] font-semibold text-[#1a1a1a]">{MONTHS[month.m]} {month.y}</span>
+        <div className="text-center">
+          <span className="text-[13px] font-bold text-[#1a1a1a]">{MONTHS[month.m]}</span>
+          <span className="text-[13px] font-normal text-[#9B8BAB] ml-1.5">{month.y}</span>
+        </div>
         <button onClick={() => setMonth((m) => {
           if (m.m === 11) return { y: m.y + 1, m: 0 };
           return { y: m.y, m: m.m + 1 };
-        })} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#F0E8F4] transition-colors">
+        })} className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-[#F0E8F4] transition-colors">
           <svg viewBox="0 0 8 14" width="7" height="12" fill="none">
             <path d="M1 1l6 6-6 6" stroke="#9B8BAB" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -260,17 +274,23 @@ function Calendar({ mode, selected, onSelect, minDate }) {
       </div>
       <div className="grid grid-cols-7 gap-0.5">
         {DAYS.map((d) => (
-          <div key={d} className="text-center text-[9.5px] text-[#C4B3CE] font-semibold uppercase py-1">{d}</div>
+          <div key={d} className="text-center text-[9px] text-[#C4B3CE] font-bold uppercase tracking-wide py-1.5">{d}</div>
         ))}
         {cells.map((day, i) => (
           <div key={i} onClick={() => handleClick(day)}
-            className={`h-8 flex items-center justify-center text-[12px] transition-colors duration-150 ${cellClass(day)}`}>
+            className={`h-9 flex items-center justify-center text-[12.5px] font-medium transition-all duration-150 ${cellClass(day)}`}>
             {day}
           </div>
         ))}
       </div>
       {mode === "night_stay" && (
-        <p className="text-[10px] text-[#C4B3CE] text-center mt-2">Click to select check-in, then check-out date</p>
+        <p className="text-[10px] text-[#C4B3CE] text-center mt-3 flex items-center justify-center gap-1">
+          <svg viewBox="0 0 12 12" width="10" height="10" fill="none">
+            <circle cx="6" cy="6" r="5.3" stroke="currentColor" strokeWidth="1.2"/>
+            <path d="M6 4v3M6 8.3v.2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+          </svg>
+          Select check-in, then check-out
+        </p>
       )}
     </div>
   );
@@ -279,23 +299,23 @@ function Calendar({ mode, selected, onSelect, minDate }) {
 // ─── Guest Counter ─────────────────────────────────────────────────────────────
 function Counter({ label, sub, value, min = 0, max = 10, onChange }) {
   return (
-    <div>
-      <p className="text-[10px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold mb-2">{label}</p>
-      <div className="flex items-center gap-3">
+    <div className="bg-[#FAF7FC] border border-[#EDE5F0] rounded-xl p-4">
+      <p className="text-[10px] uppercase tracking-[0.18em] text-[#9B8BAB] font-bold mb-3">{label}</p>
+      <div className="flex items-center gap-2">
         <button type="button"
           onClick={() => onChange(Math.max(min, value - 1))}
           disabled={value <= min}
-          className="w-9 h-9 rounded-xl bg-[#F0E8F4] flex items-center justify-center text-[#7A2267] text-xl font-light
-            disabled:text-[#D4C8DC] disabled:bg-[#F7F4F0] hover:bg-[#E8DAF0] transition-colors">−</button>
+          className="w-9 h-9 rounded-xl bg-white border border-[#EDE5F0] flex items-center justify-center text-[#7A2267] text-xl font-light
+            disabled:text-[#D4C8DC] disabled:border-[#F7F4F0] hover:bg-[#F0E8F4] hover:border-[#C4B3CE] transition-all shadow-sm">−</button>
         <div className="flex-1 text-center">
-          <span className="text-[18px] font-bold text-[#1a1410]">{value}</span>
-          {sub && <span className="text-[10px] text-[#C4B3CE] ml-1.5">{sub}</span>}
+          <span className="text-[22px] font-bold text-[#1a1410]">{value}</span>
+          {sub && <p className="text-[9.5px] text-[#C4B3CE] mt-0.5">{sub}</p>}
         </div>
         <button type="button"
           onClick={() => onChange(Math.min(max, value + 1))}
           disabled={value >= max}
-          className="w-9 h-9 rounded-xl bg-[#F0E8F4] flex items-center justify-center text-[#7A2267] text-xl font-light
-            disabled:text-[#D4C8DC] disabled:bg-[#F7F4F0] hover:bg-[#E8DAF0] transition-colors">+</button>
+          className="w-9 h-9 rounded-xl bg-[#7A2267] flex items-center justify-center text-white text-xl font-light
+            disabled:opacity-30 hover:bg-[#6d1d5c] transition-all shadow-[0_2px_8px_rgba(122,34,103,0.3)]">+</button>
       </div>
     </div>
   );
@@ -342,6 +362,101 @@ function RoomCard({ room, bookingMode, selected, onToggle, cartCount }) {
         </div>
       </div>
     </motion.div>
+  );
+}
+
+// ─── Fixed Bottom Navigation Bar ─────────────────────────────────────────────
+function FixedBottomBar({ showBack, showNext, onBack, onNext, nextDisabled, nextLabel, contextInfo, barError, isLoading }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className={`${montserrat.className} fixed bottom-0 inset-x-0 z-40`}>
+      <AnimatePresence>
+        {barError && (
+          <motion.div
+            key="bar-err"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="bg-red-50 border-t border-red-200 overflow-hidden"
+          >
+            <div className="max-w-3xl mx-auto px-4 py-2 flex items-center gap-2">
+              <svg viewBox="0 0 16 16" width="13" height="13" fill="none" className="shrink-0 text-red-500">
+                <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.4"/>
+                <path d="M8 5v4M8 10.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              <p className="text-[11.5px] text-red-700 leading-snug line-clamp-2">{barError}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <div className="bg-white/95 backdrop-blur-xl border-t border-[#EDE5F0] shadow-[0_-6px_32px_rgba(0,0,0,0.09)]">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+          {/* Back button */}
+          {showBack ? (
+            <button onClick={onBack}
+              className="h-11 px-4 rounded-xl border-2 border-[#EDE5F0] text-[#9B8BAB] font-semibold text-[13px]
+                hover:border-[#C4B3CE] hover:text-[#7A2267] transition-all shrink-0 flex items-center gap-1.5">
+              <svg viewBox="0 0 16 10" width="13" height="9" fill="none">
+                <path d="M5 1L1 5l4 4M1 5h14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span className="hidden sm:inline">Back</span>
+            </button>
+          ) : (
+            <div className="h-11 w-4 shrink-0" />
+          )}
+
+          {/* Animated context chip */}
+          <div className="flex-1 flex justify-center overflow-hidden px-1">
+            <AnimatePresence mode="wait">
+              {contextInfo && (
+                <motion.div
+                  key={contextInfo}
+                  initial={{ opacity: 0, scale: 0.88, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.88, y: -6 }}
+                  transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+                  className="flex items-center gap-2 bg-gradient-to-r from-[#F0E8F4] to-[#FAF7FC]
+                    border border-[#E0D5EA] text-[#7A2267] text-[11.5px] font-semibold
+                    px-4 py-2 rounded-full max-w-full overflow-hidden shadow-sm">
+                  <motion.div
+                    animate={{ scale: [1, 1.35, 1] }}
+                    transition={{ duration: 0.55, ease: "easeOut" }}
+                    className="w-1.5 h-1.5 rounded-full bg-[#7A2267] shrink-0" />
+                  <span className="truncate">{contextInfo}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Primary action */}
+          {showNext ? (
+            <button onClick={onNext} disabled={nextDisabled || isLoading}
+              className="h-11 px-6 rounded-xl bg-[#7A2267] hover:bg-[#6d1d5c] active:bg-[#5c1650] text-white font-semibold text-[13px]
+                shadow-[0_4px_16px_rgba(122,34,103,0.35)] hover:shadow-[0_6px_22px_rgba(122,34,103,0.45)]
+                disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none
+                transition-all duration-200 shrink-0 flex items-center gap-1.5">
+              {isLoading ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <span>{nextLabel}</span>
+                  <svg viewBox="0 0 16 10" width="13" height="9" fill="none">
+                    <path d="M11 1l4 4-4 4M15 5H1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </>
+              )}
+            </button>
+          ) : (
+            <div className="h-11 w-4 shrink-0" />
+          )}
+        </div>
+      </div>
+    </div>,
+    document.body
   );
 }
 
@@ -716,11 +831,9 @@ export default function BookingWizard({ settings, preselect }) {
           return `Your selected room${cart.size > 1 ? "s" : ""} can accommodate ${cartCapacity} adult${cartCapacity !== 1 ? "s" : ""}, but you have ${adults}. Please add more rooms.`;
         }
       }
-      // For day long: entry is required; rooms are optional and skipped when roomSubStep === 0
+      // For day long: entry is required; rooms (and property) are fully optional
       if (bookingMode === "day_long") {
         if (!selectedEntry) return "Please select an entry service to continue.";
-        // If the user went into room sub-steps, a property must be selected before continuing
-        if (roomSubStep > 0 && !selectedProp) return "Please select a property.";
       }
     }
     if (n === 4) {
@@ -793,6 +906,36 @@ export default function BookingWizard({ settings, preselect }) {
     }
     setPreviewRoom(null);
     setStep((s) => s - 1);
+  }
+
+  // ── Bar navigation (handles sub-step routing so the fixed bar can own Back/Next) ─
+  function barGoBack() {
+    setError("");
+    setUploadWarn(null);
+    setPreviewRoom(null);
+    if (step === 3) {
+      if (roomSubStep === 3) { setRoomSubStep(2); return; }
+      if (roomSubStep === 2) { setRoomSubStep(1); return; }
+      if (roomSubStep === 1 && bookingMode === "day_long") { setRoomSubStep(0); return; }
+    }
+    goBack();
+  }
+
+  function barGoNext() {
+    setError("");
+    if (step === 3) {
+      if (roomSubStep === 1) {
+        if (selectedProp) setRoomSubStep(2);
+        else setError("Please select a property to continue.");
+        return;
+      }
+      if (roomSubStep === 2) {
+        if (selectedCat) setRoomSubStep(3);
+        else setError("Please select a room category to continue.");
+        return;
+      }
+    }
+    goNext();
   }
 
   // ── Submit booking ────────────────────────────────────────────────────────────
@@ -953,7 +1096,7 @@ export default function BookingWizard({ settings, preselect }) {
     if (!showPriceBar) return null;
     const hasDiscount = dayLongDiscount > 0 || autoOfferDiscount > 0 || couponDiscount > 0;
     return (
-      <div className={`${montserrat.className} bg-white border border-[#EDE5F0] rounded-2xl shadow-[0_2px_16px_rgba(0,0,0,0.05)] p-4 mb-4`}>
+      <div className={`${montserrat.className} bg-gradient-to-r from-[#FDFBFE] to-[#FAF7FC] border border-[#EDE5F0] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-4 mb-4`}>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[9.5px] uppercase tracking-[0.2em] text-[#9B8BAB] font-semibold">Price Summary</p>
           {hasDiscount && (
@@ -1035,12 +1178,52 @@ export default function BookingWizard({ settings, preselect }) {
     );
   }
 
+  // ── Bar computed values ───────────────────────────────────────────────────────
+  const barNextDisabled =
+    (step === 3 && bookingMode === "night_stay" && roomSubStep === 1 && !selectedProp) ||
+    (step === 3 && bookingMode === "night_stay" && roomSubStep === 2 && !selectedCat) ||
+    (step === 3 && roomSubStep === 3 && bookingMode === "night_stay" && cart.size === 0);
+
+  const barNextLabel = step === 4 ? "Review & Pay" : "Continue";
+  const barShowBack  = step > 1;
+  const barShowNext  = step < 5;
+
+  const barContextInfo = (() => {
+    if (step === 1) return bookingMode === "night_stay" ? "Night Stay" : "Day Long";
+    if (step === 2 && checkIn) {
+      if (bookingMode === "day_long") return `Day Long · ${fmtDate(checkIn)}`;
+      if (checkOut) return `${fmtDate(checkIn)} → ${fmtDate(checkOut)}${nights > 0 ? ` · ${nights} night${nights > 1 ? "s" : ""}` : ""}`;
+      return fmtDate(checkIn) + " → ?";
+    }
+    if (step >= 3) {
+      const parts = [];
+      if (selectedEntry) parts.push(selectedEntry.name);
+      if (cart.size > 0) parts.push(`${cart.size} room${cart.size > 1 ? "s" : ""}`);
+      const priceSum = totalPrice + dayLongSvcTotal;
+      if (priceSum > 0) parts.push("৳" + priceSum.toLocaleString());
+      return parts.length ? parts.join(" · ") : null;
+    }
+    return null;
+  })();
+
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <div className={`${montserrat.className}`}>
+    <div className={`${montserrat.className} pb-24`}>
       <StepIndicator step={step} total={5} />
 
       <PriceBar />
+
+      <FixedBottomBar
+        showBack={barShowBack}
+        showNext={barShowNext}
+        onBack={barGoBack}
+        onNext={barGoNext}
+        nextDisabled={barNextDisabled}
+        nextLabel={barNextLabel}
+        contextInfo={barContextInfo}
+        barError={error}
+        isLoading={isPending}
+      />
 
       <AnimatePresence mode="wait">
         {/* ── STEP 1: Mode Selection ── */}
@@ -1048,37 +1231,41 @@ export default function BookingWizard({ settings, preselect }) {
           <motion.div key="step1"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}>
-            <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-6">
-
+            <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
               <div className="p-6 sm:p-8">
                 <h2 className={`text-[22px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>
                   How would you like to stay?
                 </h2>
-                <p className="text-[12.5px] text-[#9B8BAB] mb-7">Choose between a night stay or a day-long experience.</p>
+                <p className="text-[12.5px] text-[#9B8BAB] mb-7">Choose between a night stay or a full-day experience.</p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Night Stay */}
                   <button
                     onClick={() => setBookingMode("night_stay")}
-                    className={`group relative rounded-2xl border-2 p-6 text-left transition-all duration-300
+                    className={`group relative rounded-2xl border-2 p-6 text-left transition-all duration-300 overflow-hidden
                       ${bookingMode === "night_stay"
-                        ? "border-[#7A2267] bg-[#7A2267]/[0.03] shadow-[0_6px_28px_rgba(122,34,103,0.18)]"
-                        : "border-[#EDE5F0] hover:border-[#C4B3CE] hover:shadow-md"}`}>
+                        ? "border-[#7A2267] bg-gradient-to-br from-[#7A2267]/[0.04] to-[#F0E8F4]/70 shadow-[0_8px_32px_rgba(122,34,103,0.2)]"
+                        : "border-[#EDE5F0] bg-white hover:border-[#C4B3CE] hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)]"}`}>
+                    {/* Decorative orb */}
+                    <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full transition-all duration-300
+                      ${bookingMode === "night_stay" ? "bg-[#7A2267]/8" : "bg-[#F0E8F4]/50 group-hover:bg-[#EDE5F0]/80"}`} />
                     {bookingMode === "night_stay" && (
-                      <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-[#7A2267] flex items-center justify-center shadow-sm">
+                      <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-[#7A2267] flex items-center justify-center shadow-sm z-10">
                         <svg viewBox="0 0 10 10" width="10" height="10" fill="none">
                           <path d="M2 5l2.5 2.5 3.5-4" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </div>
                     )}
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-colors duration-200
-                      ${bookingMode === "night_stay" ? "bg-[#7A2267] text-white" : "bg-[#F0E8F4] text-[#7A2267] group-hover:bg-[#E8DAF0]"}`}>
+                    <div className={`relative z-10 w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-all duration-200
+                      ${bookingMode === "night_stay"
+                        ? "bg-[#7A2267] text-white shadow-[0_4px_14px_rgba(122,34,103,0.4)]"
+                        : "bg-[#F0E8F4] text-[#7A2267] group-hover:bg-[#E8DAF0]"}`}>
                       <MoonIcon />
                     </div>
-                    <p className={`text-[17px] font-semibold text-[#1a1410] mb-1.5 ${playfair.className}`}>Night Stay</p>
-                    <p className="text-[12px] text-[#9B8BAB] leading-relaxed">Stay overnight across one or more nights.</p>
+                    <p className={`relative z-10 text-[17px] font-semibold text-[#1a1410] mb-1.5 ${playfair.className}`}>Night Stay</p>
+                    <p className="relative z-10 text-[12px] text-[#9B8BAB] leading-relaxed">Stay overnight — one or more nights of comfort.</p>
                     {ciTime && coTime && (
-                      <div className="mt-4 pt-3 border-t border-[#F0E8F4] grid grid-cols-2 gap-2 text-[10.5px]">
+                      <div className="relative z-10 mt-4 pt-3 border-t border-[#F0E8F4] grid grid-cols-2 gap-2 text-[10.5px]">
                         <div>
                           <p className="text-[#C4B3CE] mb-0.5">Check-in</p>
                           <p className="font-semibold text-[#9B8BAB]">{fmt12(ciTime)}</p>
@@ -1094,25 +1281,29 @@ export default function BookingWizard({ settings, preselect }) {
                   {/* Day Long */}
                   <button
                     onClick={() => setBookingMode("day_long")}
-                    className={`group relative rounded-2xl border-2 p-6 text-left transition-all duration-300
+                    className={`group relative rounded-2xl border-2 p-6 text-left transition-all duration-300 overflow-hidden
                       ${bookingMode === "day_long"
-                        ? "border-[#7A2267] bg-[#7A2267]/[0.03] shadow-[0_6px_28px_rgba(122,34,103,0.18)]"
-                        : "border-[#EDE5F0] hover:border-[#C4B3CE] hover:shadow-md"}`}>
+                        ? "border-[#7A2267] bg-gradient-to-br from-[#7A2267]/[0.04] to-[#F0E8F4]/70 shadow-[0_8px_32px_rgba(122,34,103,0.2)]"
+                        : "border-[#EDE5F0] bg-white hover:border-[#C4B3CE] hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)]"}`}>
+                    <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full transition-all duration-300
+                      ${bookingMode === "day_long" ? "bg-[#7A2267]/8" : "bg-[#F0E8F4]/50 group-hover:bg-[#EDE5F0]/80"}`} />
                     {bookingMode === "day_long" && (
-                      <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-[#7A2267] flex items-center justify-center shadow-sm">
+                      <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-[#7A2267] flex items-center justify-center shadow-sm z-10">
                         <svg viewBox="0 0 10 10" width="10" height="10" fill="none">
                           <path d="M2 5l2.5 2.5 3.5-4" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </div>
                     )}
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-colors duration-200
-                      ${bookingMode === "day_long" ? "bg-[#7A2267] text-white" : "bg-[#F0E8F4] text-[#7A2267] group-hover:bg-[#E8DAF0]"}`}>
+                    <div className={`relative z-10 w-12 h-12 rounded-2xl flex items-center justify-center mb-4 transition-all duration-200
+                      ${bookingMode === "day_long"
+                        ? "bg-[#7A2267] text-white shadow-[0_4px_14px_rgba(122,34,103,0.4)]"
+                        : "bg-[#F0E8F4] text-[#7A2267] group-hover:bg-[#E8DAF0]"}`}>
                       <SunIcon />
                     </div>
-                    <p className={`text-[17px] font-semibold text-[#1a1410] mb-1.5 ${playfair.className}`}>Day Long</p>
-                    <p className="text-[12px] text-[#9B8BAB] leading-relaxed">A full-day resort experience from morning to evening.</p>
+                    <p className={`relative z-10 text-[17px] font-semibold text-[#1a1410] mb-1.5 ${playfair.className}`}>Day Long</p>
+                    <p className="relative z-10 text-[12px] text-[#9B8BAB] leading-relaxed">A full-day resort experience from morning to evening.</p>
                     {settings?.dayLongCheckInTime && settings?.dayLongCheckOutTime && (
-                      <div className="mt-4 pt-3 border-t border-[#F0E8F4] grid grid-cols-2 gap-2 text-[10.5px]">
+                      <div className="relative z-10 mt-4 pt-3 border-t border-[#F0E8F4] grid grid-cols-2 gap-2 text-[10.5px]">
                         <div>
                           <p className="text-[#C4B3CE] mb-0.5">Arrival</p>
                           <p className="font-semibold text-[#9B8BAB]">{fmt12(settings.dayLongCheckInTime)}</p>
@@ -1127,11 +1318,6 @@ export default function BookingWizard({ settings, preselect }) {
                 </div>
               </div>
             </div>
-            <button onClick={goNext}
-              className="w-full bg-[#7A2267] hover:bg-[#8e2878] text-white font-semibold text-[13.5px]
-                py-4 rounded-2xl transition-all duration-200 shadow-[0_4px_20px_rgba(122,34,103,0.25)]">
-              Continue →
-            </button>
           </motion.div>
         )}
 
@@ -1140,7 +1326,7 @@ export default function BookingWizard({ settings, preselect }) {
           <motion.div key="step2"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}>
-            <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+            <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
 
               <div className="p-6 sm:p-8">
                 <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>
@@ -1154,18 +1340,22 @@ export default function BookingWizard({ settings, preselect }) {
 
                 {/* Date summary */}
                 {checkIn && (
-                  <div className="mt-4 flex items-center gap-3 text-[12.5px] text-[#1a1410] bg-[#FAF7FC] rounded-xl px-4 py-3">
-                    <svg viewBox="0 0 14 14" width="14" height="14" fill="none">
-                      <rect x="1" y="2.5" width="12" height="10" rx="1.5" stroke="#7A2267" strokeWidth="1.3" />
-                      <path d="M1 6h12M5 1.5v2M9 1.5v2" stroke="#7A2267" strokeWidth="1.3" strokeLinecap="round" />
-                    </svg>
-                    <span>
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                    className="mt-4 flex items-center gap-3 text-[12.5px] text-[#1a1410] bg-gradient-to-r from-[#F0E8F4]/60 to-[#FAF7FC] border border-[#EDE5F0] rounded-xl px-4 py-3">
+                    <div className="w-7 h-7 rounded-lg bg-[#7A2267]/10 flex items-center justify-center shrink-0">
+                      <svg viewBox="0 0 14 14" width="12" height="12" fill="none">
+                        <rect x="1" y="2.5" width="12" height="10" rx="1.5" stroke="#7A2267" strokeWidth="1.3" />
+                        <path d="M1 6h12M5 1.5v2M9 1.5v2" stroke="#7A2267" strokeWidth="1.3" strokeLinecap="round" />
+                      </svg>
+                    </div>
+                    <span className="font-medium text-[#7A2267]">
                       {bookingMode === "day_long"
                         ? <>{fmtDate(checkIn)} · Day long</>
-                        : <>{fmtDate(checkIn)} → {checkOut ? fmtDate(checkOut) : "?"}{nights > 0 ? ` · ${nights} night${nights > 1 ? "s" : ""}` : ""}</>
+                        : <>{fmtDate(checkIn)} → {checkOut ? fmtDate(checkOut) : <span className="text-[#C4B3CE]">select check-out</span>}{nights > 0 ? <span className="text-[#9B8BAB] font-normal ml-1.5">· {nights} night{nights > 1 ? "s" : ""}</span> : ""}</>
                       }
                     </span>
-                  </div>
+                  </motion.div>
                 )}
 
                 {/* Timings reminder */}
@@ -1185,9 +1375,10 @@ export default function BookingWizard({ settings, preselect }) {
             </div>
 
             {/* Guest counts */}
-            <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+            <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
               <div className="p-6">
-                <h3 className="text-[13px] font-semibold text-[#1a1410] mb-4">How many guests?</h3>
+                <h3 className={`text-[16px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>How many guests?</h3>
+                <p className="text-[11.5px] text-[#C4B3CE] mb-5">Rooms are assigned based on your group size.</p>
                 <div className="grid grid-cols-2 gap-6">
                   <Counter label="Adults" value={adults} min={1} max={20}
                     sub={adults === 1 ? "adult" : "adults"} onChange={setAdults} />
@@ -1203,15 +1394,6 @@ export default function BookingWizard({ settings, preselect }) {
               </div>
             </div>
 
-            {error && <p className="text-[12px] text-red-600 bg-red-50 border border-red-200 px-4 py-3 rounded-xl mb-4">{error}</p>}
-            <div className="flex gap-3">
-              <button onClick={goBack} className="flex-1 py-4 rounded-2xl border-2 border-[#EDE5F0] text-[#9B8BAB] font-semibold text-[13px] hover:border-[#C4B3CE] transition-colors">← Back</button>
-              <button onClick={goNext}
-                className="flex-[2] bg-[#7A2267] hover:bg-[#8e2878] text-white font-semibold text-[13.5px]
-                  py-4 rounded-2xl transition-all duration-200 shadow-[0_4px_20px_rgba(122,34,103,0.25)]">
-                Continue →
-              </button>
-            </div>
           </motion.div>
         )}
 
@@ -1400,7 +1582,7 @@ export default function BookingWizard({ settings, preselect }) {
                 const addonServices = packages.filter((p) => p.type === "addon");
                 return (
                   <>
-                    <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+                    <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
         
                       <div className="p-6 sm:p-8">
                         <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>Choose your day package</h2>
@@ -1448,7 +1630,7 @@ export default function BookingWizard({ settings, preselect }) {
 
                     {/* Package summary */}
                     {(selectedEntry || selectedAddons.length > 0) && (
-                      <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+                      <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
                         <div className="p-4 sm:p-5">
                           <p className="text-[10px] uppercase tracking-[0.2em] text-[#9B8BAB] font-semibold mb-2.5">Selected Packages</p>
                           {selectedEntry && (
@@ -1471,15 +1653,6 @@ export default function BookingWizard({ settings, preselect }) {
                       </div>
                     )}
 
-                    {error && <p className="text-[12px] text-red-600 bg-red-50 border border-red-200 px-4 py-3 rounded-xl mb-4">{error}</p>}
-                    <div className="flex gap-3 mb-3">
-                      <button onClick={goBack} className="flex-1 py-4 rounded-2xl border-2 border-[#EDE5F0] text-[#9B8BAB] font-semibold text-[13px] hover:border-[#C4B3CE] transition-colors">← Back</button>
-                      <button onClick={goNext}
-                        className="flex-[2] bg-[#7A2267] hover:bg-[#8e2878] text-white font-semibold text-[13.5px]
-                          py-4 rounded-2xl transition-all duration-200 shadow-[0_4px_20px_rgba(122,34,103,0.25)]">
-                        Continue →
-                      </button>
-                    </div>
                     {/* Optional: add a day long room */}
                     <button onClick={() => setRoomSubStep(1)}
                       className="w-full py-3.5 rounded-2xl border-2 border-dashed border-[#C4B3CE] text-[#7A2267] font-semibold text-[13px]
@@ -1498,7 +1671,7 @@ export default function BookingWizard({ settings, preselect }) {
               {/* ── Sub-step 1: Property Selection ── */}
               {roomSubStep === 1 && (
                 <>
-                  <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+                  <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
       
                     <div className="p-6 sm:p-8">
                       <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>Choose your property</h2>
@@ -1554,28 +1727,13 @@ export default function BookingWizard({ settings, preselect }) {
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => bookingMode === "day_long" ? setRoomSubStep(0) : goBack()}
-                      className="flex-1 py-4 rounded-2xl border-2 border-[#EDE5F0] text-[#9B8BAB] font-semibold text-[13px] hover:border-[#C4B3CE] transition-colors">
-                      ← Back
-                    </button>
-                    <button
-                      onClick={() => { if (selectedProp) setRoomSubStep(2); }}
-                      disabled={!selectedProp}
-                      className="flex-[2] bg-[#7A2267] hover:bg-[#8e2878] text-white font-semibold text-[13.5px]
-                        py-4 rounded-2xl transition-all duration-200 shadow-[0_4px_20px_rgba(122,34,103,0.25)]
-                        disabled:opacity-40 disabled:cursor-not-allowed">
-                      Next →
-                    </button>
-                  </div>
                 </>
               )}
 
               {/* ── Sub-step 2: Category Selection ── */}
               {roomSubStep === 2 && (
                 <>
-                  <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+                  <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
       
                     <div className="p-6 sm:p-8">
                       <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>Choose room category</h2>
@@ -1624,27 +1782,13 @@ export default function BookingWizard({ settings, preselect }) {
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-3">
-                    <button onClick={() => setRoomSubStep(1)}
-                      className="flex-1 py-4 rounded-2xl border-2 border-[#EDE5F0] text-[#9B8BAB] font-semibold text-[13px] hover:border-[#C4B3CE] transition-colors">
-                      ← Back
-                    </button>
-                    <button
-                      onClick={() => { if (selectedCat) setRoomSubStep(3); }}
-                      disabled={!selectedCat}
-                      className="flex-[2] bg-[#7A2267] hover:bg-[#8e2878] text-white font-semibold text-[13.5px]
-                        py-4 rounded-2xl transition-all duration-200 shadow-[0_4px_20px_rgba(122,34,103,0.25)]
-                        disabled:opacity-40 disabled:cursor-not-allowed">
-                      Next →
-                    </button>
-                  </div>
                 </>
               )}
 
               {/* ── Sub-step 3: Room Grid ── */}
               {roomSubStep === 3 && (
                 <>
-                  <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+                  <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
       
                     <div className="p-5 sm:p-6">
                       <div className="flex items-center justify-between mb-4">
@@ -1687,7 +1831,7 @@ export default function BookingWizard({ settings, preselect }) {
 
                   {/* Cart summary — rooms only, no total (total is in PriceBar above) */}
                   {cart.size > 0 && (
-                    <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+                    <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
                       <div className="p-4 sm:p-5">
                         <div className="flex items-center justify-between mb-2.5">
                           <p className="text-[10px] uppercase tracking-[0.2em] text-[#9B8BAB] font-semibold">Selected Rooms</p>
@@ -1721,20 +1865,6 @@ export default function BookingWizard({ settings, preselect }) {
                     </div>
                   )}
 
-                  {error && <p className="text-[12px] text-red-600 bg-red-50 border border-red-200 px-4 py-3 rounded-xl mb-4">{error}</p>}
-                  <div className="flex gap-3">
-                    <button onClick={() => setRoomSubStep(2)}
-                      className="flex-1 py-4 rounded-2xl border-2 border-[#EDE5F0] text-[#9B8BAB] font-semibold text-[13px] hover:border-[#C4B3CE] transition-colors">
-                      ← Back
-                    </button>
-                    <button onClick={goNext}
-                      disabled={bookingMode === "night_stay" && cart.size === 0}
-                      className="flex-[2] bg-[#7A2267] hover:bg-[#8e2878] text-white font-semibold text-[13.5px]
-                        py-4 rounded-2xl transition-all duration-200 shadow-[0_4px_20px_rgba(122,34,103,0.25)]
-                        disabled:opacity-50 disabled:cursor-not-allowed">
-                      Continue →
-                    </button>
-                  </div>
                 </>
               )}
 
@@ -1747,7 +1877,7 @@ export default function BookingWizard({ settings, preselect }) {
           <motion.div key="step4"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}>
-            <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+            <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
 
               <div className="p-6 sm:p-8">
                 <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>Your details</h2>
@@ -1763,13 +1893,13 @@ export default function BookingWizard({ settings, preselect }) {
                       <label className="block text-[9.5px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold mb-1">Full Name *</label>
                       <input placeholder="Your full name" value={primaryGuest.name}
                         onChange={(e) => setPrimaryGuest((p) => ({ ...p, name: e.target.value }))}
-                        className="w-full border border-[#EDE5F0] rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a1a1a] placeholder:text-[#C4B3CE] outline-none focus:border-[#7A2267]/40 transition-all" />
+                        className="w-full border border-[#EDE5F0] rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a1a1a] placeholder:text-[#C4B3CE] outline-none focus:border-[#7A2267]/50 focus:shadow-[0_0_0_3px_rgba(122,34,103,0.08)] transition-all" />
                     </div>
                     <div>
                       <label className="block text-[9.5px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold mb-1">Phone *</label>
                       <input placeholder="+880 1X..." value={primaryGuest.phone}
                         onChange={(e) => setPrimaryGuest((p) => ({ ...p, phone: e.target.value }))}
-                        className="w-full border border-[#EDE5F0] rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a1a1a] placeholder:text-[#C4B3CE] outline-none focus:border-[#7A2267]/40 transition-all" />
+                        className="w-full border border-[#EDE5F0] rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a1a1a] placeholder:text-[#C4B3CE] outline-none focus:border-[#7A2267]/50 focus:shadow-[0_0_0_3px_rgba(122,34,103,0.08)] transition-all" />
                     </div>
                   </div>
 
@@ -1778,7 +1908,7 @@ export default function BookingWizard({ settings, preselect }) {
                     <label className="block text-[9.5px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold mb-1">Email *</label>
                     <input type="email" placeholder="name@example.com" value={primaryGuest.email}
                       onChange={(e) => setPrimaryGuest((p) => ({ ...p, email: e.target.value }))}
-                      className="w-full border border-[#EDE5F0] rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a1a1a] placeholder:text-[#C4B3CE] outline-none focus:border-[#7A2267]/40 transition-all" />
+                      className="w-full border border-[#EDE5F0] rounded-xl px-3.5 py-2.5 text-[13px] text-[#1a1a1a] placeholder:text-[#C4B3CE] outline-none focus:border-[#7A2267]/50 focus:shadow-[0_0_0_3px_rgba(122,34,103,0.08)] transition-all" />
                   </div>
 
                   {/* Row 3: Age + Gender */}
@@ -2056,14 +2186,6 @@ export default function BookingWizard({ settings, preselect }) {
               </div>
             )}
 
-            <div className="flex gap-3">
-              <button onClick={goBack} className="flex-1 py-4 rounded-2xl border-2 border-[#EDE5F0] text-[#9B8BAB] font-semibold text-[13px] hover:border-[#C4B3CE] transition-colors">← Back</button>
-              <button onClick={goNext}
-                className="flex-[2] bg-[#7A2267] hover:bg-[#8e2878] text-white font-semibold text-[13.5px]
-                  py-4 rounded-2xl transition-all duration-200 shadow-[0_4px_20px_rgba(122,34,103,0.25)]">
-                Review & Pay →
-              </button>
-            </div>
           </motion.div>
         )}
 
@@ -2075,7 +2197,7 @@ export default function BookingWizard({ settings, preselect }) {
 
             {/* Login gate */}
             {!session?.user && (
-              <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4 p-6 sm:p-8 text-center">
+              <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4 p-6 sm:p-8 text-center">
                 <div className="w-16 h-16 rounded-full bg-[#F0E8F4] flex items-center justify-center mx-auto mb-4">
                   <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
                     <circle cx="12" cy="8" r="4" stroke="#7A2267" strokeWidth="1.5" />
@@ -2106,7 +2228,7 @@ export default function BookingWizard({ settings, preselect }) {
             {session?.user && (
               <>
                 {/* Booking summary */}
-                <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+                <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
     
                   <div className="p-6">
                     <h2 className={`text-[18px] font-semibold text-[#1a1410] mb-4 ${playfair.className}`}>Booking Summary</h2>
@@ -2224,7 +2346,7 @@ export default function BookingWizard({ settings, preselect }) {
                 )}
 
                 {/* Coupon code input */}
-                <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+                <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
                   <div className="p-5">
                     <p className="text-[10px] uppercase tracking-[0.18em] text-[#9B8BAB] font-semibold mb-3">Have a coupon?</p>
                     {couponApplied ? (
@@ -2263,7 +2385,7 @@ export default function BookingWizard({ settings, preselect }) {
                 </div>
 
                 {/* Payment options */}
-                <div className="bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] overflow-hidden mb-4">
+                <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
                   <div className="p-6">
                     <h3 className="text-[13px] font-semibold text-[#1a1410] mb-4">Payment Option</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
@@ -2313,7 +2435,6 @@ export default function BookingWizard({ settings, preselect }) {
               </>
             )}
 
-            <button onClick={goBack} className="w-full py-3 rounded-2xl border-2 border-[#EDE5F0] text-[#9B8BAB] font-semibold text-[13px] hover:border-[#C4B3CE] transition-colors">← Back</button>
           </motion.div>
         )}
       </AnimatePresence>

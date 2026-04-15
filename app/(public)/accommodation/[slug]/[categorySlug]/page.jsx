@@ -30,7 +30,8 @@ export default async function CategoryPage({ params }) {
   const category = await getCategoryBySlug(property._id.toString(), categorySlug);
   if (!category || !category.isActive) notFound();
 
-  const availableRooms = category.rooms?.filter((r) => r.status === "available") ?? [];
+  const allRooms       = category.rooms ?? [];
+  const availableRooms = allRooms.filter((r) => r.status === "available");
 
   return (
     <main className="min-h-screen bg-[#fcfcfc]">
@@ -136,9 +137,9 @@ export default async function CategoryPage({ params }) {
               </div>
             )}
 
-            {/* Room Availability */}
-            {category.rooms?.length > 0 ? (
-              <CategoryRoomsGrid rooms={category.rooms} category={category} />
+            {/* Rooms */}
+            {allRooms.length > 0 ? (
+              <CategoryRoomsGrid rooms={allRooms} category={category} />
             ) : (
               <p className="text-[13px] text-neutral-400">No rooms configured yet.</p>
             )}
@@ -161,21 +162,21 @@ export default async function CategoryPage({ params }) {
                   );
                 })()}
                 {availableRooms.length > 0 ? (
-                  <p className="text-[12px] text-emerald-600 mt-1">{availableRooms.length} room{availableRooms.length !== 1 ? "s" : ""} available</p>
-                ) : (
-                  <p className="text-[12px] text-red-400 mt-1">No rooms available</p>
-                )}
+                  <p className="text-[12px] text-emerald-600 mt-1">
+                    {availableRooms.length} room{availableRooms.length !== 1 ? "s" : ""} available now
+                  </p>
+                ) : allRooms.length > 0 ? (
+                  <p className="text-[12px] text-neutral-400 mt-1">{allRooms.length} room{allRooms.length !== 1 ? "s" : ""}</p>
+                ) : null}
               </div>
 
-              {availableRooms.length > 0 && (
-                <Link
-                  href={`/booking?property=${property._id}&category=${category._id}`}
-                  className="block w-full text-center py-3 rounded-xl bg-[#7A2267] text-white text-[13.5px]
-                    font-semibold hover:bg-[#8e2878] transition-colors duration-200"
-                >
-                  Book This Room
-                </Link>
-              )}
+              <Link
+                href={`/booking?property=${property._id}&category=${category._id}`}
+                className="block w-full text-center py-3 rounded-xl bg-[#7A2267] text-white text-[13.5px]
+                  font-semibold hover:bg-[#8e2878] transition-colors duration-200"
+              >
+                Check Availability &amp; Book
+              </Link>
 
               <div className="pt-2 space-y-2 text-[12px] text-neutral-500">
                 <div className="flex justify-between">

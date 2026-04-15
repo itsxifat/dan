@@ -609,8 +609,7 @@ export default function AccountClient({ user, bookings, userId, initialTab = "pr
   const [cropFile, setCropFile]             = useState(null);
   const fileInputRef = useRef(null);
 
-  const nightStayBookings = bookings.filter((b) => b.bookingMode !== "day_long");
-  const dayLongBookings   = bookings.filter((b) => b.bookingMode === "day_long");
+  const sortedBookings = [...bookings].sort((a, b) => new Date(b.checkIn) - new Date(a.checkIn));
 
   // 3 tabs only — no invoices tab (invoice button lives on each booking card)
   const TABS = [
@@ -808,32 +807,9 @@ export default function AccountClient({ user, bookings, userId, initialTab = "pr
               {bookings.length === 0 ? (
                 <EmptyState message="No bookings yet." linkHref="/booking" linkLabel="Book your first stay →" />
               ) : (
-                <>
-                  {nightStayBookings.length > 0 && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <div className="h-px flex-1 bg-[#EDE5F0]" />
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-[#9B8BAB] font-bold flex items-center gap-1.5">
-                          Night Stay · {nightStayBookings.length}
-                        </span>
-                        <div className="h-px flex-1 bg-[#EDE5F0]" />
-                      </div>
-                      {nightStayBookings.map((b) => <BookingCard key={b._id} booking={b} />)}
-                    </div>
-                  )}
-                  {dayLongBookings.length > 0 && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <div className="h-px flex-1 bg-[#EDE5F0]" />
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-[#9B8BAB] font-bold flex items-center gap-1.5">
-                          Day Long · {dayLongBookings.length}
-                        </span>
-                        <div className="h-px flex-1 bg-[#EDE5F0]" />
-                      </div>
-                      {dayLongBookings.map((b) => <BookingCard key={b._id} booking={b} />)}
-                    </div>
-                  )}
-                </>
+                <div className="space-y-3">
+                  {sortedBookings.map((b) => <BookingCard key={b._id} booking={b} />)}
+                </div>
               )}
             </div>
           </motion.div>

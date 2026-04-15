@@ -1004,3 +1004,76 @@ export async function markRoomMaintenance(roomId, issueDescription) {
   revalidatePath(`/admin/rooms/${roomId}`);
   return { success: true };
 }
+
+// ─── getRoomBookingsForRange: calendar data ───────────────────────────────────
+
+/**
+ * Returns all bookings (online + offline) for a room within [from, to].
+ * Used by the per-room calendar view.
+ */
+export async function getRoomBookingsForRange(roomId, from, to) {
+  await requireRead();
+  await dbConnect();
+
+  const fromDate = new Date(from);
+  const toDate   = new Date(to);
+
+  const [onlineBookings, offlineBookings] = await Promise.all([
+    Booking.find({
+      "roomBookings.room": roomId,
+      status: { $nin: ["pending", "cancelled", "no_show"] },
+      checkIn:  { $lt: toDate },
+      checkOut: { $gt: fromDate },
+    })
+      .select("bookingNumber status checkIn checkOut primaryGuest totalAmount paidAmount remainingAmount paymentStatus nights bookingMode")
+      .sort({ checkIn: 1 })
+      .lean(),
+
+    OfflineBooking.find({
+      room: roomId,
+      status: { $nin: ["cancelled", "no_show"] },
+      checkIn:  { $lt: toDate },
+      checkOut: { $gt: fromDate },
+    })
+      .select("referenceNumber status checkIn checkOut primaryGuest finalAmount paidAmount remainingAmount nights createdByName")
+      .sort({ checkIn: 1 })
+      .lean(),
+  ]);
+
+  const bookings = [
+    ...onlineBookings.map((b) => ({
+      _id:             b._id.toString(),
+      source:          "online",
+      ref:             b.bookingNumber,
+      status:          b.status,
+      checkIn:         b.checkIn,
+      checkOut:        b.checkOut,
+      guestName:       b.primaryGuest?.name || "Guest",
+      guestPhone:      b.primaryGuest?.phone || "",
+      totalAmount:     b.totalAmount,
+      paidAmount:      b.paidAmount,
+      remainingAmount: b.remainingAmount,
+      paymentStatus:   b.paymentStatus,
+      nights:          b.nights,
+      bookingMode:     b.bookingMode,
+    })),
+    ...offlineBookings.map((b) => ({
+      _id:             b._id.toString(),
+      source:          "offline",
+      ref:             b.referenceNumber,
+      status:          b.status,
+      checkIn:         b.checkIn,
+      checkOut:        b.checkOut,
+      guestName:       b.primaryGuest?.name || "Guest",
+      guestPhone:      b.primaryGuest?.phone || "",
+      totalAmount:     b.finalAmount,
+      paidAmount:      b.paidAmount,
+      remainingAmount: b.remainingAmount,
+      paymentStatus:   b.paidAmount >= b.finalAmount ? "paid" : b.paidAmount > 0 ? "partial" : "unpaid",
+      nights:          b.nights,
+      bookingMode:     "night_stay",
+    })),
+  ].sort((a, b) => new Date(a.checkIn) - new Date(b.checkIn));
+
+  return JSON.parse(JSON.stringify(bookings));
+}

@@ -29,8 +29,8 @@ const BookingSchema = new mongoose.Schema({
     default: "night_stay",
   },
 
-  property:    { type: mongoose.Schema.Types.ObjectId, ref: "Property", required: true },
-  bookingType: { type: String, enum: ["room", "cottage"], required: true },
+  property:    { type: mongoose.Schema.Types.ObjectId, ref: "Property", default: null },
+  bookingType: { type: String, enum: ["room", "cottage", null], default: null },
 
   // Multi-room allocations
   roomBookings: [RoomBookingSchema],

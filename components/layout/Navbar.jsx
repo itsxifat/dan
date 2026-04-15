@@ -367,7 +367,7 @@ export default function Navbar() {
                 alt="Dhali's Amber Nivaas"
                 width={90}
                 height={26}
-                className="object-contain opacity-80 group-hover:opacity-100 transition-opacity duration-300"
+                className="object-contain"
                 priority
               />
             </Link>

@@ -113,8 +113,10 @@ export async function getAvailableRoomsForBooking({
   const category = await RoomCategory.findById(categoryId).lean();
   if (!category) return [];
 
-  // All rooms in this category
-  const query = { property: propertyId, category: categoryId, status: "available" };
+  // All rooms in this category — include "occupied" rooms because occupancy is a static
+  // snapshot; the date-range booking check below correctly handles actual conflicts.
+  // Only hard-exclude maintenance/blocked rooms (they cannot accept any booking).
+  const query = { property: propertyId, category: categoryId, status: { $in: ["available", "occupied"] } };
   const allRooms = await Room.find(query).lean();
 
   // Booked room IDs in this date range — exclude "pending" (payment not yet confirmed)
@@ -353,8 +355,8 @@ export async function createPendingBooking(bookingData) {
   const booking = await Booking.create({
     bookingNumber,
     bookingMode: bookingMode || "night_stay",
-    property:    propertyId,
-    bookingType,
+    property:    propertyId || null,
+    bookingType: bookingType || null,
     roomBookings: resolvedRoomBookings,
     category:     categoryId || null,
     room:         cottageRoomId || null,

@@ -48,44 +48,38 @@ const PLACEHOLDER_PROPERTIES = [
 
 // ── Single card ───────────────────────────────────────────────────────────────
 function PropertyCard({ property }) {
-  const cardRef    = useRef(null);
-  const imgRef     = useRef(null);
-  const overlayRef = useRef(null);
-  const slideRef   = useRef(null);
+  const cardRef  = useRef(null);
+  const imgRef   = useRef(null);
+  const slideRef = useRef(null);
 
   const imgSrc    = property.coverImage || FALLBACK_IMAGE;
   const isCottage = property.type === "cottage";
   const tagline   = property.tagline || "";
 
   useGSAP(() => {
-    const card    = cardRef.current;
-    const img     = imgRef.current;
-    const overlay = overlayRef.current;
-    const slide   = slideRef.current;
+    const card  = cardRef.current;
+    const img   = imgRef.current;
+    const slide = slideRef.current;
 
     const mm = gsap.matchMedia();
 
     // ── Desktop / pointer devices: hide slide, reveal on hover ──
     mm.add("(hover: hover)", () => {
-      // set hidden state via GSAP (no inline style needed)
       gsap.set(slide, { y: 18, opacity: 0 });
 
-      const onEnter = () => {
-        gsap.to(img,     { scale: 1.08, duration: 0.7,  ease: "power2.out" });
-        gsap.to(overlay, { opacity: 1,  duration: 0.35, ease: "power2.out" });
-        gsap.to(slide,   { y: 0, opacity: 1, duration: 0.42, ease: "power3.out" });
-      };
-      const onLeave = () => {
-        gsap.to(img,     { scale: 1,   duration: 0.6,  ease: "power2.inOut" });
-        gsap.to(overlay, { opacity: 0, duration: 0.35, ease: "power2.inOut" });
-        gsap.to(slide,   { y: 18, opacity: 0, duration: 0.32, ease: "power2.in" });
-      };
+      const tl = gsap.timeline({ paused: true })
+        .to(img,   { scale: 1.06, duration: 0.7,  ease: "power2.out" },    0)
+        .to(slide, { y: 0, opacity: 1, duration: 0.42, ease: "power3.out" }, 0);
+
+      const onEnter = () => tl.play();
+      const onLeave = () => tl.reverse();
 
       card.addEventListener("mouseenter", onEnter);
       card.addEventListener("mouseleave", onLeave);
       return () => {
         card.removeEventListener("mouseenter", onEnter);
         card.removeEventListener("mouseleave", onLeave);
+        tl.kill();
       };
     });
 
@@ -100,7 +94,7 @@ function PropertyCard({ property }) {
       ref={cardRef}
       href={`/accommodation/${property.slug}`}
       className="property-card relative block rounded-2xl overflow-hidden cursor-pointer
-        aspect-[3/4] w-[78vw] sm:w-[72vw] md:w-auto flex-shrink-0 snap-start"
+        aspect-4/3 w-[78vw] sm:w-[72vw] md:w-auto shrink-0 snap-start"
     >
       {/* Image */}
       <img
@@ -111,10 +105,7 @@ function PropertyCard({ property }) {
       />
 
       {/* Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0d0905]/90 via-[#0d0905]/30 to-transparent" />
-
-      {/* Hover darkening */}
-      <div ref={overlayRef} className="absolute inset-0 bg-[#0d0905]/25 opacity-0 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#0d0905]/75 via-[#0d0905]/15 to-transparent" />
 
       {/* Cottage badge */}
       {isCottage && (
@@ -246,7 +237,7 @@ export default function RoomsSection({ properties }) {
             overflow-x-auto md:overflow-visible
             pl-4 sm:pl-8 lg:pl-12
             pr-4 sm:pr-8 lg:pr-12
-            pb-3 md:pb-0
+            py-3 md:py-0
             snap-x snap-mandatory md:snap-none scroll-pl-4 sm:scroll-pl-8
           "
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
