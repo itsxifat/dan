@@ -91,37 +91,59 @@ function ShieldIcon() {
 
 // ─── Custom Select ────────────────────────────────────────────────────────────
 function CustomSelect({ value, onChange, options, className = "" }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef(null);
-  const selected = options.find((o) => o.value === value) || options[0];
+  const [open, setOpen]   = useState(false);
+  const [rect, setRect]   = useState(null);
+  const btnRef            = useRef(null);
+  const selected          = options.find((o) => o.value === value) || options[0];
 
   useEffect(() => {
-    function handler(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    if (!open) return;
+    function handler(e) {
+      if (btnRef.current && !btnRef.current.contains(e.target)) setOpen(false);
+    }
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, []);
+  }, [open]);
+
+  function handleOpen() {
+    if (btnRef.current) setRect(btnRef.current.getBoundingClientRect());
+    setOpen((v) => !v);
+  }
+
+  const dropdown = open && rect && createPortal(
+    <div
+      style={{
+        position: "fixed",
+        top:      rect.bottom + 4,
+        left:     rect.left,
+        width:    rect.width,
+        zIndex:   9999,
+      }}
+      className="bg-white border border-[#EDE5F0] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.12)] overflow-hidden"
+    >
+      {options.map((o) => (
+        <button key={o.value} type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => { onChange(o.value); setOpen(false); }}
+          className={`w-full text-left px-3.5 py-2 text-[12.5px] transition-colors
+            ${o.value === value ? "bg-[#F0E8F4] text-[#7A2267] font-semibold" : "text-[#1a1a1a] hover:bg-[#FAF7FC]"}`}>
+          {o.label}
+        </button>
+      ))}
+    </div>,
+    document.body
+  );
 
   return (
-    <div ref={ref} className={`relative ${className}`}>
-      <button type="button" onClick={() => setOpen((v) => !v)}
+    <div className={`relative ${className}`}>
+      <button ref={btnRef} type="button" onClick={handleOpen}
         className="w-full flex items-center justify-between gap-1.5 border border-[#EDE5F0] rounded-xl px-3 py-2 text-[12.5px] text-[#1a1a1a] bg-white outline-none focus:border-[#7A2267]/40 transition-all hover:border-[#C4B3CE]">
         <span>{selected.label}</span>
         <svg viewBox="0 0 10 6" width="9" height="6" fill="none" className={`transition-transform duration-150 ${open ? "rotate-180" : ""}`}>
           <path d="M1 1l4 4 4-4" stroke="#C4B3CE" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
         </svg>
       </button>
-      {open && (
-        <div className="absolute z-50 left-0 mt-1 min-w-full bg-white border border-[#EDE5F0] rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.1)] overflow-hidden">
-          {options.map((o) => (
-            <button key={o.value} type="button"
-              onClick={() => { onChange(o.value); setOpen(false); }}
-              className={`w-full text-left px-3.5 py-2 text-[12.5px] transition-colors
-                ${o.value === value ? "bg-[#F0E8F4] text-[#7A2267] font-semibold" : "text-[#1a1a1a] hover:bg-[#FAF7FC]"}`}>
-              {o.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {dropdown}
     </div>
   );
 }
@@ -697,6 +719,14 @@ export default function BookingWizard({ settings, preselect }) {
     }).then(setRooms).catch(() => {}).finally(() => setRoomsLoading(false));
   }, [selectedProp, selectedCat, checkIn, checkOut, bookingMode]);
 
+  // Clear cart when dates change while rooms are already selected
+  useEffect(() => {
+    if (cart.size > 0) {
+      setCart(new Map());
+      setPreviewRoom(null);
+    }
+  }, [checkIn, checkOut]);
+
   // ── Cart helpers ─────────────────────────────────────────────────────────────
   function toggleRoom(room) {
     setCart((prev) => {
@@ -843,30 +873,15 @@ export default function BookingWizard({ settings, preselect }) {
       if (!primaryGuest.phone.trim()) return "Please enter a phone number.";
       if (!primaryGuest.age || isNaN(Number(primaryGuest.age))) return "Please enter the primary guest's age.";
 
-      // Every added guest must have name, age, and gender
-      for (const room of cartRooms) {
-        const info = getGuestInfo(room._id);
-        for (let i = 0; i < info.guests.length; i++) {
-          const g = info.guests[i];
-          const label = `Room ${room.roomNumber} · Guest ${i + 1}`;
-          if (!g.name?.trim())
-            return `${label}: Please enter a name.`;
-          if (g.age === "" || g.age === undefined || g.age === null || isNaN(Number(g.age)))
-            return `${label} (${g.name}): Age is required — we need it to classify adults and children correctly.`;
-          if (!g.gender)
-            return `${label} (${g.name}): Please select a gender.`;
-        }
-      }
-
       // NID check — handled separately via uploadWarn prompt, not a hard block here
       // Marriage cert check — also via uploadWarn prompt
     }
     return null;
   }
 
-  // Returns null if OK, or { type: "nid" | "cert", roomId? } if upload was skipped
+  // Returns null if OK, or { type: "cert", roomId? } if couple cert upload was skipped
   function checkUploadWarnings() {
-    if (nidMethod === "upload" && !nidUrl) return { type: "nid" };
+    // NID is always optional — no warning needed for it
     const maxFCA = settings?.maxFreeChildAge ?? 5;
     for (const room of cartRooms) {
       const info = getGuestInfo(room._id);
@@ -1210,8 +1225,6 @@ export default function BookingWizard({ settings, preselect }) {
   return (
     <div className={`${montserrat.className} pb-24`}>
       <StepIndicator step={step} total={5} />
-
-      <PriceBar />
 
       <FixedBottomBar
         showBack={barShowBack}
@@ -1628,30 +1641,8 @@ export default function BookingWizard({ settings, preselect }) {
                       </div>
                     </div>
 
-                    {/* Package summary */}
-                    {(selectedEntry || selectedAddons.length > 0) && (
-                      <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
-                        <div className="p-4 sm:p-5">
-                          <p className="text-[10px] uppercase tracking-[0.2em] text-[#9B8BAB] font-semibold mb-2.5">Selected Packages</p>
-                          {selectedEntry && (
-                            <div className="flex items-center justify-between text-[12.5px] py-1.5">
-                              <span className="text-[#1a1410] font-medium">{selectedEntry.name} <span className="text-[#C4B3CE] text-[10px]">Entry</span></span>
-                              <span className="text-[#7A2267] font-semibold">৳{Number(selectedEntry.price).toLocaleString()}</span>
-                            </div>
-                          )}
-                          {selectedAddons.map((a) => (
-                            <div key={a._id} className="flex items-center justify-between text-[12.5px] py-1">
-                              <span className="text-[#1a1410]">{a.name} <span className="text-[#C4B3CE] text-[10px]">Add-on</span></span>
-                              <span className="text-[#7A2267] font-semibold">৳{Number(a.price).toLocaleString()}</span>
-                            </div>
-                          ))}
-                          <div className="flex items-center justify-between text-[13px] font-bold mt-2 pt-2 border-t border-[#EDE5F0]">
-                            <span className="text-[#1a1410]">Package Total</span>
-                            <span className="text-[#7A2267]">৳{dayLongSvcTotal.toLocaleString()}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                    {/* Price summary replaces old package summary */}
+                    {(selectedEntry || selectedAddons.length > 0) && <PriceBar />}
 
                     {/* Optional: add a day long room */}
                     <button onClick={() => setRoomSubStep(1)}
@@ -1683,7 +1674,7 @@ export default function BookingWizard({ settings, preselect }) {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           {properties.filter((p) => p.type === "building").map((p) => (
                             <button key={p._id}
-                              onClick={() => { setSelectedProp(p._id); setSelectedCat(null); setRooms([]); setCart(new Map()); setPreviewRoom(null); }}
+                              onClick={() => { setSelectedProp(p._id); setSelectedCat(null); setRooms([]); setCart(new Map()); setPreviewRoom(null); setRoomSubStep(2); }}
                               className={`group relative text-left rounded-2xl overflow-hidden transition-all duration-300
                                 ${selectedProp === p._id
                                   ? "ring-2 ring-[#7A2267] ring-offset-2 shadow-[0_8px_36px_rgba(122,34,103,0.22)]"
@@ -1745,7 +1736,7 @@ export default function BookingWizard({ settings, preselect }) {
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                           {categories.map((c) => (
                             <button key={c._id}
-                              onClick={() => { setSelectedCat(c._id); setCart(new Map()); setPreviewRoom(null); }}
+                              onClick={() => { setSelectedCat(c._id); setCart(new Map()); setPreviewRoom(null); setRoomSubStep(3); }}
                               className={`group relative rounded-xl overflow-hidden text-left transition-all duration-250
                                 ${selectedCat === c._id
                                   ? "ring-2 ring-[#7A2267] ring-offset-1 shadow-[0_4px_18px_rgba(122,34,103,0.18)]"
@@ -1829,41 +1820,8 @@ export default function BookingWizard({ settings, preselect }) {
                     </div>
                   </div>
 
-                  {/* Cart summary — rooms only, no total (total is in PriceBar above) */}
-                  {cart.size > 0 && (
-                    <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
-                      <div className="p-4 sm:p-5">
-                        <div className="flex items-center justify-between mb-2.5">
-                          <p className="text-[10px] uppercase tracking-[0.2em] text-[#9B8BAB] font-semibold">Selected Rooms</p>
-                          <span className="text-[10px] text-[#C4B3CE]">{cart.size} room{cart.size > 1 ? "s" : ""}</span>
-                        </div>
-                        {cartRooms.map((r) => (
-                          <div key={r._id} className="flex items-center justify-between text-[12.5px] py-1.5 border-b border-[#F8F4FB] last:border-0">
-                            <div>
-                              <span className="text-[#1a1410] font-medium">Room {r.roomNumber}</span>
-                              <span className="text-[10px] text-[#C4B3CE] ml-1.5">Floor {r.floor}{r.block ? ` · ${r.block}` : ""}</span>
-                              {(r.variantName || r.bedType) && (
-                                <span className="text-[9.5px] text-[#9B8BAB] ml-1.5">{r.variantName || r.bedType}</span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2.5">
-                              <span className="text-[#7A2267] font-semibold text-[12px]">
-                                ৳{Number(bookingMode === "day_long" ? r.resolvedDayPrice : r.resolvedNightPrice).toLocaleString()}
-                                <span className="text-[9px] text-[#C4B3CE] font-normal ml-0.5">/{bookingMode === "day_long" ? "day" : "night"}</span>
-                              </span>
-                              <button onClick={() => { toggleRoom(r); if (previewRoom?._id === r._id) setPreviewRoom(null); }}
-                                className="w-5 h-5 rounded-full bg-[#F0E8F4] flex items-center justify-center text-[#C4B3CE] hover:bg-red-100 hover:text-red-500 transition-colors"
-                                title="Remove room">
-                                <svg viewBox="0 0 8 8" width="7" height="7" fill="none">
-                                  <path d="M1.5 1.5l5 5M6.5 1.5l-5 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                                </svg>
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  {/* Price summary replaces old cart summary */}
+                  {cart.size > 0 && <PriceBar />}
 
                 </>
               )}
@@ -1877,6 +1835,48 @@ export default function BookingWizard({ settings, preselect }) {
           <motion.div key="step4"
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}>
+
+            {/* Stay summary — dates + guests, with edit options */}
+            <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
+              <div className="p-4 sm:p-5">
+                <p className="text-[9.5px] uppercase tracking-[0.18em] text-[#9B8BAB] font-semibold mb-3">Your Stay</p>
+                <div className="flex flex-wrap gap-3">
+                  {/* Dates block */}
+                  <div className="flex-1 min-w-[140px] bg-[#FAF7FC] border border-[#EDE5F0] rounded-xl px-3.5 py-3">
+                    <p className="text-[9.5px] text-[#C4B3CE] uppercase tracking-wide font-semibold mb-1">
+                      {bookingMode === "day_long" ? "Date" : "Dates"}
+                    </p>
+                    <p className="text-[12.5px] font-semibold text-[#1a1410]">
+                      {bookingMode === "day_long"
+                        ? fmtDate(checkIn)
+                        : `${fmtDate(checkIn)} → ${fmtDate(checkOut)}`}
+                    </p>
+                    {bookingMode === "night_stay" && nights > 0 && (
+                      <p className="text-[10.5px] text-[#9B8BAB] mt-0.5">{nights} night{nights > 1 ? "s" : ""}</p>
+                    )}
+                    <button type="button"
+                      onClick={() => { setCart(new Map()); setStep(2); }}
+                      className="mt-1.5 text-[10px] font-semibold text-[#7A2267] underline underline-offset-2 hover:no-underline">
+                      Change
+                    </button>
+                  </div>
+                  {/* Guests block */}
+                  <div className="flex-1 min-w-[120px] bg-[#FAF7FC] border border-[#EDE5F0] rounded-xl px-3.5 py-3">
+                    <p className="text-[9.5px] text-[#C4B3CE] uppercase tracking-wide font-semibold mb-1">Guests</p>
+                    <p className="text-[12.5px] font-semibold text-[#1a1410]">
+                      {adults} adult{adults > 1 ? "s" : ""}
+                      {children > 0 ? `, ${children} child${children > 1 ? "ren" : ""}` : ""}
+                    </p>
+                    <button type="button"
+                      onClick={() => { setCart(new Map()); setStep(2); }}
+                      className="mt-1.5 text-[10px] font-semibold text-[#7A2267] underline underline-offset-2 hover:no-underline">
+                      Change
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
 
               <div className="p-6 sm:p-8">
@@ -1929,9 +1929,9 @@ export default function BookingWizard({ settings, preselect }) {
                   </div>
                 </div>
 
-                {/* NID — simplified: at_desk by default, upload optional */}
+                {/* NID — default: show at desk; "Upload online" button reveals upload field */}
                 <div className="mb-5 bg-[#FAF7FC] border border-[#EDE5F0] rounded-xl px-4 py-3.5">
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center justify-between gap-3 mb-1">
                     <div className="flex items-center gap-2.5">
                       <svg viewBox="0 0 18 14" width="16" height="13" fill="none">
                         <rect x="1" y="1" width="16" height="12" rx="2" stroke="#9B8BAB" strokeWidth="1.2"/>
@@ -1941,21 +1941,27 @@ export default function BookingWizard({ settings, preselect }) {
                       <div>
                         <p className="text-[12px] font-semibold text-[#1a1410]">NID / Passport</p>
                         <p className="text-[10.5px] text-[#9B8BAB] mt-0.5">
-                          {nidMethod === "upload" && nidUrl
-                            ? "Document uploaded"
-                            : nidMethod === "upload"
-                            ? "Upload your document below"
-                            : "Show original at check-in"}
+                          {nidUrl ? "Document uploaded" : "Show original at check-in"}
                         </p>
                       </div>
                     </div>
-                    <button type="button"
-                      onClick={() => setNidMethod(nidMethod === "at_desk" ? "upload" : "at_desk")}
-                      className="shrink-0 text-[10.5px] font-semibold text-[#7A2267] underline underline-offset-2 hover:no-underline transition-all">
-                      {nidMethod === "at_desk" ? "Upload now" : "Show at desk"}
-                    </button>
+                    {!nidUrl && (
+                      <button type="button"
+                        onClick={() => setNidMethod(nidMethod === "at_desk" ? "upload" : "at_desk")}
+                        className="shrink-0 text-[10.5px] font-semibold text-[#7A2267] underline underline-offset-2 hover:no-underline transition-all">
+                        {nidMethod === "at_desk" ? "Upload online" : "Cancel"}
+                      </button>
+                    )}
+                    {nidUrl && (
+                      <button type="button" onClick={() => { setNidUrl(""); setNidMethod("at_desk"); }}
+                        className="shrink-0 text-[10.5px] font-semibold text-emerald-600 hover:text-red-500 transition-colors">
+                        Remove
+                      </button>
+                    )}
                   </div>
-                  {nidMethod === "upload" && (
+
+                  {/* Upload field — shown only when user clicks "Upload online" or after upload */}
+                  {(nidMethod === "upload" || nidUrl) && (
                     <div className="mt-3">
                       {nidUrl ? (
                         <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-2.5">
@@ -1963,9 +1969,7 @@ export default function BookingWizard({ settings, preselect }) {
                             <circle cx="6" cy="6" r="5.5" fill="#10b981"/>
                             <path d="M3.5 6L5 7.5 8.5 4" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
-                          <span className="text-[11.5px] text-emerald-700 font-medium flex-1">Uploaded</span>
-                          <button type="button" onClick={() => setNidUrl("")}
-                            className="text-[10px] text-emerald-600 hover:text-red-500 font-semibold">Remove</button>
+                          <span className="text-[11.5px] text-emerald-700 font-medium flex-1">Uploaded successfully</span>
                         </div>
                       ) : (
                         <label className="flex items-center gap-3 border-2 border-dashed border-[#C4B3CE]/50 rounded-xl px-4 py-3 cursor-pointer hover:border-[#7A2267]/40 hover:bg-white/60 transition-all">
@@ -2025,11 +2029,11 @@ export default function BookingWizard({ settings, preselect }) {
                                     const warnMsg = childReclassifyMsg[`${room._id}-${gi}`];
                                     return (
                                       <div key={gi}>
-                                        <div className="grid grid-cols-[1fr_72px_auto_auto] gap-2 items-center">
+                                        <div className="flex flex-wrap gap-2 items-center">
                                           <input placeholder="Name" value={g.name || ""}
                                             onChange={(e) => updateGuest(room._id, gi, "name", e.target.value)}
-                                            className="border border-[#EDE5F0] rounded-xl px-3 py-2 text-[12.5px] outline-none focus:border-[#7A2267]/40 text-[#1a1a1a] placeholder:text-[#C4B3CE] transition-all" />
-                                          <div className="relative">
+                                            className="flex-1 min-w-[100px] border border-[#EDE5F0] rounded-xl px-3 py-2 text-[12.5px] outline-none focus:border-[#7A2267]/40 text-[#1a1a1a] placeholder:text-[#C4B3CE] transition-all" />
+                                          <div className="relative w-[72px] shrink-0">
                                             <input type="number" placeholder="Age" min="0" max="120" value={g.age ?? ""}
                                               onChange={(e) => updateGuest(room._id, gi, "age", e.target.value === "" ? "" : Math.min(120, Math.max(0, Number(e.target.value))))}
                                               className={`w-full border rounded-xl px-2.5 py-2 text-[12.5px] outline-none text-center text-[#1a1a1a] placeholder:text-[#C4B3CE] transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none
@@ -2038,11 +2042,13 @@ export default function BookingWizard({ settings, preselect }) {
                                               <span className="absolute -top-1.5 -right-1 text-[7.5px] font-bold bg-amber-400 text-white px-1 py-0.5 rounded-full leading-none pointer-events-none">C</span>
                                             )}
                                           </div>
-                                          <CustomSelect value={g.gender || "male"}
-                                            onChange={(v) => updateGuest(room._id, gi, "gender", v)}
-                                            options={GENDER_SHORT_OPTIONS} className="w-14" />
+                                          <div className="shrink-0 w-20">
+                                            <CustomSelect value={g.gender || "male"}
+                                              onChange={(v) => updateGuest(room._id, gi, "gender", v)}
+                                              options={GENDER_OPTIONS} />
+                                          </div>
                                           <button type="button" onClick={() => removeGuest(room._id, gi)}
-                                            className="text-[#C4B3CE] hover:text-red-400 transition-colors text-lg leading-none">×</button>
+                                            className="shrink-0 w-7 h-7 rounded-full bg-[#F0E8F4] flex items-center justify-center text-[#C4B3CE] hover:bg-red-100 hover:text-red-400 transition-colors text-lg leading-none">×</button>
                                         </div>
                                         {warnMsg && (
                                           <p className="text-[10.5px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mt-1">{warnMsg}</p>
@@ -2142,39 +2148,42 @@ export default function BookingWizard({ settings, preselect }) {
               </div>
             )}
 
-            {/* Upload-missed warning panel */}
-            {uploadWarn && (
+            {/* Upload-missed warning panel (couple certificate only) */}
+            {uploadWarn && uploadWarn.type === "cert" && (
               <div className="rounded-2xl overflow-hidden border border-amber-200 mb-4">
                 <div className="flex items-center gap-2.5 px-4 py-3 bg-amber-50 border-b border-amber-200">
                   <WarningIcon />
                   <p className="text-[12px] font-bold text-amber-800">
-                    {uploadWarn.type === "nid"
-                      ? "You haven't uploaded your NID / Passport"
-                      : `Room ${uploadWarn.roomNumber}: Marriage certificate not uploaded`}
+                    Room {uploadWarn.roomNumber}: Marriage certificate not uploaded
                   </p>
                 </div>
                 <div className="p-4 bg-[#FFFBF5]">
                   <p className="text-[12px] text-amber-700 mb-3">
-                    {uploadWarn.type === "nid"
-                      ? "You chose to upload your NID or Passport but haven't added the file yet. Would you like to provide it at check-in instead, or go back and upload it now?"
-                      : "You chose to upload the marriage certificate but haven't added the file yet. Would you like to bring it at check-in instead, or go back and upload it now?"}
+                    You chose to upload the marriage certificate but haven't added the file yet. Would you like to bring it at check-in instead, or go back and upload it now?
                   </p>
                   <div className="flex flex-col sm:flex-row gap-2">
                     <button type="button"
                       onClick={() => {
-                        if (uploadWarn.type === "nid") {
-                          setNidMethod("at_desk");
-                        } else {
-                          updateGuestInfo(uploadWarn.roomId, { coupleDocMethod: "at_desk" });
-                        }
+                        updateGuestInfo(uploadWarn.roomId, { coupleDocMethod: "at_desk" });
                         setUploadWarn(null);
-                        // Re-check for more warnings, then advance
-                        const next = checkUploadWarnings();
-                        if (!next) setStep((s) => s + 1);
-                        else setUploadWarn(next);
+                        // Check if any other rooms also need cert
+                        const maxFCA = settings?.maxFreeChildAge ?? 5;
+                        let nextWarn = null;
+                        for (const room of cartRooms) {
+                          if (room._id === uploadWarn.roomId) continue;
+                          const info = getGuestInfo(room._id);
+                          const adultList = info.guests.filter((g) => g.age !== "" && !isNaN(Number(g.age)) && Number(g.age) > maxFCA);
+                          const hasOpp = adultList.some((g) => g.gender === "male") && adultList.some((g) => g.gender === "female");
+                          if (hasOpp && settings?.requireCoupleDoc && info.groupType === "couple" && info.coupleDocMethod === "upload" && !info.coupleDocumentUrl) {
+                            nextWarn = { type: "cert", roomId: room._id, roomNumber: room.roomNumber };
+                            break;
+                          }
+                        }
+                        if (!nextWarn) setStep((s) => s + 1);
+                        else setUploadWarn(nextWarn);
                       }}
                       className="flex-1 py-2.5 rounded-xl bg-amber-600 text-white text-[12px] font-semibold hover:bg-amber-700 transition-colors">
-                      {uploadWarn.type === "nid" ? "I'll show my NID at desk" : "I'll bring certificate at desk"}
+                      I'll bring certificate at desk
                     </button>
                     <button type="button"
                       onClick={() => setUploadWarn(null)}
@@ -2441,7 +2450,10 @@ export default function BookingWizard({ settings, preselect }) {
 
       {/* ── Fixed floating room preview card (bottom-right on desktop, bottom sheet on mobile) ── */}
       <AnimatePresence>
-        {previewRoom && (
+        {previewRoom && (() => {
+          const catFallbackImage = categories.find((c) => c._id === previewRoom.category)?.coverImage || "";
+          const roomDisplayImage = previewRoom.coverImage || catFallbackImage;
+          return (
           <motion.div
             key={previewRoom._id}
             initial={{ opacity: 0, y: 32 }}
@@ -2453,8 +2465,8 @@ export default function BookingWizard({ settings, preselect }) {
           >
             {/* Image section */}
             <div className="relative h-48 bg-gradient-to-br from-[#F0E8F4] to-[#E4D5F0]">
-              {previewRoom.coverImage
-                ? <img src={previewRoom.coverImage} alt={`Room ${previewRoom.roomNumber}`} className="w-full h-full object-cover" />
+              {roomDisplayImage
+                ? <img src={roomDisplayImage} alt={`Room ${previewRoom.roomNumber}`} className="w-full h-full object-cover" />
                 : <div className="w-full h-full flex items-center justify-center">
                     <svg viewBox="0 0 24 18" width="36" height="28" fill="none">
                       <rect x="1" y="5" width="22" height="12" rx="1.5" stroke="#C4B3CE" strokeWidth="1.3"/>
@@ -2463,7 +2475,7 @@ export default function BookingWizard({ settings, preselect }) {
                     </svg>
                   </div>
               }
-              {previewRoom.coverImage && <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />}
+              {roomDisplayImage && <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />}
               {/* Close button */}
               <button onClick={() => setPreviewRoom(null)}
                 className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/35 backdrop-blur-sm
@@ -2482,7 +2494,7 @@ export default function BookingWizard({ settings, preselect }) {
                 </div>
               )}
               {/* Room title on image */}
-              {previewRoom.coverImage && (
+              {roomDisplayImage && (
                 <div className="absolute bottom-0 inset-x-0 px-4 pb-3">
                   <p className={`text-white text-[18px] font-semibold ${playfair.className}`}>Room {previewRoom.roomNumber}</p>
                   <p className="text-white/55 text-[11px] mt-0.5">
@@ -2494,7 +2506,7 @@ export default function BookingWizard({ settings, preselect }) {
 
             {/* Details */}
             <div className="p-4">
-              {!previewRoom.coverImage && (
+              {!roomDisplayImage && (
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div>
                     <p className={`text-[17px] font-semibold text-[#1a1410] ${playfair.className}`}>Room {previewRoom.roomNumber}</p>
@@ -2512,7 +2524,7 @@ export default function BookingWizard({ settings, preselect }) {
               )}
 
               {/* Price if image present */}
-              {previewRoom.coverImage && (
+              {roomDisplayImage && (
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-[11.5px] text-[#9B8BAB]">Rate</span>
                   <div className="text-right">
@@ -2544,25 +2556,25 @@ export default function BookingWizard({ settings, preselect }) {
                 )}
               </div>
 
-              {/* Action buttons */}
+              {/* Action button */}
               <div className="flex gap-2">
                 <button
-                  onClick={() => toggleRoom(previewRoom)}
+                  onClick={() => {
+                    const wasSelected = cart.has(previewRoom._id);
+                    toggleRoom(previewRoom);
+                    if (!wasSelected) setPreviewRoom(null);
+                  }}
                   className={`flex-1 py-2.5 rounded-xl text-[12.5px] font-semibold transition-all duration-200
                     ${cart.has(previewRoom._id)
                       ? "bg-red-50 text-red-600 border-2 border-red-200 hover:bg-red-100"
                       : "bg-[#7A2267] text-white shadow-[0_3px_14px_rgba(122,34,103,0.28)] hover:bg-[#8e2878]"}`}>
                   {cart.has(previewRoom._id) ? "Remove" : "Select Room"}
                 </button>
-                <a href={`/rooms/${previewRoom._id}`} target="_blank" rel="noopener noreferrer"
-                  className="px-3.5 py-2.5 rounded-xl text-[12.5px] font-semibold border-2 border-[#EDE5F0]
-                    text-[#9B8BAB] hover:border-[#C4B3CE] hover:text-[#7A2267] transition-all duration-150 whitespace-nowrap">
-                  Full Profile
-                </a>
               </div>
             </div>
           </motion.div>
-        )}
+          );
+        })()}
       </AnimatePresence>
     </div>
   );

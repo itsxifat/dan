@@ -4,16 +4,15 @@ import { useRef, useState, useEffect, useCallback, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence, useInView } from "framer-motion";
-import { Playfair_Display, Montserrat, Cormorant_Garamond } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const playfair  = Playfair_Display({ subsets: ["latin"], weight: ["400","500","600","700"] });
-const sans      = Montserrat({ subsets: ["latin"], weight: ["300","400","500","600"] });
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300","400","500","600"], style: ["italic","normal"] });
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 // ── Hero bg photo ──────────────────────────────────────────────────────────────
 const HERO_IMAGE = "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1920&q=85";
@@ -75,21 +74,21 @@ function HeroTitle() {
   return (
     <div ref={containerRef}>
       <div className="overflow-hidden mb-1">
-        <span className={`hw inline-block ${playfair.className} text-[2.8rem] sm:text-[4rem] lg:text-[5.2rem] xl:text-[6rem]
+        <span className={`hw inline-block ${lora.className} text-[2.8rem] sm:text-[4rem] lg:text-[5.2rem] xl:text-[6rem]
           font-semibold text-white leading-[1.05]`} style={{ opacity: 0 }}>
           Where Every
         </span>
       </div>
       <div className="overflow-hidden mb-1">
-        <span className={`hw inline-block ${playfair.className} text-[2.8rem] sm:text-[4rem] lg:text-[5.2rem] xl:text-[6rem]
+        <span className={`hw inline-block ${lora.className} text-[2.8rem] sm:text-[4rem] lg:text-[5.2rem] xl:text-[6rem]
           font-semibold text-white leading-[1.05]`} style={{ opacity: 0 }}>
           Moment&nbsp;
-          <em className={`${cormorant.className} italic text-[#D4A87C]`}>Becomes</em>
+          <em className={`${lora.className} italic text-[#7A2267]`}>Becomes</em>
         </span>
       </div>
       <div className="overflow-hidden">
-        <span className={`hw inline-block ${cormorant.className} italic text-[3.2rem] sm:text-[4.6rem] lg:text-[6rem] xl:text-[7rem]
-          font-light text-[#C9956C] leading-[1.0]`} style={{ opacity: 0 }}>
+        <span className={`hw inline-block ${lora.className} italic text-[3.2rem] sm:text-[4.6rem] lg:text-[6rem] xl:text-[7rem]
+          font-light text-[#7A2267] leading-[1.0]`} style={{ opacity: 0 }}>
           Forever
         </span>
       </div>
@@ -101,11 +100,11 @@ function HeroTitle() {
 function OrnamentalDivider({ light = false }) {
   return (
     <div className="flex items-center justify-center gap-3 py-3">
-      <div className={`h-px flex-1 max-w-[80px] ${light ? "bg-white/10" : "bg-[#C9956C]/20"}`} />
-      <svg viewBox="0 0 20 20" width="14" height="14" fill="none" className={light ? "text-white/20" : "text-[#C9956C]/40"}>
+      <div className={`h-px flex-1 max-w-[80px] ${light ? "bg-white/10" : "bg-[#7A2267]/20"}`} />
+      <svg viewBox="0 0 20 20" width="14" height="14" fill="none" className={light ? "text-white/20" : "text-[#7A2267]/40"}>
         <path d="M10 1 L11.8 7H18L13 11L14.8 17L10 13L5.2 17L7 11L2 7H8.2Z" fill="currentColor"/>
       </svg>
-      <div className={`h-px flex-1 max-w-[80px] ${light ? "bg-white/10" : "bg-[#C9956C]/20"}`} />
+      <div className={`h-px flex-1 max-w-[80px] ${light ? "bg-white/10" : "bg-[#7A2267]/20"}`} />
     </div>
   );
 }
@@ -132,7 +131,7 @@ function Marquee() {
         style={{ background: "linear-gradient(90deg, #7A2267 0%, transparent 8%, transparent 92%, #7A2267 100%)" }} />
       <div ref={trackRef} className="flex items-center gap-6 whitespace-nowrap will-change-transform" style={{ width: "max-content" }}>
         {doubled.map((item, i) => (
-          <span key={i} className={`${sans.className} text-[10px] uppercase tracking-[0.22em] font-semibold
+          <span key={i} className={`${josefin.className} text-[10px] uppercase tracking-[0.22em] font-semibold
             ${item === "·" ? "text-white/25" : "text-white/70"}`}>
             {item}
           </span>
@@ -190,13 +189,13 @@ function StatsBar() {
               <div className="mb-1">
                 <span
                   ref={statRefs[i]}
-                  className={`${playfair.className} text-[2.6rem] sm:text-[3.2rem] font-semibold text-[#C9956C] leading-none`}
+                  className={`${lora.className} text-[2.6rem] sm:text-[3.2rem] font-semibold text-[#7A2267] leading-none`}
                 >
                   0{s.suffix}
                 </span>
               </div>
               <OrnamentalDivider light />
-              <p className={`${sans.className} text-[9px] uppercase tracking-[0.22em] text-white/35 font-semibold mt-1`}>
+              <p className={`${josefin.className} text-[9px] uppercase tracking-[0.22em] text-white/35 font-semibold mt-1`}>
                 {s.label}
               </p>
             </div>
@@ -239,17 +238,17 @@ function VenuesSection({ venues = [] }) {
       <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
         {/* Header */}
         <div ref={headRef} className="mb-14 md:mb-16">
-          <p className={`reveal-item ${sans.className} text-[9.5px] uppercase tracking-[0.35em] text-[#C9956C]/60 font-semibold mb-4`}
+          <p className={`reveal-item ${josefin.className} text-[9.5px] uppercase tracking-[0.35em] text-[#7A2267]/60 font-semibold mb-4`}
             style={{ opacity: 0 }}>
             Our Wedding Venues
           </p>
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-            <h2 className={`reveal-item ${playfair.className} text-[2rem] sm:text-[2.8rem] lg:text-[3.2rem]
+            <h2 className={`reveal-item ${lora.className} text-[2rem] sm:text-[2.8rem] lg:text-[3.2rem]
               font-semibold text-white leading-[1.1] max-w-xl`} style={{ opacity: 0 }}>
               Every Celebration Finds Its{" "}
-              <em className={`${cormorant.className} italic text-[#C9956C]`}>Perfect Stage</em>
+              <em className={`${lora.className} italic text-[#7A2267]`}>Perfect Stage</em>
             </h2>
-            <p className={`reveal-item ${sans.className} text-[12px] text-white/35 font-light max-w-xs leading-relaxed lg:text-right`}
+            <p className={`reveal-item ${josefin.className} text-[12px] text-white/35 font-light max-w-xs leading-relaxed lg:text-right`}
               style={{ opacity: 0 }}>
               Six distinct venues — from intimate suites to grand fields for 15,000.
             </p>
@@ -258,7 +257,7 @@ function VenuesSection({ venues = [] }) {
 
         {/* Grid */}
         {venues.length === 0 ? (
-          <div className={`${sans.className} text-center py-16 text-white/20 text-[13px]`}>
+          <div className={`${josefin.className} text-center py-16 text-white/20 text-[13px]`}>
             Venues coming soon. Check back shortly.
           </div>
         ) : (
@@ -267,11 +266,11 @@ function VenuesSection({ venues = [] }) {
             <div key={v._id} className="venue-card group relative rounded-2xl overflow-hidden"
               style={{
                 background: "linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
-                border: "1px solid rgba(201,149,108,0.12)" }}>
+                border: "1px solid rgba(122,34,103,0.12)" }}>
 
               {/* Cover image or gradient placeholder */}
               <div className="relative h-44 overflow-hidden"
-                style={{ background: "linear-gradient(135deg, rgba(122,34,103,0.12) 0%, rgba(201,149,108,0.06) 100%)" }}>
+                style={{ background: "linear-gradient(135deg, rgba(122,34,103,0.12) 0%, rgba(122,34,103,0.06) 100%)" }}>
                 {v.coverImage ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -281,7 +280,7 @@ function VenuesSection({ venues = [] }) {
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full">
-                    <svg viewBox="0 0 40 36" className="w-14 h-14 text-[#C9956C]/20 group-hover:text-[#C9956C]/40 transition-colors duration-500" fill="none" stroke="currentColor" strokeWidth="1">
+                    <svg viewBox="0 0 40 36" className="w-14 h-14 text-[#7A2267]/20 group-hover:text-[#7A2267]/40 transition-colors duration-500" fill="none" stroke="currentColor" strokeWidth="1">
                       <rect x="2" y="8" width="36" height="26" rx="3"/>
                       <path d="M20 16v8M16 19.5h8"/>
                     </svg>
@@ -290,38 +289,38 @@ function VenuesSection({ venues = [] }) {
                 {/* Dark overlay for readability */}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0e0710]/80 via-transparent to-transparent" />
                 {v.badge && (
-                  <div className="absolute top-3 left-3 bg-[#C9956C] text-[#0e0710] text-[8px] font-bold
+                  <div className="absolute top-3 left-3 bg-[#7A2267] text-white text-[8px] font-bold
                     px-2.5 py-1 rounded-full uppercase tracking-[0.15em]">
                     {v.badge}
                   </div>
                 )}
                 {v.capacity && (
-                  <span className={`${sans.className} absolute bottom-3 right-3 text-[9px] font-semibold
-                    text-[#C9956C] bg-[#0e0710]/70 backdrop-blur-sm border border-[#C9956C]/25
+                  <span className={`${josefin.className} absolute bottom-3 right-3 text-[9px] font-semibold
+                    text-[#7A2267] bg-[#0e0710]/70 backdrop-blur-sm border border-[#7A2267]/25
                     px-2.5 py-1 rounded-full whitespace-nowrap`}>
                     {v.capacity}
                   </span>
                 )}
                 {/* Glow on hover */}
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                  style={{ background: "radial-gradient(ellipse at center, rgba(201,149,108,0.06) 0%, transparent 70%)" }} />
+                  style={{ background: "radial-gradient(ellipse at center, rgba(122,34,103,0.06) 0%, transparent 70%)" }} />
               </div>
 
               {/* Content */}
               <div className="px-5 pb-5 pt-4">
-                <h3 className={`${playfair.className} text-[1.05rem] font-semibold text-white/90 leading-tight mb-2`}>
+                <h3 className={`${lora.className} text-[1.05rem] font-semibold text-white/90 leading-tight mb-2`}>
                   {v.name}
                 </h3>
                 {v.description && (
-                  <p className={`${sans.className} text-[11.5px] text-white/35 leading-[1.75] font-light mb-3 line-clamp-2`}>
+                  <p className={`${josefin.className} text-[11.5px] text-white/35 leading-[1.75] font-light mb-3 line-clamp-2`}>
                     {v.description}
                   </p>
                 )}
                 {v.features?.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mb-4">
                     {v.features.slice(0, 3).map((f) => (
-                      <span key={f} className={`${sans.className} text-[9.5px] text-[#C9956C]/50
-                        bg-[#C9956C]/[0.06] border border-[#C9956C]/10 px-2.5 py-0.5 rounded-full`}>
+                      <span key={f} className={`${josefin.className} text-[9.5px] text-[#7A2267]/50
+                        bg-[#7A2267]/[0.06] border border-[#7A2267]/10 px-2.5 py-0.5 rounded-full`}>
                         {f}
                       </span>
                     ))}
@@ -329,8 +328,8 @@ function VenuesSection({ venues = [] }) {
                 )}
                 <Link
                   href={`/destination-wedding/venues/${v.slug}`}
-                  className={`${sans.className} inline-flex items-center gap-1.5 text-[9.5px] uppercase
-                    tracking-[0.18em] font-semibold text-[#C9956C]/60 hover:text-[#C9956C]
+                  className={`${josefin.className} inline-flex items-center gap-1.5 text-[9.5px] uppercase
+                    tracking-[0.18em] font-semibold text-[#7A2267]/60 hover:text-[#7A2267]
                     transition-colors duration-200 group/link`}
                 >
                   View Details
@@ -385,18 +384,18 @@ function ServicesSection() {
 
       {/* Soft rose glow */}
       <div className="pointer-events-none absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[140px]"
-        style={{ background: "radial-gradient(circle, rgba(201,149,108,0.07) 0%, transparent 70%)" }} />
+        style={{ background: "radial-gradient(circle, rgba(122,34,103,0.07) 0%, transparent 70%)" }} />
 
       <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
         <div ref={headRef} className="mb-12 md:mb-14">
-          <p className={`rev ${sans.className} text-[9.5px] uppercase tracking-[0.35em] text-[#C9956C]/55 font-semibold mb-4`}
+          <p className={`rev ${josefin.className} text-[9.5px] uppercase tracking-[0.35em] text-[#7A2267]/55 font-semibold mb-4`}
             style={{ opacity: 0 }}>
             What We Offer
           </p>
-          <h2 className={`rev ${playfair.className} text-[2rem] sm:text-[2.8rem] font-semibold text-white leading-[1.1] max-w-2xl`}
+          <h2 className={`rev ${lora.className} text-[2rem] sm:text-[2.8rem] font-semibold text-white leading-[1.1] max-w-2xl`}
             style={{ opacity: 0 }}>
             Everything Your Wedding Needs,{" "}
-            <em className={`${cormorant.className} italic text-[#C9956C]`}>Under One Roof</em>
+            <em className={`${lora.className} italic text-[#7A2267]`}>Under One Roof</em>
           </h2>
         </div>
 
@@ -406,18 +405,18 @@ function ServicesSection() {
               transition-all duration-500 hover:-translate-y-1"
               style={{ opacity: 0,
                 background: "linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
-                border: "1px solid rgba(201,149,108,0.1)" }}>
+                border: "1px solid rgba(122,34,103,0.1)" }}>
               {/* Hover glow */}
               <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                style={{ background: "radial-gradient(ellipse at top left, rgba(201,149,108,0.06) 0%, transparent 60%)" }} />
+                style={{ background: "radial-gradient(ellipse at top left, rgba(122,34,103,0.06) 0%, transparent 60%)" }} />
               <div className="relative z-10">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 text-[#C9956C]/50
-                  group-hover:text-[#C9956C]/80 transition-colors duration-300"
-                  style={{ background: "rgba(201,149,108,0.08)", border: "1px solid rgba(201,149,108,0.1)" }}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 text-[#7A2267]/50
+                  group-hover:text-[#7A2267]/80 transition-colors duration-300"
+                  style={{ background: "rgba(122,34,103,0.08)", border: "1px solid rgba(122,34,103,0.1)" }}>
                   {SERVICE_ICONS[i]}
                 </div>
-                <h3 className={`${playfair.className} text-[1rem] font-semibold text-white/85 mb-2 leading-tight`}>{s.title}</h3>
-                <p className={`${sans.className} text-[11.5px] text-white/30 leading-[1.75] font-light`}>{s.desc}</p>
+                <h3 className={`${lora.className} text-[1rem] font-semibold text-white/85 mb-2 leading-tight`}>{s.title}</h3>
+                <p className={`${josefin.className} text-[11.5px] text-white/30 leading-[1.75] font-light`}>{s.desc}</p>
               </div>
             </div>
           ))}
@@ -480,8 +479,8 @@ function Lightbox({ photos, index, onClose, onPrev, onNext }) {
         <img src={photo.src} alt={photo.title}
           className="w-full max-h-[72vh] object-contain rounded-2xl" />
         <div className="mt-4 text-center">
-          <p className={`${playfair.className} text-white text-[1.1rem] font-semibold`}>{photo.title}</p>
-          <p className={`${sans.className} text-white/35 text-[9px] uppercase tracking-[0.2em] mt-1`}>{photo.cat}</p>
+          <p className={`${lora.className} text-white text-[1.1rem] font-semibold`}>{photo.title}</p>
+          <p className={`${josefin.className} text-white/35 text-[9px] uppercase tracking-[0.2em] mt-1`}>{photo.cat}</p>
         </div>
       </motion.div>
     </motion.div>
@@ -520,17 +519,17 @@ function WeddingGallery({ photos = [] }) {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 mb-8">
           <div>
-            <p className={`gallery-head ${sans.className} text-[9.5px] uppercase tracking-[0.35em] text-[#7A2267]/55 font-semibold mb-3`}
+            <p className={`gallery-head ${josefin.className} text-[9.5px] uppercase tracking-[0.35em] text-[#7A2267]/55 font-semibold mb-3`}
               style={{ opacity: 0 }}>
               Wedding Gallery
             </p>
-            <h2 className={`gallery-head ${playfair.className} text-[2rem] sm:text-[2.8rem] font-semibold text-[#1a0d14] leading-[1.1]`}
+            <h2 className={`gallery-head ${lora.className} text-[2rem] sm:text-[2.8rem] font-semibold text-[#1a0d14] leading-[1.1]`}
               style={{ opacity: 0 }}>
               Moments That Tell{" "}
-              <em className={`${cormorant.className} italic text-[#7A2267]`}>Your Story</em>
+              <em className={`${lora.className} italic text-[#7A2267]`}>Your Story</em>
             </h2>
           </div>
-          <p className={`gallery-head ${sans.className} text-[11.5px] text-[#9B7A8A] font-light max-w-xs leading-relaxed sm:text-right`}
+          <p className={`gallery-head ${josefin.className} text-[11.5px] text-[#9B7A8A] font-light max-w-xs leading-relaxed sm:text-right`}
             style={{ opacity: 0 }}>
             A glimpse into the celebrations that have unfolded at Dhali's Amber Nivaas.
           </p>
@@ -540,7 +539,7 @@ function WeddingGallery({ photos = [] }) {
         <motion.div className="flex flex-wrap gap-2 mb-8">
           {GALLERY_CATS.map((cat) => (
             <button key={cat} onClick={() => { setActiveCat(cat); setLightboxIdx(null); }}
-              className={`${sans.className} text-[10px] font-semibold px-4 py-1.5 rounded-full
+              className={`${josefin.className} text-[10px] font-semibold px-4 py-1.5 rounded-full
                 border transition-all duration-200
                 ${activeCat === cat
                   ? "bg-[#7A2267] border-[#7A2267] text-white shadow-[0_2px_12px_rgba(122,34,103,0.3)]"
@@ -576,14 +575,14 @@ function WeddingGallery({ photos = [] }) {
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1a0d14]/80 via-transparent to-transparent
                   opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
                 <div className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-300">
-                  <span className={`${sans.className} text-[8px] uppercase tracking-[0.15em] font-semibold
+                  <span className={`${josefin.className} text-[8px] uppercase tracking-[0.15em] font-semibold
                     px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md text-white border border-white/20`}>
                     {photo.cat}
                   </span>
                 </div>
                 <div className="absolute bottom-0 inset-x-0 px-3.5 pb-3.5 opacity-0 group-hover:opacity-100
                   translate-y-1 group-hover:translate-y-0 transition-all duration-300">
-                  <p className={`${playfair.className} text-white text-[13px] font-semibold`}>{photo.title}</p>
+                  <p className={`${lora.className} text-white text-[13px] font-semibold`}>{photo.title}</p>
                 </div>
                 <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/15 backdrop-blur-md
                   flex items-center justify-center opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100
@@ -645,21 +644,21 @@ function CustomCalendar({ value, onChange, onClose }) {
       exit={{ opacity: 0, y: 4, scale: 0.97 }}
       transition={{ duration: 0.2 }}
       className="absolute top-full left-0 z-50 mt-2 w-[280px] rounded-2xl shadow-2xl shadow-black/60 overflow-hidden"
-      style={{ background: "#1a0e1f", border: "1px solid rgba(201,149,108,0.18)" }}
+      style={{ background: "#1a0e1f", border: "1px solid rgba(122,34,103,0.18)" }}
       onClick={(e) => e.stopPropagation()}
     >
       {/* Calendar header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
         <button onClick={goBack}
-          className="w-7 h-7 rounded-full bg-white/[0.06] hover:bg-[#C9956C]/15 text-white/50 hover:text-[#C9956C]
+          className="w-7 h-7 rounded-full bg-white/[0.06] hover:bg-[#7A2267]/15 text-white/50 hover:text-[#7A2267]
             flex items-center justify-center transition-all text-sm">
           ‹
         </button>
-        <span className={`${sans.className} text-[12px] font-semibold text-white/80`}>
+        <span className={`${josefin.className} text-[12px] font-semibold text-white/80`}>
           {MONTHS[view.month]} {view.year}
         </span>
         <button onClick={goFwd}
-          className="w-7 h-7 rounded-full bg-white/[0.06] hover:bg-[#C9956C]/15 text-white/50 hover:text-[#C9956C]
+          className="w-7 h-7 rounded-full bg-white/[0.06] hover:bg-[#7A2267]/15 text-white/50 hover:text-[#7A2267]
             flex items-center justify-center transition-all text-sm">
           ›
         </button>
@@ -668,7 +667,7 @@ function CustomCalendar({ value, onChange, onClose }) {
       {/* Day labels */}
       <div className="grid grid-cols-7 px-3 pt-3">
         {WEEK.map((d) => (
-          <div key={d} className={`${sans.className} text-center text-[8.5px] font-semibold text-white/20 uppercase tracking-wider py-1`}>
+          <div key={d} className={`${josefin.className} text-center text-[8.5px] font-semibold text-white/20 uppercase tracking-wider py-1`}>
             {d}
           </div>
         ))}
@@ -684,10 +683,10 @@ function CustomCalendar({ value, onChange, onClose }) {
           const isToday = dateStr === todayStr;
           return (
             <button key={i} disabled={isPast} onClick={() => !isPast && select(day)}
-              className={`${sans.className} w-full aspect-square rounded-lg text-[12px] font-medium
+              className={`${josefin.className} w-full aspect-square rounded-lg text-[12px] font-medium
                 flex items-center justify-center transition-all
                 ${isSel   ? "bg-[#7A2267] text-white shadow-[0_0_12px_rgba(122,34,103,0.5)]"
-                : isToday ? "bg-[#C9956C]/15 text-[#C9956C] border border-[#C9956C]/30"
+                : isToday ? "bg-[#7A2267]/15 text-[#7A2267] border border-[#7A2267]/30"
                 : isPast  ? "text-white/12 cursor-not-allowed"
                 :           "text-white/55 hover:bg-white/[0.08] hover:text-white"
                 }`}>
@@ -718,10 +717,10 @@ function CustomSelect({ value, onChange, options, placeholder }) {
       <button type="button" onClick={() => setOpen((o) => !o)}
         className={`w-full flex items-center justify-between gap-2 px-4 py-3.5 rounded-xl transition-all duration-200
           text-left text-[12.5px] font-light
-          ${open ? "border-[#C9956C]/50 bg-white/[0.08]" : "border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.07]"}
+          ${open ? "border-[#7A2267]/50 bg-white/[0.08]" : "border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.07]"}
           ${value ? "text-white/80" : "text-white/25"}`}
-        style={{ border: `1px solid ${open ? "rgba(201,149,108,0.5)" : "rgba(255,255,255,0.1)"}` }}>
-        <span className={`${sans.className}`}>{selected ? selected.label : placeholder}</span>
+        style={{ border: `1px solid ${open ? "rgba(122,34,103,0.5)" : "rgba(255,255,255,0.1)"}` }}>
+        <span className={`${josefin.className}`}>{selected ? selected.label : placeholder}</span>
         <motion.svg animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}
           viewBox="0 0 10 6" width="10" height="6" fill="none" className="text-white/30 shrink-0">
           <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
@@ -736,14 +735,14 @@ function CustomSelect({ value, onChange, options, placeholder }) {
             exit={{ opacity: 0, y: 4, scale: 0.97 }}
             transition={{ duration: 0.18 }}
             className="absolute top-full left-0 right-0 z-50 mt-1.5 rounded-xl overflow-hidden shadow-2xl shadow-black/60"
-            style={{ background: "#1a0e1f", border: "1px solid rgba(201,149,108,0.15)" }}>
+            style={{ background: "#1a0e1f", border: "1px solid rgba(122,34,103,0.15)" }}>
             {options.map((opt) => (
               <button key={opt.value} type="button"
                 onClick={() => { onChange(opt.value); setOpen(false); }}
-                className={`${sans.className} w-full text-left px-4 py-2.5 text-[12.5px] font-light
+                className={`${josefin.className} w-full text-left px-4 py-2.5 text-[12.5px] font-light
                   transition-colors duration-150
                   ${value === opt.value
-                    ? "text-[#C9956C] bg-[#C9956C]/10"
+                    ? "text-[#7A2267] bg-[#7A2267]/10"
                     : "text-white/55 hover:text-white/85 hover:bg-white/[0.05]"
                   }`}>
                 {opt.label}
@@ -764,9 +763,9 @@ function FloatingInput({ label, type = "text", value, onChange, required, autoCo
   return (
     <div className="relative">
       <label
-        className={`${sans.className} absolute left-4 pointer-events-none transition-all duration-200 font-medium
+        className={`${josefin.className} absolute left-4 pointer-events-none transition-all duration-200 font-medium
           ${active
-            ? "top-2 text-[9px] text-[#C9956C] tracking-[0.12em] uppercase"
+            ? "top-2 text-[9px] text-[#7A2267] tracking-[0.12em] uppercase"
             : "top-3.5 text-[12.5px] text-white/25"
           }`}>
         {label}{required && " *"}
@@ -779,12 +778,12 @@ function FloatingInput({ label, type = "text", value, onChange, required, autoCo
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         onChange={onChange}
-        className={`${sans.className} w-full bg-white/[0.04] rounded-xl px-4 text-[12.5px] text-white/80
+        className={`${josefin.className} w-full bg-white/[0.04] rounded-xl px-4 text-[12.5px] text-white/80
           outline-none transition-all duration-200 font-light
           ${active ? "pt-5 pb-2" : "pt-3.5 pb-3.5"}`}
         style={{
-          border: `1px solid ${focused ? "rgba(201,149,108,0.5)" : "rgba(255,255,255,0.08)"}`,
-          boxShadow: focused ? "0 0 0 3px rgba(201,149,108,0.08)" : "none",
+          border: `1px solid ${focused ? "rgba(122,34,103,0.5)" : "rgba(255,255,255,0.08)"}`,
+          boxShadow: focused ? "0 0 0 3px rgba(122,34,103,0.08)" : "none",
         }}
       />
     </div>
@@ -809,17 +808,17 @@ function DateInput({ value, onChange }) {
 
   return (
     <div ref={ref} className="relative">
-      <label className={`${sans.className} absolute left-4 pointer-events-none transition-all duration-200 font-medium z-10
-        ${value ? "top-2 text-[9px] text-[#C9956C] tracking-[0.12em] uppercase" : "top-3.5 text-[12.5px] text-white/25"}`}>
+      <label className={`${josefin.className} absolute left-4 pointer-events-none transition-all duration-200 font-medium z-10
+        ${value ? "top-2 text-[9px] text-[#7A2267] tracking-[0.12em] uppercase" : "top-3.5 text-[12.5px] text-white/25"}`}>
         Preferred Date
       </label>
       <button type="button" onClick={() => setOpen((o) => !o)}
-        className={`${sans.className} w-full bg-white/[0.04] rounded-xl px-4 text-[12.5px] text-left transition-all duration-200 font-light
+        className={`${josefin.className} w-full bg-white/[0.04] rounded-xl px-4 text-[12.5px] text-left transition-all duration-200 font-light
           flex items-center justify-between
           ${value ? "pt-5 pb-2 text-white/80" : "pt-3.5 pb-3.5 text-white/25"}`}
         style={{
-          border: `1px solid ${open ? "rgba(201,149,108,0.5)" : "rgba(255,255,255,0.08)"}`,
-          boxShadow: open ? "0 0 0 3px rgba(201,149,108,0.08)" : "none",
+          border: `1px solid ${open ? "rgba(122,34,103,0.5)" : "rgba(255,255,255,0.08)"}`,
+          boxShadow: open ? "0 0 0 3px rgba(122,34,103,0.08)" : "none",
         }}>
         <span>{formatted || ""}</span>
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" className="text-white/20 shrink-0">
@@ -842,8 +841,8 @@ function FloatingTextarea({ label, value, onChange }) {
   const active = focused || !!value;
   return (
     <div className="relative">
-      <label className={`${sans.className} absolute left-4 pointer-events-none transition-all duration-200 font-medium
-        ${active ? "top-2 text-[9px] text-[#C9956C] tracking-[0.12em] uppercase" : "top-3.5 text-[12.5px] text-white/25"}`}>
+      <label className={`${josefin.className} absolute left-4 pointer-events-none transition-all duration-200 font-medium
+        ${active ? "top-2 text-[9px] text-[#7A2267] tracking-[0.12em] uppercase" : "top-3.5 text-[12.5px] text-white/25"}`}>
         {label}
       </label>
       <textarea
@@ -851,12 +850,12 @@ function FloatingTextarea({ label, value, onChange }) {
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         onChange={onChange}
-        className={`${sans.className} w-full bg-white/[0.04] rounded-xl px-4 text-[12.5px] text-white/80
+        className={`${josefin.className} w-full bg-white/[0.04] rounded-xl px-4 text-[12.5px] text-white/80
           outline-none transition-all duration-200 font-light resize-none
           ${active ? "pt-6 pb-3" : "pt-3.5 pb-3.5"}`}
         style={{
-          border: `1px solid ${focused ? "rgba(201,149,108,0.5)" : "rgba(255,255,255,0.08)"}`,
-          boxShadow: focused ? "0 0 0 3px rgba(201,149,108,0.08)" : "none",
+          border: `1px solid ${focused ? "rgba(122,34,103,0.5)" : "rgba(255,255,255,0.08)"}`,
+          boxShadow: focused ? "0 0 0 3px rgba(122,34,103,0.08)" : "none",
         }}
       />
     </div>
@@ -912,22 +911,22 @@ function EnquiryForm({ venues = [] }) {
       <div className="pointer-events-none absolute top-0 right-0 w-[600px] h-[600px] rounded-full blur-[160px]"
         style={{ background: "radial-gradient(circle, rgba(122,34,103,0.12) 0%, transparent 70%)" }} />
       <div className="pointer-events-none absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-[120px]"
-        style={{ background: "radial-gradient(circle, rgba(201,149,108,0.07) 0%, transparent 70%)" }} />
+        style={{ background: "radial-gradient(circle, rgba(122,34,103,0.07) 0%, transparent 70%)" }} />
 
       <div className="relative z-10 max-w-3xl mx-auto px-5 sm:px-8">
 
         {/* Header */}
         <div ref={headRef} className="text-center mb-12">
-          <p className={`frev ${sans.className} text-[9.5px] uppercase tracking-[0.35em] text-[#C9956C]/55 font-semibold mb-4`}
+          <p className={`frev ${josefin.className} text-[9.5px] uppercase tracking-[0.35em] text-[#7A2267]/55 font-semibold mb-4`}
             style={{ opacity: 0 }}>
             Start Planning
           </p>
-          <h2 className={`frev ${playfair.className} text-[2rem] sm:text-[2.8rem] font-semibold text-white leading-[1.1] mb-4`}
+          <h2 className={`frev ${lora.className} text-[2rem] sm:text-[2.8rem] font-semibold text-white leading-[1.1] mb-4`}
             style={{ opacity: 0 }}>
             Begin Your{" "}
-            <em className={`${cormorant.className} italic text-[#C9956C]`}>Wedding Journey</em>
+            <em className={`${lora.className} italic text-[#7A2267]`}>Wedding Journey</em>
           </h2>
-          <p className={`frev ${sans.className} text-[12.5px] text-white/30 leading-[1.85] font-light max-w-lg mx-auto`}
+          <p className={`frev ${josefin.className} text-[12.5px] text-white/30 leading-[1.85] font-light max-w-lg mx-auto`}
             style={{ opacity: 0 }}>
             Tell us about your dream day and our dedicated wedding team will be in touch within 24 hours.
           </p>
@@ -941,13 +940,13 @@ function EnquiryForm({ venues = [] }) {
             className="text-center py-16"
           >
             <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
-              style={{ background: "rgba(201,149,108,0.12)", border: "1px solid rgba(201,149,108,0.3)" }}>
+              style={{ background: "rgba(122,34,103,0.12)", border: "1px solid rgba(122,34,103,0.3)" }}>
               <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
-                <path d="M5 12l5 5L20 7" stroke="#C9956C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M5 12l5 5L20 7" stroke="#7A2267" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <p className={`${playfair.className} text-[1.5rem] text-white font-semibold mb-2`}>Enquiry Received</p>
-            <p className={`${sans.className} text-[12.5px] text-white/35 font-light`}>
+            <p className={`${lora.className} text-[1.5rem] text-white font-semibold mb-2`}>Enquiry Received</p>
+            <p className={`${josefin.className} text-[12.5px] text-white/35 font-light`}>
               Thank you, {form.name || "dear guest"}. Our wedding team will contact you within 24 hours.
             </p>
           </motion.div>
@@ -955,12 +954,12 @@ function EnquiryForm({ venues = [] }) {
           <form onSubmit={handleSubmit} className="form-card rounded-3xl p-6 sm:p-8" style={{
             opacity: 0,
             background: "rgba(255,255,255,0.025)",
-            border: "1px solid rgba(201,149,108,0.1)",
+            border: "1px solid rgba(122,34,103,0.1)",
             backdropFilter: "blur(20px)",
           }}>
             {/* Gold accent top */}
             <div className="h-[2px] rounded-full mb-6"
-              style={{ background: "linear-gradient(90deg, transparent 0%, #C9956C 30%, #7A2267 60%, transparent 100%)" }} />
+              style={{ background: "linear-gradient(90deg, transparent 0%, #7A2267 30%, #7A2267 60%, transparent 100%)" }} />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
               <FloatingInput label="Full Name" value={form.name} required
@@ -978,7 +977,7 @@ function EnquiryForm({ venues = [] }) {
               {/* Custom venue select */}
               <div className="relative">
                 {form.venue && (
-                  <label className={`${sans.className} absolute left-4 top-2 text-[9px] text-[#C9956C]/70
+                  <label className={`${josefin.className} absolute left-4 top-2 text-[9px] text-[#7A2267]/70
                     tracking-[0.12em] uppercase font-medium z-10 pointer-events-none`}>
                     Preferred Venue
                   </label>
@@ -1004,7 +1003,7 @@ function EnquiryForm({ venues = [] }) {
 
             {/* Submit */}
             <button type="submit" disabled={isPending}
-              className={`${sans.className} w-full py-4 rounded-2xl text-[11.5px] font-semibold
+              className={`${josefin.className} w-full py-4 rounded-2xl text-[11.5px] font-semibold
                 uppercase tracking-[0.18em] transition-all duration-300 relative overflow-hidden group
                 ${isPending ? "opacity-50 cursor-not-allowed" : "hover:-translate-y-0.5"}`}
               style={{
@@ -1028,7 +1027,7 @@ function EnquiryForm({ venues = [] }) {
                 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
             </button>
 
-            <p className={`${sans.className} text-center text-[10px] text-white/18 mt-3 font-light`}>
+            <p className={`${josefin.className} text-center text-[10px] text-white/18 mt-3 font-light`}>
               We respect your privacy. Your information will never be shared with third parties.
             </p>
           </form>
@@ -1043,7 +1042,6 @@ export default function WeddingContent({ photos = [], venues = [] }) {
   const heroRef    = useRef(null);
   const heroBgRef  = useRef(null);
   const heroTextRef = useRef(null);
-  const scrollRef  = useRef(null);
 
   // Hero parallax + initial badge reveal
   useGSAP(() => {
@@ -1072,15 +1070,6 @@ export default function WeddingContent({ photos = [], venues = [] }) {
       },
     });
 
-    // Scroll indicator bounce
-    gsap.to(scrollRef.current, {
-      y: 8,
-      duration: 1.2,
-      repeat: -1,
-      yoyo: true,
-      ease: "sine.inOut",
-    });
-
     // Badge reveal
     gsap.fromTo(heroRef.current?.querySelectorAll(".hero-badge"),
       { opacity: 0, y: 20 },
@@ -1089,7 +1078,7 @@ export default function WeddingContent({ photos = [], venues = [] }) {
   }, { scope: heroRef });
 
   return (
-    <div className={sans.className} style={{ background: "#0e0710" }}>
+    <div  style={{ background: "#0e0710" }}>
 
       {/* ── HERO ── */}
       <div ref={heroRef} className="relative min-h-[100svh] flex flex-col justify-end overflow-hidden">
@@ -1119,8 +1108,8 @@ export default function WeddingContent({ photos = [], venues = [] }) {
 
           {/* Top badge */}
           <div className="hero-badge flex items-center gap-2 mb-7" style={{ opacity: 0 }}>
-            <div className="h-px w-8 bg-[#C9956C]/50" />
-            <span className={`${sans.className} text-[9px] uppercase tracking-[0.4em] text-[#C9956C]/70 font-semibold`}>
+            <div className="h-px w-8 bg-[#7A2267]/50" />
+            <span className={`${josefin.className} text-[9px] uppercase tracking-[0.4em] text-[#7A2267]/70 font-semibold`}>
               Destination Wedding · Dhali's Amber Nivaas
             </span>
           </div>
@@ -1131,7 +1120,7 @@ export default function WeddingContent({ photos = [], venues = [] }) {
           </div>
 
           {/* Subtitle */}
-          <p className={`hero-badge ${sans.className} text-[13px] sm:text-[14px] text-white/40 leading-[1.9]
+          <p className={`hero-badge ${josefin.className} text-[13px] sm:text-[14px] text-white/40 leading-[1.9]
             font-light max-w-xl mb-9`} style={{ opacity: 0 }}>
             From intimate Nikah ceremonies to grand receptions for 15,000 — impeccable halal catering,
             six stunning venues, and a dedicated team to make every detail flawless.
@@ -1140,7 +1129,7 @@ export default function WeddingContent({ photos = [], venues = [] }) {
           {/* CTAs */}
           <div className="hero-badge flex flex-col sm:flex-row gap-3" style={{ opacity: 0 }}>
             <a href="#enquiry"
-              className={`${sans.className} group inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full
+              className={`${josefin.className} group inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full
                 text-[10.5px] uppercase tracking-[0.2em] font-semibold text-white transition-all duration-300
                 hover:-translate-y-0.5 relative overflow-hidden`}
               style={{
@@ -1155,7 +1144,7 @@ export default function WeddingContent({ photos = [], venues = [] }) {
               <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
             </a>
             <a href="#venues"
-              className={`${sans.className} inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full
+              className={`${josefin.className} inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full
                 border border-white/15 text-white/50 hover:text-white hover:border-white/35
                 text-[10.5px] uppercase tracking-[0.2em] font-semibold transition-all duration-300 backdrop-blur-sm`}>
               Explore Venues
@@ -1163,14 +1152,6 @@ export default function WeddingContent({ photos = [], venues = [] }) {
           </div>
         </div>
 
-        {/* Scroll indicator */}
-        <div ref={scrollRef} className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10
-          flex flex-col items-center gap-1.5 opacity-30">
-          <span className={`${sans.className} text-[8px] uppercase tracking-[0.3em] text-white`}>Scroll</span>
-          <svg viewBox="0 0 10 16" width="8" height="13" fill="none">
-            <path d="M5 1v12M1 9l4 5 4-5" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </div>
       </div>
 
       {/* ── Marquee ── */}
@@ -1192,22 +1173,22 @@ export default function WeddingContent({ photos = [], venues = [] }) {
       <EnquiryForm venues={venues} />
 
       {/* ── Footer strip ── */}
-      <div className="py-8 border-t" style={{ background: "#0e0710", borderColor: "rgba(201,149,108,0.08)" }}>
+      <div className="py-8 border-t" style={{ background: "#0e0710", borderColor: "rgba(122,34,103,0.08)" }}>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 flex flex-col sm:flex-row items-center justify-between gap-4">
           <Link href="/"
-            className={`${sans.className} inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.18em]
-              text-white/20 hover:text-[#C9956C] font-semibold transition-colors duration-200`}>
+            className={`${josefin.className} inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.18em]
+              text-white/20 hover:text-[#7A2267] font-semibold transition-colors duration-200`}>
             <svg viewBox="0 0 10 10" width="8" height="8" fill="none">
               <path d="M9 5H2M5 2L2 5l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             Back to Home
           </Link>
           <div className="flex items-center gap-3">
-            <div className="h-px w-8 bg-[#C9956C]/20" />
-            <span className={`${cormorant.className} italic text-[#C9956C]/30 text-[13px]`}>
+            <div className="h-px w-8 bg-[#7A2267]/20" />
+            <span className={`${lora.className} italic text-[#7A2267]/30 text-[13px]`}>
               Dhali's Amber Nivaas
             </span>
-            <div className="h-px w-8 bg-[#C9956C]/20" />
+            <div className="h-px w-8 bg-[#7A2267]/20" />
           </div>
         </div>
       </div>

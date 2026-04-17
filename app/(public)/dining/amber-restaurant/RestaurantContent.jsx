@@ -15,22 +15,22 @@ const stagger= { hidden: {}, show: { transition: { staggerChildren: 0.08, delayC
 
 // Static fallback menu
 const STATIC_MENU = [
-  { _id:"r1",  category:"Starters",   name:"Chicken Shorba",          description:"Slow-cooked aromatic chicken broth with herbs and spices",   price:180, isPopular:true,  isVeg:false },
-  { _id:"r2",  category:"Starters",   name:"Garden Salad",            description:"Fresh seasonal greens with house lemon dressing",             price:150, isPopular:false, isVeg:true  },
-  { _id:"r3",  category:"Starters",   name:"Beef Seekh Kebab",        description:"Minced beef patties grilled over charcoal, served with chutney", price:280, isPopular:true, isVeg:false },
-  { _id:"r4",  category:"Starters",   name:"Paneer Tikka",            description:"Marinated cottage cheese cubes flame-grilled to perfection",   price:220, isPopular:false, isVeg:true  },
-  { _id:"r5",  category:"Main Course", name:"Kacchi Biryani",         description:"Slow-cooked layered rice with tender mutton and saffron",       price:420, isPopular:true,  isVeg:false },
-  { _id:"r6",  category:"Main Course", name:"Chicken Rezala",         description:"Aromatic white curry with yogurt, cream and whole spices",      price:350, isPopular:true,  isVeg:false },
-  { _id:"r7",  category:"Main Course", name:"Grilled Fish Fillet",    description:"Fresh catch marinated with herbs and grilled to perfection",    price:480, isPopular:false, isVeg:false },
-  { _id:"r8",  category:"Main Course", name:"Lamb Rogan Josh",        description:"Kashmiri-style lamb braised in a rich tomato-onion masala",     price:520, isPopular:true,  isVeg:false },
-  { _id:"r9",  category:"Main Course", name:"Mixed Vegetable Handi",  description:"Seasonal vegetables slow-cooked with fragrant spices",         price:280, isPopular:false, isVeg:true  },
-  { _id:"r10", category:"Main Course", name:"Beef Haleem",            description:"Slow-cooked wheat and beef stew, a house speciality",          price:380, isPopular:false, isVeg:false },
-  { _id:"r11", category:"Desserts",   name:"Shahi Firni",             description:"Chilled rose-scented rice pudding in clay cups",               price:150, isPopular:true,  isVeg:true  },
-  { _id:"r12", category:"Desserts",   name:"Mango Kulfi",             description:"Traditional Indian ice cream with alphonso mango",             price:160, isPopular:true,  isVeg:true  },
-  { _id:"r13", category:"Desserts",   name:"Gulab Jamun",             description:"Soft milk dumplings in warm rose syrup",                       price:120, isPopular:false, isVeg:true  },
-  { _id:"r14", category:"Desserts",   name:"Kheer",                   description:"Creamy slow-cooked rice pudding with cardamom and nuts",        price:130, isPopular:false, isVeg:true  },
-  { _id:"r15", category:"Beverages",  name:"Fresh Lime Juice",        description:"Chilled pressed lime with a hint of sea salt",                 price:100, isPopular:false, isVeg:true  },
-  { _id:"r16", category:"Beverages",  name:"Sugarcane Juice",         description:"Freshly pressed seasonal sugarcane with ginger",               price:90,  isPopular:true,  isVeg:true  },
+  { _id:"r1",  category:"Starters",   name:"Chicken Shorba",          description:"Slow-cooked aromatic chicken broth with herbs and spices",   price:180, isPopular:true},
+  { _id:"r2",  category:"Starters",   name:"Garden Salad",            description:"Fresh seasonal greens with house lemon dressing",             price:150, isPopular:false},
+  { _id:"r3",  category:"Starters",   name:"Beef Seekh Kebab",        description:"Minced beef patties grilled over charcoal, served with chutney", price:280, isPopular:true},
+  { _id:"r4",  category:"Starters",   name:"Paneer Tikka",            description:"Marinated cottage cheese cubes flame-grilled to perfection",   price:220, isPopular:false},
+  { _id:"r5",  category:"Main Course", name:"Kacchi Biryani",         description:"Slow-cooked layered rice with tender mutton and saffron",       price:420, isPopular:true},
+  { _id:"r6",  category:"Main Course", name:"Chicken Rezala",         description:"Aromatic white curry with yogurt, cream and whole spices",      price:350, isPopular:true},
+  { _id:"r7",  category:"Main Course", name:"Grilled Fish Fillet",    description:"Fresh catch marinated with herbs and grilled to perfection",    price:480, isPopular:false},
+  { _id:"r8",  category:"Main Course", name:"Lamb Rogan Josh",        description:"Kashmiri-style lamb braised in a rich tomato-onion masala",     price:520, isPopular:true},
+  { _id:"r9",  category:"Main Course", name:"Mixed Vegetable Handi",  description:"Seasonal vegetables slow-cooked with fragrant spices",         price:280, isPopular:false},
+  { _id:"r10", category:"Main Course", name:"Beef Haleem",            description:"Slow-cooked wheat and beef stew, a house speciality",          price:380, isPopular:false},
+  { _id:"r11", category:"Desserts",   name:"Shahi Firni",             description:"Chilled rose-scented rice pudding in clay cups",               price:150, isPopular:true},
+  { _id:"r12", category:"Desserts",   name:"Mango Kulfi",             description:"Traditional Indian ice cream with alphonso mango",             price:160, isPopular:true},
+  { _id:"r13", category:"Desserts",   name:"Gulab Jamun",             description:"Soft milk dumplings in warm rose syrup",                       price:120, isPopular:false},
+  { _id:"r14", category:"Desserts",   name:"Kheer",                   description:"Creamy slow-cooked rice pudding with cardamom and nuts",        price:130, isPopular:false},
+  { _id:"r15", category:"Beverages",  name:"Fresh Lime Juice",        description:"Chilled pressed lime with a hint of sea salt",                 price:100, isPopular:false},
+  { _id:"r16", category:"Beverages",  name:"Sugarcane Juice",         description:"Freshly pressed seasonal sugarcane with ginger",               price:90,  isPopular:true},
 ];
 
 function groupByCategory(items) {
@@ -72,11 +72,6 @@ function MenuCard({ item }) {
                 Chef's Pick
               </span>
             )}
-            {item.isVeg && (
-              <span className="w-3.5 h-3.5 rounded-sm border-2 border-emerald-500 flex items-center justify-center shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              </span>
-            )}
           </div>
           <p className={`${sans.className} text-[13px] font-semibold text-[#c9a96e] shrink-0`}>
             ৳{item.price}
@@ -114,23 +109,7 @@ export default function RestaurantContent({ menuItems = [] }) {
 
         <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 pb-14 md:pb-20 pt-28">
           <motion.div variants={stagger} initial="hidden" animate="show" className="max-w-2xl">
-            <motion.div variants={fadeUp}
-              className={`${sans.className} flex items-center gap-2 text-[10.5px] text-white/40 mb-5`}>
-              <Link href="/" className="hover:text-white/70 transition-colors">Home</Link>
-              <span>/</span>
-              <Link href="/facilities" className="hover:text-white/70 transition-colors">Facilities</Link>
-              <span>/</span>
-              <span className="text-[#c9a96e]">Amber Restaurant</span>
-            </motion.div>
-
-            <motion.div variants={fadeUp} className="flex items-center gap-4 mb-4">
-              <div className="h-px w-10 bg-[#c9a96e]/60" />
-              <p className={`${sans.className} text-[9.5px] uppercase tracking-[0.3em] font-semibold text-[#c9a96e]`}>
-                Fine Dining
-              </p>
-            </motion.div>
-
-            <motion.h1 variants={fadeUp}
+<motion.h1 variants={fadeUp}
               className={`${playfair.className} text-[2.6rem] sm:text-[3.4rem] lg:text-[4.2rem]
                 text-white leading-[1.1] tracking-[-0.01em]`}>
               Amber{" "}
@@ -147,19 +126,34 @@ export default function RestaurantContent({ menuItems = [] }) {
       </section>
 
       {/* ── Info strip ── */}
-      <section className="bg-[#0e0a05] border-b border-white/[0.06]">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-6
-          grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-0">
+      <section className="bg-[#0e0a05] border-y border-white/[0.06]">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-5
+          flex flex-wrap items-center justify-center gap-x-8 gap-y-4 md:gap-x-14">
           {[
-            { label: "Hours",      value: "7 AM – 10 PM" },
-            { label: "Seating",    value: "Indoor & Garden" },
-            { label: "Kitchen",    value: "Halal Certified" },
-            { label: "Reservations", value: "Recommended" },
+            {
+              label: "Opening Hours", value: "7 AM – 10 PM",
+              icon: <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><circle cx="9" cy="9" r="7"/><path d="M9 5v4l2.5 2.5"/></svg>,
+            },
+            {
+              label: "Seating", value: "Indoor & Garden",
+              icon: <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M3 14v-3a6 6 0 0 1 12 0v3M1 14h16M6 14v2M12 14v2"/></svg>,
+            },
+            {
+              label: "Kitchen", value: "100% Halal",
+              icon: <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 1l6 2.5v5.5c0 3.5-2.7 6.5-6 7.5-3.3-1-6-4-6-7.5V3.5L9 1z"/><path d="M6.5 9l2 2 3-3"/></svg>,
+            },
+            {
+              label: "Reservations", value: "Recommended",
+              icon: <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="14" height="13" rx="2"/><path d="M6 1v3M12 1v3M2 8h14"/></svg>,
+            },
           ].map((s, i, arr) => (
-            <div key={s.label} className={`flex flex-col items-center text-center relative
-              ${i < arr.length - 1 ? "md:border-r md:border-white/[0.07]" : ""}`}>
-              <p className={`${playfair.className} text-[1.35rem] text-white`}>{s.value}</p>
-              <p className={`${sans.className} text-[9px] uppercase tracking-[0.2em] text-white/30 mt-1`}>{s.label}</p>
+            <div key={s.label} className="flex items-center gap-2.5">
+              <div className="text-white/25">{s.icon}</div>
+              <div>
+                <p className={`${sans.className} text-[8.5px] uppercase tracking-[0.22em] text-white/30 leading-none mb-0.5`}>{s.label}</p>
+                <p className={`${sans.className} text-[12px] font-medium text-white/70`}>{s.value}</p>
+              </div>
+              {i < arr.length - 1 && <div className="hidden md:block w-px h-6 bg-white/10 ml-8 md:ml-14" style={{marginLeft: 0}} />}
             </div>
           ))}
         </div>

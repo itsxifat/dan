@@ -15,20 +15,20 @@ const stagger= { hidden: {}, show: { transition: { staggerChildren: 0.08, delayC
 
 // Static fallback menu
 const STATIC_MENU = [
-  { _id:"c1", category:"Hot Beverages", name:"Kashmiri Chai", description:"Aromatic pink tea with milk and cardamom", price:120, isPopular:true, isVeg:true },
-  { _id:"c2", category:"Hot Beverages", name:"Masala Tea", description:"Classic spiced milk tea", price:80, isPopular:false, isVeg:true },
-  { _id:"c3", category:"Hot Beverages", name:"Café Latte", description:"Smooth espresso with steamed milk", price:150, isPopular:true, isVeg:true },
-  { _id:"c4", category:"Hot Beverages", name:"Ginger Honey Tea", description:"Soothing blend of ginger root and pure honey", price:100, isPopular:false, isVeg:true },
-  { _id:"c5", category:"Cold Beverages", name:"Mango Lassi", description:"Chilled mango blended with yogurt", price:130, isPopular:true, isVeg:true },
-  { _id:"c6", category:"Cold Beverages", name:"Fresh Lime Soda", description:"Zesty citrus with sparkling water", price:90, isPopular:false, isVeg:true },
-  { _id:"c7", category:"Cold Beverages", name:"Watermelon Cooler", description:"Fresh watermelon juice with mint", price:110, isPopular:false, isVeg:true },
-  { _id:"c8", category:"Snacks & Bites", name:"Chicken Shawarma Roll", description:"Tender grilled chicken with garlic sauce in flatbread", price:220, isPopular:true, isVeg:false },
-  { _id:"c9", category:"Snacks & Bites", name:"Vegetable Samosa", description:"Crispy pastry with spiced potato filling", price:80, isPopular:false, isVeg:true },
-  { _id:"c10",category:"Snacks & Bites", name:"Club Sandwich", description:"Toasted bread with grilled chicken, lettuce and cheese", price:200, isPopular:true, isVeg:false },
-  { _id:"c11",category:"Snacks & Bites", name:"French Fries", description:"Golden crispy fries with dipping sauce", price:120, isPopular:false, isVeg:true },
-  { _id:"c12",category:"Desserts", name:"Chocolate Lava Cake", description:"Warm chocolate cake with molten centre", price:180, isPopular:true, isVeg:true },
-  { _id:"c13",category:"Desserts", name:"Gulab Jamun", description:"Soft milk dumplings in rose syrup", price:100, isPopular:false, isVeg:true },
-  { _id:"c14",category:"Desserts", name:"Mango Cheesecake", description:"Creamy cheesecake with mango coulis", price:200, isPopular:true, isVeg:true },
+  { _id:"c1", category:"Hot Beverages", name:"Kashmiri Chai", description:"Aromatic pink tea with milk and cardamom", price:120, isPopular:true },
+  { _id:"c2", category:"Hot Beverages", name:"Masala Tea", description:"Classic spiced milk tea", price:80, isPopular:false },
+  { _id:"c3", category:"Hot Beverages", name:"Café Latte", description:"Smooth espresso with steamed milk", price:150, isPopular:true },
+  { _id:"c4", category:"Hot Beverages", name:"Ginger Honey Tea", description:"Soothing blend of ginger root and pure honey", price:100, isPopular:false },
+  { _id:"c5", category:"Cold Beverages", name:"Mango Lassi", description:"Chilled mango blended with yogurt", price:130, isPopular:true },
+  { _id:"c6", category:"Cold Beverages", name:"Fresh Lime Soda", description:"Zesty citrus with sparkling water", price:90, isPopular:false },
+  { _id:"c7", category:"Cold Beverages", name:"Watermelon Cooler", description:"Fresh watermelon juice with mint", price:110, isPopular:false },
+  { _id:"c8", category:"Snacks & Bites", name:"Chicken Shawarma Roll", description:"Tender grilled chicken with garlic sauce in flatbread", price:220, isPopular:true },
+  { _id:"c9", category:"Snacks & Bites", name:"Vegetable Samosa", description:"Crispy pastry with spiced potato filling", price:80, isPopular:false },
+  { _id:"c10",category:"Snacks & Bites", name:"Club Sandwich", description:"Toasted bread with grilled chicken, lettuce and cheese", price:200, isPopular:true },
+  { _id:"c11",category:"Snacks & Bites", name:"French Fries", description:"Golden crispy fries with dipping sauce", price:120, isPopular:false },
+  { _id:"c12",category:"Desserts", name:"Chocolate Lava Cake", description:"Warm chocolate cake with molten centre", price:180, isPopular:true },
+  { _id:"c13",category:"Desserts", name:"Gulab Jamun", description:"Soft milk dumplings in rose syrup", price:100, isPopular:false },
+  { _id:"c14",category:"Desserts", name:"Mango Cheesecake", description:"Creamy cheesecake with mango coulis", price:200, isPopular:true },
 ];
 
 function groupByCategory(items) {
@@ -70,11 +70,6 @@ function MenuCard({ item }) {
                 Popular
               </span>
             )}
-            {item.isVeg && (
-              <span className="w-3.5 h-3.5 rounded-sm border-2 border-emerald-600 flex items-center justify-center shrink-0">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-              </span>
-            )}
           </div>
           <p className={`${sans.className} text-[13px] font-semibold text-[#c9a96e] shrink-0`}>
             ৳{item.price}
@@ -112,23 +107,7 @@ export default function CafeContent({ menuItems = [] }) {
 
         <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 pb-12 md:pb-16 pt-28">
           <motion.div variants={stagger} initial="hidden" animate="show" className="max-w-2xl">
-            <motion.div variants={fadeUp}
-              className={`${sans.className} flex items-center gap-2 text-[10.5px] text-white/40 mb-5`}>
-              <Link href="/" className="hover:text-white/70 transition-colors">Home</Link>
-              <span>/</span>
-              <Link href="/facilities" className="hover:text-white/70 transition-colors">Facilities</Link>
-              <span>/</span>
-              <span className="text-[#c9a96e]">Amber Café</span>
-            </motion.div>
-
-            <motion.div variants={fadeUp} className="flex items-center gap-4 mb-4">
-              <div className="h-px w-10 bg-[#c9a96e]/60" />
-              <p className={`${sans.className} text-[9.5px] uppercase tracking-[0.3em] font-semibold text-[#c9a96e]`}>
-                Casual & Cosy
-              </p>
-            </motion.div>
-
-            <motion.h1 variants={fadeUp}
+<motion.h1 variants={fadeUp}
               className={`${playfair.className} text-[2.6rem] sm:text-[3.4rem] lg:text-[4.2rem]
                 text-white leading-[1.1] tracking-[-0.01em]`}>
               Amber{" "}
@@ -144,19 +123,34 @@ export default function CafeContent({ menuItems = [] }) {
       </section>
 
       {/* ── Info strip ── */}
-      <section className="bg-[#1a1309]">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-6
-          grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-0">
+      <section className="bg-[#1a1309] border-y border-white/[0.06]">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-5
+          flex flex-wrap items-center justify-center gap-x-8 gap-y-4 md:gap-x-14">
           {[
-            { label: "Hours", value: "7 AM – 11 PM" },
-            { label: "Seating", value: "Indoor & Terrace" },
-            { label: "Kitchen", value: "Halal Certified" },
-            { label: "Order", value: "Dine-in & Takeaway" },
+            {
+              label: "Opening Hours", value: "7 AM – 11 PM",
+              icon: <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"><circle cx="9" cy="9" r="7"/><path d="M9 5v4l2.5 2.5"/></svg>,
+            },
+            {
+              label: "Seating", value: "Indoor & Terrace",
+              icon: <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M3 14v-3a6 6 0 0 1 12 0v3M1 14h16M6 14v2M12 14v2"/></svg>,
+            },
+            {
+              label: "Kitchen", value: "100% Halal",
+              icon: <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M9 1l6 2.5v5.5c0 3.5-2.7 6.5-6 7.5-3.3-1-6-4-6-7.5V3.5L9 1z"/><path d="M6.5 9l2 2 3-3"/></svg>,
+            },
+            {
+              label: "Order", value: "Dine-in & Takeaway",
+              icon: <svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h2l2 8h8l1.5-5H6"/><circle cx="8" cy="15" r="1"/><circle cx="14" cy="15" r="1"/></svg>,
+            },
           ].map((s, i, arr) => (
-            <div key={s.label} className={`flex flex-col items-center text-center relative
-              ${i < arr.length - 1 ? "md:border-r md:border-white/10" : ""}`}>
-              <p className={`${playfair.className} text-[1.35rem] text-white`}>{s.value}</p>
-              <p className={`${sans.className} text-[9px] uppercase tracking-[0.2em] text-white/35 mt-1`}>{s.label}</p>
+            <div key={s.label} className="flex items-center gap-2.5">
+              <div className="text-white/25">{s.icon}</div>
+              <div>
+                <p className={`${sans.className} text-[8.5px] uppercase tracking-[0.22em] text-white/30 leading-none mb-0.5`}>{s.label}</p>
+                <p className={`${sans.className} text-[12px] font-medium text-white/70`}>{s.value}</p>
+              </div>
+              {i < arr.length - 1 && <div className="hidden md:block w-px h-6 bg-white/10 ml-8 md:ml-14" style={{marginLeft: 0}} />}
             </div>
           ))}
         </div>

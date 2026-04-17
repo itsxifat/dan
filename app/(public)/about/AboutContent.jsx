@@ -73,7 +73,16 @@ const pillars = [
 ];
 
 // ── Main ──────────────────────────────────────────────────────────────────────
-export default function AboutContent() {
+export default function AboutContent({ aboutData = {} }) {
+  const chairman = {
+    name:         aboutData.chairmanName         || "Md. Abdur Rahman Dhali",
+    title:        aboutData.chairmanTitle         || "Chairman",
+    organization: aboutData.chairmanOrganization  || "Dhali's Amber Nivaas Resort",
+    image:        aboutData.chairmanImage         || "",
+    quote:        aboutData.chairmanQuote         || "",
+    para1:        aboutData.chairmanMessagePara1  || "",
+    para2:        aboutData.chairmanMessagePara2  || "",
+  };
   const heroRef    = useRef(null);
   const heroImgRef = useRef(null);
   const storyRef   = useRef(null);
@@ -83,9 +92,11 @@ export default function AboutContent() {
   const pillarsRef = useRef(null);
   const closingRef = useRef(null);
 
-  const storyInView   = useInView(storyRef,   { once: true, margin: "-80px" });
-  const pillarsInView = useInView(pillarsRef, { once: true, margin: "-80px" });
-  const closingInView = useInView(closingRef, { once: true, margin: "-80px" });
+  const chairmanRef   = useRef(null);
+  const storyInView    = useInView(storyRef,    { once: true, margin: "-80px" });
+  const pillarsInView  = useInView(pillarsRef,  { once: true, margin: "-80px" });
+  const chairmanInView = useInView(chairmanRef, { once: true, margin: "-80px" });
+  const closingInView  = useInView(closingRef,  { once: true, margin: "-80px" });
 
   // Hero parallax
   useGSAP(() => {
@@ -163,18 +174,6 @@ export default function AboutContent() {
           </motion.p>
         </div>
 
-        {/* Scroll cue */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.2, duration: 0.6 }}
-          className="absolute bottom-8 inset-x-0 flex justify-center pointer-events-none"
-        >
-          <div className="flex flex-col items-center gap-2">
-            <span className={`${josefin.className} text-[8px] uppercase tracking-[0.35em] text-white/25`}>Scroll</span>
-            <div className="w-px h-10 bg-gradient-to-b from-white/25 to-transparent" />
-          </div>
-        </motion.div>
 
       </section>
 
@@ -304,6 +303,113 @@ export default function AboutContent() {
               </motion.div>
             ))}
           </motion.div>
+        </div>
+      </section>
+
+      {/* ── CHAIRMAN MESSAGE ─────────────────────────────────────────────── */}
+      <section ref={chairmanRef} className="relative bg-white overflow-hidden py-24 md:py-32">
+
+        <div className="pointer-events-none absolute inset-0"
+          style={{ background: "radial-gradient(ellipse 65% 50% at 0% 50%, rgba(122,34,103,0.04) 0%, transparent 70%)" }} />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-14">
+          <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 xl:gap-32 items-center">
+
+            {/* Photo & identity */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              animate={chairmanInView ? { opacity: 1, x: 0 } : {}}
+              transition={{ duration: 1.0, ease: EASE }}
+              className="flex flex-col items-center lg:items-start gap-8"
+            >
+              {/* Photo frame */}
+              <div className="relative">
+                <div className="w-56 h-56 sm:w-64 sm:h-64 rounded-full overflow-hidden
+                  shadow-[0_24px_60px_-12px_rgba(13,9,5,0.22)] border-4 border-white
+                  ring-1 ring-[#7A2267]/20 bg-[#f5ede8] flex items-center justify-center">
+                  {chairman.image ? (
+                    <Image
+                      src={chairman.image}
+                      alt={chairman.name}
+                      fill sizes="256px"
+                      className="object-cover object-top"
+                    />
+                  ) : (
+                    <span className={`${lora.className} text-[3rem] font-400 text-[#7A2267]/40 italic`}>
+                      {chairman.name.charAt(0)}
+                    </span>
+                  )}
+                </div>
+                {/* Accent ring */}
+                <div className="absolute -bottom-2 -right-2 w-16 h-16 rounded-full
+                  bg-gradient-to-br from-[#7A2267]/20 to-[#7A2267]/05 blur-xl" />
+              </div>
+
+              {/* Name & title */}
+              <div className="text-center lg:text-left space-y-2">
+                <p className={`${lora.className} text-[1.4rem] font-500 text-[#1a1309] leading-snug`}>
+                  {chairman.name}
+                </p>
+                <p className={`${josefin.className} text-[10px] uppercase tracking-[0.28em] text-[#7A2267]/70 font-semibold`}>
+                  {chairman.title}
+                </p>
+                <p className={`${josefin.className} text-[11px] font-light text-[#7a6a52] tracking-wide`}>
+                  {chairman.organization}
+                </p>
+              </div>
+
+              {/* Signature line */}
+              <div className="h-px w-20 bg-gradient-to-r from-[#7A2267]/40 to-transparent" />
+            </motion.div>
+
+            {/* Message */}
+            <motion.div
+              variants={stagger}
+              initial="hidden"
+              animate={chairmanInView ? "show" : "hidden"}
+              className="flex flex-col gap-7"
+            >
+              <motion.p variants={fadeUp}
+                className={`${josefin.className} text-[9.5px] uppercase tracking-[0.45em] text-[#7A2267]/60`}>
+                Message from the Chairman
+              </motion.p>
+
+              {/* Large quotation mark */}
+              <motion.div variants={fadeUp}>
+                <span className={`${lora.className} text-[5rem] leading-none text-[#7A2267]/15 font-600 select-none`}>&ldquo;</span>
+              </motion.div>
+
+              {chairman.quote && (
+                <motion.p variants={fadeUp}
+                  className={`${lora.className} text-[1.2rem] sm:text-[1.35rem] lg:text-[1.45rem]
+                    italic font-400 text-[#1a1309] leading-[1.65] -mt-8`}>
+                  {chairman.quote}
+                </motion.p>
+              )}
+
+              <motion.div variants={fadeUp} className="h-px w-14 bg-[#7A2267]/25" />
+
+              {chairman.para1 && (
+                <motion.p variants={fadeUp}
+                  className={`${josefin.className} text-[13.5px] font-light text-[#5a4e42] leading-[1.95]`}>
+                  {chairman.para1}
+                </motion.p>
+              )}
+
+              {chairman.para2 && (
+                <motion.p variants={fadeUp}
+                  className={`${josefin.className} text-[13px] font-light text-[#7a6a52] leading-[1.9]`}>
+                  {chairman.para2}
+                </motion.p>
+              )}
+
+              <motion.div variants={fadeUp}
+                className={`${lora.className} text-[5rem] leading-none text-[#7A2267]/15 font-600 text-right select-none`}>
+                &rdquo;
+              </motion.div>
+            </motion.div>
+
+          </div>
         </div>
       </section>
 

@@ -7,6 +7,7 @@ const CorporateEventSchema = new mongoose.Schema({
   client:      { type: String, trim: true, default: "" },
   eventDate:   { type: String, default: "" },
   tags:        [{ type: String }],
+  gallery:     [{ type: String }],
   isPublished: { type: Boolean, default: true },
   sortOrder:   { type: Number, default: 0 },
   createdAt:   { type: Date, default: Date.now },

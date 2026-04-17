@@ -60,7 +60,11 @@ const stayLinks = [
   { label: "Private Cottages",   href: "/accommodation?type=cottage" },
 ];
 
-export default function FooterSection() {
+export default function FooterSection({ contactInfo = {} }) {
+  const address = [contactInfo.addressLine1, contactInfo.addressLine2, contactInfo.addressNote]
+    .filter(Boolean);
+  const phone   = contactInfo.phones?.[0]?.number || "";
+  const email   = contactInfo.emails?.[0]?.address || "";
   return (
     <footer className="bg-[#0d0a05] pt-16 md:pt-20">
 
@@ -163,36 +167,42 @@ export default function FooterSection() {
           </p>
           <ul className="flex flex-col gap-4">
             {/* Address */}
-            <li>
-              <div className="flex items-start gap-2.5">
-                <span className="mt-0.5 shrink-0"><MapPinIcon /></span>
-                <p className={`${josefin.className} text-[12.5px] font-light text-white/35 leading-[1.75]`}>
-                  Dhali&apos;s Amber Nivaas Resort,<br />
-                  Gazipur, Dhaka District,<br />
-                  Bangladesh
-                </p>
-              </div>
-            </li>
+            {address.length > 0 && (
+              <li>
+                <div className="flex items-start gap-2.5">
+                  <span className="mt-0.5 shrink-0"><MapPinIcon /></span>
+                  <p className={`${josefin.className} text-[12.5px] font-light text-white/35 leading-[1.75]`}>
+                    {address.map((line, i) => (
+                      <span key={i}>{line}{i < address.length - 1 ? <br /> : null}</span>
+                    ))}
+                  </p>
+                </div>
+              </li>
+            )}
             {/* Phone */}
-            <li>
-              <a
-                href="tel:+880XXXXXXXXX"
-                className={`${josefin.className} text-[12.5px] font-light text-white/35
-                  hover:text-[#c084b8] transition-colors duration-200`}
-              >
-                +880 XXX XXX XXXX
-              </a>
-            </li>
+            {phone && (
+              <li>
+                <a
+                  href={`tel:${phone.replace(/\s/g, "")}`}
+                  className={`${josefin.className} text-[12.5px] font-light text-white/35
+                    hover:text-[#c084b8] transition-colors duration-200`}
+                >
+                  {phone}
+                </a>
+              </li>
+            )}
             {/* Email */}
-            <li>
-              <a
-                href="mailto:info@dhalisambernivaas.com"
-                className={`${josefin.className} text-[12.5px] font-light text-white/35
-                  hover:text-[#c084b8] transition-colors duration-200 break-all`}
-              >
-                info@dhalisambernivaas.com
-              </a>
-            </li>
+            {email && (
+              <li>
+                <a
+                  href={`mailto:${email}`}
+                  className={`${josefin.className} text-[12.5px] font-light text-white/35
+                    hover:text-[#c084b8] transition-colors duration-200 break-all`}
+                >
+                  {email}
+                </a>
+              </li>
+            )}
           </ul>
         </div>
 
@@ -203,7 +213,7 @@ export default function FooterSection() {
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-5
           flex flex-col sm:flex-row items-center justify-between gap-2">
           <p className={`${josefin.className} text-[11px] text-white/30`}>
-            &copy; 2025 Dhali&apos;s Amber Nivaas. All rights reserved.
+            &copy; {new Date().getFullYear()} Dhali&apos;s Amber Nivaas. All rights reserved.
           </p>
           <p className={`${josefin.className} text-[11px] text-white/30`}>
             Designed with care for your experience.

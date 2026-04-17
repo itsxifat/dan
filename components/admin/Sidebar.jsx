@@ -156,17 +156,15 @@ const NAV = [
         ),
       },
       {
-        label: "Events Gallery",
-        href: "/admin/corporate/events",
+        label: "Corporate Manager",
+        href: "/admin/corporate/manage",
         permission: "corporate.write",
         Icon: ({ active }) => (
           <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
-            <rect x="1.5" y="3.5" width="15" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.3"
+            <rect x="1.5" y="2" width="15" height="14" rx="1.8" stroke="currentColor" strokeWidth="1.3"
               fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.08" : "0"} />
-            <circle cx="5.5" cy="7.5" r="1.2" stroke="currentColor" strokeWidth="1.1"
-              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.3" : "0"} />
-            <path d="M1.5 12.5l3.5-3 2.5 2 2-1.5 4 3.5" stroke="currentColor" strokeWidth="1.2"
-              strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M5 6h8M5 9h5M5 12h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"
+              opacity={active ? "1" : "0.6"} />
           </svg>
         ),
       },
@@ -287,6 +285,30 @@ const NAV = [
               fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.25" : "0"} />
             <path d="M1.5 12.5l3.5-3 3 2.5 2.5-2 4 3" stroke="currentColor" strokeWidth="1.2"
               strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ),
+      },
+      {
+        label: "About Page",
+        href: "/admin/about",
+        permission: "settings.write",
+        Icon: ({ active }) => (
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
+            <circle cx="9" cy="6" r="2.5" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.15" : "0"} />
+            <path d="M3 16c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+          </svg>
+        ),
+      },
+      {
+        label: "Contact",
+        href: "/admin/contact",
+        permission: "settings.write",
+        Icon: ({ active }) => (
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
+            <path d="M3 3h12a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H6l-3 3V4a1 1 0 0 1 1-1z"
+              stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.08" : "0"} />
           </svg>
         ),
       },

@@ -1,5 +1,9 @@
 import CorporateContent from "./CorporateContent";
-import { getPublishedCorporateEvents } from "@/actions/corporate/corporateActions";
+import {
+  getPublishedCorporateEvents,
+  getPublishedVenues,
+  getPublishedBrands,
+} from "@/actions/corporate/corporateActions";
 
 export const metadata = {
   title: "Corporate Events & Venues — Dhali's Amber Nivaas",
@@ -8,6 +12,10 @@ export const metadata = {
 };
 
 export default async function CorporatePage() {
-  const events = await getPublishedCorporateEvents({ limit: 12 });
-  return <CorporateContent events={events} />;
+  const [events, venues, brands] = await Promise.all([
+    getPublishedCorporateEvents({ limit: 12 }),
+    getPublishedVenues(),
+    getPublishedBrands(),
+  ]);
+  return <CorporateContent events={events} venues={venues} brands={brands} />;
 }

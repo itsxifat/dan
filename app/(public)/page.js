@@ -13,13 +13,15 @@ import FooterSection from "../../components/sections/FooterSection";
 import { getProperties } from "@/actions/accommodation/propertyActions";
 import { getPublishedGalleryPhotos, getGalleryCategories } from "@/actions/gallery/galleryActions";
 import { getActiveDayLongPackages } from "@/actions/accommodation/dayLongPackageActions";
+import { getContactInfo } from "@/actions/contact/contactActions";
 
 export default async function Home() {
-  const [{ properties }, galleryPhotos, galleryCategories, dayLongServices] = await Promise.all([
+  const [{ properties }, galleryPhotos, galleryCategories, dayLongServices, contactInfo] = await Promise.all([
     getProperties({ onlyActive: true, limit: 6 }),
     getPublishedGalleryPhotos({ limit: 24 }),
     getGalleryCategories(),
     getActiveDayLongPackages(),
+    getContactInfo(),
   ]);
 
   return (
@@ -38,7 +40,7 @@ export default async function Home() {
       <WeddingSection />
       <DiningSection />
       <CtaSection />
-      <FooterSection />
+      <FooterSection contactInfo={contactInfo} />
     </main>
   );
 }

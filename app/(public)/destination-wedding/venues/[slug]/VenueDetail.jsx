@@ -3,25 +3,24 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Playfair_Display, Montserrat, Cormorant_Garamond } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const playfair  = Playfair_Display({ subsets: ["latin"], weight: ["400","500","600","700"] });
-const sans      = Montserrat({ subsets: ["latin"], weight: ["300","400","500","600"] });
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300","400","500","600"], style: ["italic","normal"] });
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 function OrnamentalDivider({ light = false }) {
   return (
     <div className="flex items-center justify-center gap-3 py-3">
-      <div className={`h-px flex-1 max-w-[80px] ${light ? "bg-white/10" : "bg-[#C9956C]/20"}`} />
-      <svg viewBox="0 0 20 20" width="14" height="14" fill="none" className={light ? "text-white/20" : "text-[#C9956C]/40"}>
+      <div className={`h-px flex-1 max-w-[80px] ${light ? "bg-white/10" : "bg-[#7A2267]/20"}`} />
+      <svg viewBox="0 0 20 20" width="14" height="14" fill="none" className={light ? "text-white/20" : "text-[#7A2267]/40"}>
         <path d="M10 1 L11.8 7H18L13 11L14.8 17L10 13L5.2 17L7 11L2 7H8.2Z" fill="currentColor"/>
       </svg>
-      <div className={`h-px flex-1 max-w-[80px] ${light ? "bg-white/10" : "bg-[#C9956C]/20"}`} />
+      <div className={`h-px flex-1 max-w-[80px] ${light ? "bg-white/10" : "bg-[#7A2267]/20"}`} />
     </div>
   );
 }
@@ -170,9 +169,9 @@ export default function VenueDetail({ venue }) {
         {/* Back link */}
         <Link
           href="/destination-wedding#venues"
-          className={`${sans.className} absolute top-6 left-5 sm:left-8 lg:left-12 z-20
+          className={`${josefin.className} absolute top-6 left-5 sm:left-8 lg:left-12 z-20
             inline-flex items-center gap-2 text-[9.5px] uppercase tracking-[0.22em] font-semibold
-            text-white/40 hover:text-[#C9956C] transition-colors duration-200`}
+            text-white/40 hover:text-[#7A2267] transition-colors duration-200`}
         >
           <svg viewBox="0 0 10 10" width="8" height="8" fill="none">
             <path d="M9 5H2M5 2L2 5l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -189,7 +188,7 @@ export default function VenueDetail({ venue }) {
               transition={{ duration: 0.8, delay: 0.3 }}
               className="mb-4"
             >
-              <span className={`${sans.className} inline-block bg-[#C9956C] text-[#0e0710]
+              <span className={`${josefin.className} inline-block bg-[#7A2267] text-[#0e0710]
                 text-[8.5px] font-bold px-3 py-1 rounded-full uppercase tracking-[0.18em]`}>
                 {venue.badge}
               </span>
@@ -200,7 +199,7 @@ export default function VenueDetail({ venue }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           >
-            <h1 className={`${playfair.className} text-[2.4rem] sm:text-[3.2rem] lg:text-[4rem]
+            <h1 className={`${lora.className} text-[2.4rem] sm:text-[3.2rem] lg:text-[4rem]
               font-semibold text-white leading-[1.08] mb-3`}>
               {venue.name}
             </h1>
@@ -212,11 +211,11 @@ export default function VenueDetail({ venue }) {
               transition={{ duration: 0.8, delay: 0.4 }}
               className="flex items-center gap-2"
             >
-              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" className="text-[#C9956C]">
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" className="text-[#7A2267]">
                 <path d="M13 14s1 0 1-1-1-4-6-4-6 3-6 4 1 1 1 1h10z" stroke="currentColor" strokeWidth="1.2"/>
                 <circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.2"/>
               </svg>
-              <span className={`${sans.className} text-[12px] text-[#C9956C] font-medium`}>
+              <span className={`${josefin.className} text-[12px] text-[#7A2267] font-medium`}>
                 {venue.capacity}
               </span>
             </motion.div>
@@ -230,12 +229,12 @@ export default function VenueDetail({ venue }) {
         {/* Description */}
         {venue.description && (
           <div ref={contentRef} className="mb-14">
-            <p className={`rev ${sans.className} text-[10px] uppercase tracking-[0.3em]
-              text-[#C9956C]/55 font-semibold mb-3`} style={{ opacity: 0 }}>
+            <p className={`rev ${josefin.className} text-[10px] uppercase tracking-[0.3em]
+              text-[#7A2267]/55 font-semibold mb-3`} style={{ opacity: 0 }}>
               About This Venue
             </p>
             <OrnamentalDivider />
-            <p className={`rev ${sans.className} text-[15px] sm:text-[16px] text-white/55
+            <p className={`rev ${josefin.className} text-[15px] sm:text-[16px] text-white/55
               leading-[1.85] font-light mt-6 max-w-3xl`} style={{ opacity: 0 }}>
               {venue.description}
             </p>
@@ -245,8 +244,8 @@ export default function VenueDetail({ venue }) {
         {/* Features */}
         {venue.features?.length > 0 && (
           <div ref={featRef} className="mb-14">
-            <p className={`${sans.className} text-[10px] uppercase tracking-[0.3em]
-              text-[#C9956C]/55 font-semibold mb-5`}>
+            <p className={`${josefin.className} text-[10px] uppercase tracking-[0.3em]
+              text-[#7A2267]/55 font-semibold mb-5`}>
               Highlights
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -257,11 +256,11 @@ export default function VenueDetail({ venue }) {
                   style={{
                     opacity: 0,
                     background: "rgba(255,255,255,0.025)",
-                    border: "1px solid rgba(201,149,108,0.1)",
+                    border: "1px solid rgba(122,34,103,0.1)",
                   }}
                 >
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#C9956C]/60 shrink-0" />
-                  <span className={`${sans.className} text-[12.5px] text-white/60 font-light`}>
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#7A2267]/60 shrink-0" />
+                  <span className={`${josefin.className} text-[12.5px] text-white/60 font-light`}>
                     {feat}
                   </span>
                 </div>
@@ -273,8 +272,8 @@ export default function VenueDetail({ venue }) {
         {/* Gallery */}
         {allImages.length > 0 && (
           <div className="mb-16">
-            <p className={`${sans.className} text-[10px] uppercase tracking-[0.3em]
-              text-[#C9956C]/55 font-semibold mb-5`}>
+            <p className={`${josefin.className} text-[10px] uppercase tracking-[0.3em]
+              text-[#7A2267]/55 font-semibold mb-5`}>
               Gallery
             </p>
             <div ref={galleryRef}
@@ -305,21 +304,21 @@ export default function VenueDetail({ venue }) {
         {/* CTA */}
         <div className="text-center py-12 rounded-3xl"
           style={{
-            background: "linear-gradient(135deg, rgba(122,34,103,0.08) 0%, rgba(201,149,108,0.05) 100%)",
-            border: "1px solid rgba(201,149,108,0.1)",
+            background: "linear-gradient(135deg, rgba(122,34,103,0.08) 0%, rgba(122,34,103,0.05) 100%)",
+            border: "1px solid rgba(122,34,103,0.1)",
           }}>
           <OrnamentalDivider />
-          <h2 className={`${playfair.className} text-[1.8rem] sm:text-[2.2rem] font-semibold
+          <h2 className={`${lora.className} text-[1.8rem] sm:text-[2.2rem] font-semibold
             text-white leading-tight mt-4 mb-3`}>
             Book This{" "}
-            <em className={`${cormorant.className} italic text-[#C9956C]`}>Venue</em>
+            <em className={`${lora.className} italic text-[#7A2267]`}>Venue</em>
           </h2>
-          <p className={`${sans.className} text-[12.5px] text-white/35 font-light max-w-sm mx-auto mb-7`}>
+          <p className={`${josefin.className} text-[12.5px] text-white/35 font-light max-w-sm mx-auto mb-7`}>
             Speak with our dedicated wedding team to check availability and begin planning.
           </p>
           <Link
             href={`/destination-wedding#enquiry`}
-            className={`${sans.className} inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full
+            className={`${josefin.className} inline-flex items-center gap-2.5 px-8 py-3.5 rounded-full
               text-[10.5px] uppercase tracking-[0.2em] font-semibold text-white
               transition-all duration-300 hover:-translate-y-0.5 relative overflow-hidden group`}
             style={{
@@ -339,22 +338,22 @@ export default function VenueDetail({ venue }) {
       </div>
 
       {/* ── Footer strip ── */}
-      <div className="py-8 border-t" style={{ background: "#0e0710", borderColor: "rgba(201,149,108,0.08)" }}>
+      <div className="py-8 border-t" style={{ background: "#0e0710", borderColor: "rgba(122,34,103,0.08)" }}>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 flex flex-col sm:flex-row items-center justify-between gap-4">
           <Link href="/destination-wedding"
-            className={`${sans.className} inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.18em]
-              text-white/20 hover:text-[#C9956C] font-semibold transition-colors duration-200`}>
+            className={`${josefin.className} inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.18em]
+              text-white/20 hover:text-[#7A2267] font-semibold transition-colors duration-200`}>
             <svg viewBox="0 0 10 10" width="8" height="8" fill="none">
               <path d="M9 5H2M5 2L2 5l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
             Back to Wedding Page
           </Link>
           <div className="flex items-center gap-3">
-            <div className="h-px w-8 bg-[#C9956C]/20" />
-            <span className={`${cormorant.className} italic text-[#C9956C]/30 text-[13px]`}>
+            <div className="h-px w-8 bg-[#7A2267]/20" />
+            <span className={`${lora.className} italic text-[#7A2267]/30 text-[13px]`}>
               Dhali's Amber Nivaas
             </span>
-            <div className="h-px w-8 bg-[#C9956C]/20" />
+            <div className="h-px w-8 bg-[#7A2267]/20" />
           </div>
         </div>
       </div>
