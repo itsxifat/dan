@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
 
 const SORT_OPTIONS = [
   { value: "available_first", label: "Available First" },
@@ -265,13 +264,12 @@ function RoomCard({ room, categoryPrice }) {
   const freeDate   = room.freeFrom ? fmtShort(room.freeFrom) : null;
 
   return (
-    <Link
-      href={`/rooms/${room._id}`}
+    <div
       className={[
-        "group p-3 rounded-xl border text-center transition-all duration-200 block",
+        "p-3 rounded-xl border text-center",
         isAvailable
-          ? "bg-white border-neutral-200 hover:border-[#7A2267]/40 hover:shadow-md hover:-translate-y-0.5"
-          : "bg-neutral-50/80 border-neutral-150 hover:border-neutral-300 hover:shadow-sm",
+          ? "bg-white border-neutral-200"
+          : "bg-neutral-50/80 border-neutral-150",
       ].join(" ")}
     >
       {/* Room number + status dot */}
@@ -279,8 +277,7 @@ function RoomCard({ room, categoryPrice }) {
         <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
           isAvailable ? "bg-emerald-500" : "bg-neutral-300"
         }`} />
-        <span className={`text-[13px] font-semibold font-mono transition-colors
-          ${isAvailable ? "text-neutral-700 group-hover:text-[#7A2267]" : "text-neutral-500"}`}>
+        <span className={`text-[13px] font-semibold font-mono ${isAvailable ? "text-neutral-700" : "text-neutral-500"}`}>
           {room.roomNumber}
         </span>
       </div>
@@ -307,18 +304,12 @@ function RoomCard({ room, categoryPrice }) {
         <p className="text-[9.5px] text-neutral-400 truncate px-0.5 mt-0.5">{room.facing}</p>
       )}
 
-      {/* Bottom line — available: "Available", occupied: "Free from X" or nothing, maintenance/blocked: nothing */}
+      {/* Status line */}
       {isAvailable ? (
         <p className="text-[10px] uppercase tracking-wide mt-1 font-medium text-emerald-600">Available</p>
       ) : freeDate ? (
         <p className="text-[10px] text-neutral-400 mt-1">Free from {freeDate}</p>
       ) : null}
-
-      {/* Hover cue */}
-      <p className={`text-[9.5px] mt-1 opacity-0 group-hover:opacity-100 transition-opacity font-medium
-        ${isAvailable ? "text-[#7A2267]" : "text-neutral-400"}`}>
-        View →
-      </p>
-    </Link>
+    </div>
   );
 }

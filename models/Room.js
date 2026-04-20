@@ -10,8 +10,6 @@ const RoomSchema = new mongoose.Schema({
     enum: ["available", "occupied", "maintenance", "blocked"],
     default: "available",
   },
-  coverImage:     { type: String, default: "" },
-  images:         { type: [String], default: [] },
   description:    { type: String, default: "" },
   notes:          { type: String, default: "" },
   facilities:     { type: [{ name: String, icon: String }], default: [] },

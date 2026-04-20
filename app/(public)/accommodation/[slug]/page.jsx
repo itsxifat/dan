@@ -304,90 +304,57 @@ export default async function PropertyPage({ params }) {
 
           {/* Sidebar */}
           <div className="space-y-5">
-            {isCottage && (
-              <div className="bg-white border border-[#ede5d8] rounded-2xl p-6
-                shadow-[0_8px_32px_-8px_rgba(26,19,9,0.10)] space-y-5 sticky top-24">
-                <div className="text-center pb-4 border-b border-[#f0ebe0]">
-                  <p className={`${josefin.className} text-[9.5px] uppercase tracking-[0.22em] text-[#9b8e78] mb-2`}>
-                    Starting from
-                  </p>
-                  <p className={`${lora.className} text-[2rem] font-semibold text-[#1a1309] leading-none`}>
-                    ৳{property.pricePerNight?.toLocaleString()}
-                  </p>
-                  <p className={`${josefin.className} text-[11px] text-[#9b8e78] mt-1`}>per night</p>
-                  {property.maxGuests && (
-                    <p className={`${josefin.className} text-[11px] text-[#9b8e78] mt-1`}>
-                      Up to {property.maxGuests} guests
-                    </p>
-                  )}
-                </div>
-                <Link
-                  href={`/booking?property=${property._id}&type=cottage`}
-                  className={`${josefin.className} block w-full text-center py-3.5 rounded-xl
-                    bg-[#7A2267] text-white text-[12px] font-semibold uppercase tracking-[0.18em]
-                    hover:bg-[#8e2878] transition-colors duration-200`}
-                >
-                  Book Now
-                </Link>
-                <p className={`${josefin.className} text-[10px] text-[#9b8e78] text-center leading-relaxed`}>
-                  No hidden charges · Free cancellation — check our policy
-                </p>
-              </div>
-            )}
-
-            {isBuilding && (
-              <div className="bg-white border border-[#ede5d8] rounded-2xl p-5
-                shadow-[0_8px_32px_-8px_rgba(26,19,9,0.10)] sticky top-24 space-y-4">
-                <p className={`${josefin.className} text-[10px] uppercase tracking-[0.25em] text-[#9b8e78] font-semibold`}>
-                  Quick Info
-                </p>
-                <dl className="space-y-3">
-                  {property.totalFloors > 0 && (
-                    <div className="flex justify-between items-center">
-                      <dt className={`${josefin.className} text-[12px] text-[#9b8e78] flex items-center gap-1.5`}>
-                        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <rect x="2" y="2" width="12" height="12" rx="1"/><path d="M5 8h6M8 5v6"/>
-                        </svg>
-                        Floors
-                      </dt>
-                      <dd className={`${josefin.className} text-[12.5px] font-semibold text-[#1a1309]`}>{property.totalFloors}</dd>
-                    </div>
-                  )}
-                  {hasBlocks && (
-                    <div className="flex justify-between items-center">
-                      <dt className={`${josefin.className} text-[12px] text-[#9b8e78] flex items-center gap-1.5`}>
-                        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <path d="M3 14V6l5-4 5 4v8"/><rect x="6" y="14" width="4" height="4"/>
-                        </svg>
-                        Blocks
-                      </dt>
-                      <dd className={`${josefin.className} text-[12.5px] font-semibold text-[#1a1309]`}>{property.blocks.length}</dd>
-                    </div>
-                  )}
+            <div className="bg-white border border-[#ede5d8] rounded-2xl p-5
+              shadow-[0_8px_32px_-8px_rgba(26,19,9,0.10)] sticky top-24 space-y-4">
+              <p className={`${josefin.className} text-[10px] uppercase tracking-[0.25em] text-[#9b8e78] font-semibold`}>
+                Quick Info
+              </p>
+              <dl className="space-y-3">
+                {isBuilding && property.totalFloors > 0 && (
                   <div className="flex justify-between items-center">
                     <dt className={`${josefin.className} text-[12px] text-[#9b8e78] flex items-center gap-1.5`}>
                       <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <rect x="1" y="4" width="14" height="10" rx="1"/>
-                        <path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/>
+                        <rect x="2" y="2" width="12" height="12" rx="1"/><path d="M5 8h6M8 5v6"/>
                       </svg>
-                      Categories
+                      Floors
                     </dt>
-                    <dd className={`${josefin.className} text-[12.5px] font-semibold text-[#1a1309]`}>{property.categories?.length ?? 0}</dd>
-                  </div>
-                </dl>
-
-                {property.amenities?.length > 0 && (
-                  <div className="pt-3 border-t border-[#f0ebe0]">
-                    <div className={`${josefin.className} flex items-center gap-2 text-[11.5px] text-[#7A2267]`}>
-                      <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <path d="M8 1l1.85 3.74L14 5.73l-3 2.92.71 4.12L8 10.77 5.29 12.77 6 8.65 3 5.73l4.15-.99L8 1z"/>
-                      </svg>
-                      <span className="font-semibold">{property.amenities.length} amenities included</span>
-                    </div>
+                    <dd className={`${josefin.className} text-[12.5px] font-semibold text-[#1a1309]`}>{property.totalFloors}</dd>
                   </div>
                 )}
-              </div>
-            )}
+                {hasBlocks && (
+                  <div className="flex justify-between items-center">
+                    <dt className={`${josefin.className} text-[12px] text-[#9b8e78] flex items-center gap-1.5`}>
+                      <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path d="M3 14V6l5-4 5 4v8"/><rect x="6" y="14" width="4" height="4"/>
+                      </svg>
+                      Blocks
+                    </dt>
+                    <dd className={`${josefin.className} text-[12.5px] font-semibold text-[#1a1309]`}>{property.blocks.length}</dd>
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <dt className={`${josefin.className} text-[12px] text-[#9b8e78] flex items-center gap-1.5`}>
+                    <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <rect x="1" y="4" width="14" height="10" rx="1"/>
+                      <path d="M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/>
+                    </svg>
+                    Categories
+                  </dt>
+                  <dd className={`${josefin.className} text-[12.5px] font-semibold text-[#1a1309]`}>{property.categories?.length ?? 0}</dd>
+                </div>
+              </dl>
+
+              {property.amenities?.length > 0 && (
+                <div className="pt-3 border-t border-[#f0ebe0]">
+                  <div className={`${josefin.className} flex items-center gap-2 text-[11.5px] text-[#7A2267]`}>
+                    <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M8 1l1.85 3.74L14 5.73l-3 2.92.71 4.12L8 10.77 5.29 12.77 6 8.65 3 5.73l4.15-.99L8 1z"/>
+                    </svg>
+                    <span className="font-semibold">{property.amenities.length} amenities included</span>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Back link */}
             <Link href="/accommodation"
