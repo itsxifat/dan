@@ -15,7 +15,6 @@ const WeddingVenueSchema = new mongoose.Schema({
 });
 
 WeddingVenueSchema.index({ isPublished: 1, sortOrder: 1 });
-WeddingVenueSchema.index({ slug: 1 }, { unique: true });
 
 export default mongoose.models.WeddingVenue ||
   mongoose.model("WeddingVenue", WeddingVenueSchema);

@@ -180,7 +180,7 @@ function PremiumCalendar({ checkIn, checkOut, onCheckIn, onCheckOut, anchorEl, o
                 Visit Date
               </p>
               <p className={`text-[10.5px] font-medium ${checkIn ? "text-[#3D0A52]" : "text-[#CCBAD8]"}`}
-                style={checkIn ? cormorant.style : {}}>
+                style={checkIn ? lora.style : {}}>
                 {checkIn ? fmtShort(checkIn) : "Select date"}
               </p>
             </div>
@@ -208,7 +208,7 @@ function PremiumCalendar({ checkIn, checkOut, onCheckIn, onCheckOut, anchorEl, o
                   </p>
                   <p className={`text-[10.5px] font-medium transition-colors duration-200
                     ${val ? (picking === key ? "text-[#3D0A52]" : "text-[#7A5590]") : "text-[#CCBAD8]"}`}
-                    style={val ? cormorant.style : {}}>
+                    style={val ? lora.style : {}}>
                     {val ? fmtShort(val) : "Select date"}
                   </p>
                 </button>

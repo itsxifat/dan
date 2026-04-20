@@ -69,8 +69,6 @@ const DiscountSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-// Unique index on code (case-insensitive) when code is present
-DiscountSchema.index({ code: 1 }, { unique: true, sparse: true });
 DiscountSchema.index({ isActive: 1, type: 1 });
 DiscountSchema.index({ assignedUser: 1 });
 
