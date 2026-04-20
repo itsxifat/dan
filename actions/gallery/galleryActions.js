@@ -85,6 +85,7 @@ export async function createGalleryPhoto(data) {
     sortOrder:   Number(data.sortOrder) || 0,
   });
   revalidatePath("/");
+  revalidatePath("/gallery");
   return { success: true };
 }
 
@@ -102,6 +103,7 @@ export async function updateGalleryPhoto(id, data) {
     sortOrder:   Number(data.sortOrder) || 0,
   });
   revalidatePath("/");
+  revalidatePath("/gallery");
   return { success: true };
 }
 
@@ -110,6 +112,7 @@ export async function deleteGalleryPhoto(id) {
   await dbConnect();
   await GalleryPhoto.findByIdAndDelete(id);
   revalidatePath("/");
+  revalidatePath("/gallery");
   return { success: true };
 }
 
@@ -118,5 +121,6 @@ export async function bulkTogglePublish(ids, isPublished) {
   await dbConnect();
   await GalleryPhoto.updateMany({ _id: { $in: ids } }, { isPublished });
   revalidatePath("/");
+  revalidatePath("/gallery");
   return { success: true };
 }

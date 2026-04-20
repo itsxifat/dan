@@ -137,7 +137,7 @@ export default function ContactContent({ info = {}, mapsApiKey = "" }) {
     },
     {
       title: "Call Us",
-      lines: phones.map((p) => p.number).filter(Boolean),
+      lines: phones.map((p) => p.label ? `${p.label}: ${p.number}` : p.number).filter(Boolean),
       sub:   info.phoneHours || "",
       icon:  <PhoneIcon />,
     },

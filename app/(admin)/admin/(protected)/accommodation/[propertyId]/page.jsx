@@ -33,19 +33,17 @@ export default async function PropertyEditPage({ params }) {
 
   const amenities = await getAmenities();
 
-  // For buildings, load categories + all rooms
+  // Load categories + all rooms for both buildings and cottages
   let categories = [];
   let roomsByCategory = {};
 
-  if (property.type === "building") {
-    categories = await getCategoriesByProperty(propertyId);
-    const allRooms = await Promise.all(
-      categories.map((cat) => getRoomsByCategory(cat._id))
-    );
-    categories.forEach((cat, i) => {
-      roomsByCategory[cat._id] = allRooms[i];
-    });
-  }
+  categories = await getCategoriesByProperty(propertyId);
+  const allRooms = await Promise.all(
+    categories.map((cat) => getRoomsByCategory(cat._id))
+  );
+  categories.forEach((cat, i) => {
+    roomsByCategory[cat._id] = allRooms[i];
+  });
 
   const serialisedCategories   = JSON.parse(JSON.stringify(categories));
   const serialisedRoomsByCategory = JSON.parse(JSON.stringify(roomsByCategory));

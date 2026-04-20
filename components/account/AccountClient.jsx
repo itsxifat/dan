@@ -5,12 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Montserrat, Playfair_Display } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 import { updateProfile, updateProfileImage } from "@/actions/account/accountActions";
 import { changePassword } from "@/actions/authActions";
 
-const montserrat = Montserrat({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
-const playfair   = Playfair_Display({ subsets: ["latin"], weight: ["400", "500", "600"] });
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 // ─── Shared styles ─────────────────────────────────────────────────────────────
 const FI = `w-full bg-[#FDFCFC] border border-[#EDE5F0] rounded-xl px-4 py-3 text-[13.5px]
@@ -51,7 +51,7 @@ function PaymentBar({ paid, total }) {
   const pct = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
   return (
     <div className="space-y-1">
-      <div className={`${montserrat.className} flex justify-between text-[10px] text-[#9B8BAB]`}>
+      <div className={`${josefin.className} flex justify-between text-[10px] text-[#9B8BAB]`}>
         <span>Paid ৳{(paid || 0).toLocaleString()} of ৳{(total || 0).toLocaleString()}</span>
         <span className="font-semibold text-[#7A2267]">{pct}%</span>
       </div>
@@ -90,15 +90,15 @@ function BookingCard({ booking }) {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <p className={`${montserrat.className} text-[11px] text-[#9B8BAB] font-mono tracking-wide`}>
+              <p className={`${josefin.className} text-[11px] text-[#9B8BAB] font-mono tracking-wide`}>
                 {booking.bookingNumber}
               </p>
-              <span className={`${montserrat.className} text-[9.5px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full
+              <span className={`${josefin.className} text-[9.5px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full
                 ${isDayLong ? "bg-amber-100 text-amber-700" : "bg-[#7A2267]/10 text-[#7A2267]"}`}>
                 {isDayLong ? "Day Long" : "Night Stay"}
               </span>
             </div>
-            <p className={`${montserrat.className} text-[14.5px] font-semibold text-[#1C1C1C] mt-1 truncate`}>
+            <p className={`${josefin.className} text-[14.5px] font-semibold text-[#1C1C1C] mt-1 truncate`}>
               {booking.property?.name || "Property"}
             </p>
           </div>
@@ -108,10 +108,10 @@ function BookingCard({ booking }) {
         {/* Dates */}
         <div className="flex items-center gap-3 text-[12px]">
           <div>
-            <p className={`${montserrat.className} text-[9px] uppercase tracking-[0.12em] text-[#9B8BAB] font-semibold mb-0.5`}>
+            <p className={`${josefin.className} text-[9px] uppercase tracking-[0.12em] text-[#9B8BAB] font-semibold mb-0.5`}>
               {isDayLong ? "Date" : "Check-in"}
             </p>
-            <p className={`${montserrat.className} text-[#1C1C1C] font-medium`}>{fmtDate(booking.checkIn)}</p>
+            <p className={`${josefin.className} text-[#1C1C1C] font-medium`}>{fmtDate(booking.checkIn)}</p>
           </div>
           {!isDayLong && (
             <>
@@ -119,13 +119,13 @@ function BookingCard({ booking }) {
                 <path d="M1 3h12M9 1l2 2-2 2" stroke="#C4B3CE" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               <div>
-                <p className={`${montserrat.className} text-[9px] uppercase tracking-[0.12em] text-[#9B8BAB] font-semibold mb-0.5`}>
+                <p className={`${josefin.className} text-[9px] uppercase tracking-[0.12em] text-[#9B8BAB] font-semibold mb-0.5`}>
                   Check-out
                 </p>
-                <p className={`${montserrat.className} text-[#1C1C1C] font-medium`}>{fmtDate(booking.checkOut)}</p>
+                <p className={`${josefin.className} text-[#1C1C1C] font-medium`}>{fmtDate(booking.checkOut)}</p>
               </div>
               {booking.nights > 0 && (
-                <span className={`${montserrat.className} ml-1 text-[10px] text-[#9B8BAB] bg-[#F5EDF5] px-2 py-0.5 rounded-full mt-3`}>
+                <span className={`${josefin.className} ml-1 text-[10px] text-[#9B8BAB] bg-[#F5EDF5] px-2 py-0.5 rounded-full mt-3`}>
                   {booking.nights}N
                 </span>
               )}
@@ -137,7 +137,7 @@ function BookingCard({ booking }) {
         {isMultiRoom ? (
           <div className="space-y-1.5">
             {booking.roomBookings.map((rb, i) => (
-              <div key={i} className={`${montserrat.className} flex items-center gap-2 text-[12px] text-[#5C4A6E] bg-[#F9F5FB] rounded-lg px-3 py-2`}>
+              <div key={i} className={`${josefin.className} flex items-center gap-2 text-[12px] text-[#5C4A6E] bg-[#F9F5FB] rounded-lg px-3 py-2`}>
                 <svg viewBox="0 0 14 14" width="12" height="12" fill="none" className="shrink-0">
                   <rect x="1" y="4" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
                   <path d="M4 4V2.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V4" stroke="currentColor" strokeWidth="1.2" />
@@ -154,7 +154,7 @@ function BookingCard({ booking }) {
             ))}
           </div>
         ) : booking.room ? (
-          <div className={`${montserrat.className} flex items-center gap-2 text-[12px] text-[#5C4A6E] bg-[#F9F5FB] rounded-lg px-3 py-2`}>
+          <div className={`${josefin.className} flex items-center gap-2 text-[12px] text-[#5C4A6E] bg-[#F9F5FB] rounded-lg px-3 py-2`}>
             <svg viewBox="0 0 14 14" width="12" height="12" fill="none" className="shrink-0">
               <rect x="1" y="4" width="12" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.2" />
               <path d="M4 4V2.5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1V4" stroke="currentColor" strokeWidth="1.2" />
@@ -168,14 +168,14 @@ function BookingCard({ booking }) {
         <div className="border-t border-[#F3EDF5] pt-4 space-y-2">
           <div className="flex items-end justify-between">
             <div className="space-y-0.5">
-              <p className={`${montserrat.className} text-[9px] uppercase tracking-[0.12em] text-[#9B8BAB] font-semibold`}>
+              <p className={`${josefin.className} text-[9px] uppercase tracking-[0.12em] text-[#9B8BAB] font-semibold`}>
                 Total Amount
               </p>
-              <p className={`${montserrat.className} text-[18px] font-bold text-[#7A2267]`}>
+              <p className={`${josefin.className} text-[18px] font-bold text-[#7A2267]`}>
                 ৳{totalAmount.toLocaleString()}
               </p>
               {totalSaved > 0 && (
-                <p className={`${montserrat.className} text-[10px] text-emerald-600 font-semibold`}>
+                <p className={`${josefin.className} text-[10px] text-emerald-600 font-semibold`}>
                   Saved ৳{totalSaved.toLocaleString()}
                 </p>
               )}
@@ -185,12 +185,12 @@ function BookingCard({ booking }) {
             <div className="text-right space-y-0.5">
               {isPartial && remaining > 0 ? (
                 <>
-                  <p className={`${montserrat.className} text-[9px] uppercase tracking-[0.12em] text-orange-500 font-semibold`}>Due at Check-in</p>
-                  <p className={`${montserrat.className} text-[13px] font-semibold text-orange-500`}>৳{remaining.toLocaleString()}</p>
+                  <p className={`${josefin.className} text-[9px] uppercase tracking-[0.12em] text-orange-500 font-semibold`}>Due at Check-in</p>
+                  <p className={`${josefin.className} text-[13px] font-semibold text-orange-500`}>৳{remaining.toLocaleString()}</p>
                 </>
               ) : booking.paymentStatus === "paid" ? (
                 <>
-                  <p className={`${montserrat.className} text-[9px] uppercase tracking-[0.12em] text-emerald-600 font-semibold`}>Paid in Full</p>
+                  <p className={`${josefin.className} text-[9px] uppercase tracking-[0.12em] text-emerald-600 font-semibold`}>Paid in Full</p>
                 </>
               ) : null}
             </div>
@@ -205,7 +205,7 @@ function BookingCard({ booking }) {
         {/* Invoice link */}
         <Link
           href={`/account/invoice/${booking._id}`}
-          className={`${montserrat.className} flex items-center justify-center gap-2 w-full py-2.5 rounded-xl
+          className={`${josefin.className} flex items-center justify-center gap-2 w-full py-2.5 rounded-xl
             border border-[#7A2267]/20 text-[#7A2267] text-[12px] font-semibold
             hover:bg-[#7A2267]/5 hover:border-[#7A2267]/35 transition-all duration-200`}
         >
@@ -230,9 +230,9 @@ function EmptyState({ message, linkHref, linkLabel }) {
           <path d="M7 9h6M7 12h4" stroke="#C4B3CE" strokeWidth="1.4" strokeLinecap="round" />
         </svg>
       </div>
-      <p className={`${montserrat.className} text-[13px] text-[#9B8BAB]`}>{message}</p>
+      <p className={`${josefin.className} text-[13px] text-[#9B8BAB]`}>{message}</p>
       {linkHref && (
-        <Link href={linkHref} className={`${montserrat.className} mt-3 inline-block text-[12.5px] text-[#7A2267] font-semibold hover:underline`}>
+        <Link href={linkHref} className={`${josefin.className} mt-3 inline-block text-[12.5px] text-[#7A2267] font-semibold hover:underline`}>
           {linkLabel}
         </Link>
       )}
@@ -283,10 +283,10 @@ function PasswordSection({ hasPassword }) {
   return (
     <div className="bg-white border border-[#EDE5F0] rounded-2xl p-6 space-y-5">
       <div>
-        <h3 className={`${playfair.className} text-[18px] font-semibold text-[#1a1410]`}>
+        <h3 className={`${lora.className} text-[18px] font-semibold text-[#1a1410]`}>
           {hasPassword ? "Change Password" : "Set a Password"}
         </h3>
-        <p className={`${montserrat.className} text-[12px] text-[#9B8BAB] mt-0.5`}>
+        <p className={`${josefin.className} text-[12px] text-[#9B8BAB] mt-0.5`}>
           {hasPassword
             ? "Update your account password. You'll need your current password."
             : "Your account uses Google sign-in. Add a password to also sign in with email."}
@@ -296,7 +296,7 @@ function PasswordSection({ hasPassword }) {
       <AnimatePresence mode="wait">
         {success && (
           <motion.div key="succ" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            className={`${montserrat.className} text-[12px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-4 py-3 rounded-xl flex items-center gap-2`}>
+            className={`${josefin.className} text-[12px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-4 py-3 rounded-xl flex items-center gap-2`}>
             <svg viewBox="0 0 12 12" width="13" height="13" fill="none">
               <circle cx="6" cy="6" r="5.3" stroke="currentColor" strokeWidth="1.2" />
               <path d="M3.5 6l1.8 1.8 3.2-3.2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
@@ -306,7 +306,7 @@ function PasswordSection({ hasPassword }) {
         )}
         {error && (
           <motion.div key="err" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            className={`${montserrat.className} text-[12px] text-red-700 bg-red-50 border border-red-200 px-4 py-3 rounded-xl`}>
+            className={`${josefin.className} text-[12px] text-red-700 bg-red-50 border border-red-200 px-4 py-3 rounded-xl`}>
             {error}
           </motion.div>
         )}
@@ -345,7 +345,7 @@ function PasswordSection({ hasPassword }) {
                   <div key={i} className={`h-1 flex-1 rounded-full transition-colors duration-300 ${i < str ? strColors[str - 1] : "bg-[#EDE5F0]"}`} />
                 ))}
               </div>
-              <p className={`${montserrat.className} text-[10px] font-semibold ${strColors[str - 1]?.replace("bg-", "text-") || "text-[#9B8BAB]"}`}>
+              <p className={`${josefin.className} text-[10px] font-semibold ${strColors[str - 1]?.replace("bg-", "text-") || "text-[#9B8BAB]"}`}>
                 {str > 0 ? strLabels[str - 1] : "Too short"}
               </p>
             </div>
@@ -358,12 +358,12 @@ function PasswordSection({ hasPassword }) {
             className={`${FI} ${form.confirm && form.confirm !== form.newPw ? "border-red-300 focus:border-red-400" : ""}`}
             placeholder="••••••••" autoComplete="new-password" />
           {form.confirm && form.confirm !== form.newPw && (
-            <p className={`${montserrat.className} text-[10.5px] text-red-500 mt-1`}>Passwords do not match.</p>
+            <p className={`${josefin.className} text-[10.5px] text-red-500 mt-1`}>Passwords do not match.</p>
           )}
         </div>
         <button type="submit"
           disabled={isPending || form.newPw.length < 8 || form.newPw !== form.confirm || (hasPassword && !form.current)}
-          className={`${montserrat.className} px-6 py-2.5 rounded-xl bg-[#7A2267] text-white text-[12.5px] font-semibold
+          className={`${josefin.className} px-6 py-2.5 rounded-xl bg-[#7A2267] text-white text-[12.5px] font-semibold
             hover:bg-[#8e2878] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200`}>
           {isPending ? "Saving…" : hasPassword ? "Change Password" : "Set Password"}
         </button>
@@ -471,11 +471,11 @@ function CropModal({ file, onClose, onApply, applying }) {
 
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-black/65 backdrop-blur-sm">
-      <div className={`${montserrat.className} bg-white rounded-2xl shadow-2xl w-full max-w-[340px] overflow-hidden`}>
+      <div className={`${josefin.className} bg-white rounded-2xl shadow-2xl w-full max-w-[340px] overflow-hidden`}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[#EDE5F0]">
           <div>
-            <h3 className={`${playfair.className} text-[17px] font-semibold text-[#1a1410]`}>Crop Photo</h3>
+            <h3 className={`${lora.className} text-[17px] font-semibold text-[#1a1410]`}>Crop Photo</h3>
             <p className="text-[10.5px] text-[#9B8BAB] mt-0.5">Drag or scroll to reposition · use slider to zoom</p>
           </div>
           <button onClick={onClose} disabled={applying}
@@ -671,7 +671,7 @@ export default function AccountClient({ user, bookings, userId, initialTab = "pr
   }
 
   return (
-    <div className={`${montserrat.className} space-y-5`}>
+    <div className={`${josefin.className} space-y-5`}>
 
       {/* Crop modal */}
       {cropFile && (
@@ -719,7 +719,7 @@ export default function AccountClient({ user, bookings, userId, initialTab = "pr
                     <img src={previewImage} alt={user.name} className="w-20 h-20 rounded-full object-cover border-2 border-[#7A2267]/30" />
                   ) : (
                     <div className="w-20 h-20 rounded-full bg-[#7A2267]/10 border-2 border-[#7A2267]/20 flex items-center justify-center">
-                      <span className={`${playfair.className} text-[2rem] font-semibold text-[#7A2267]`}>
+                      <span className={`${lora.className} text-[2rem] font-semibold text-[#7A2267]`}>
                         {(user.name || "?")[0].toUpperCase()}
                       </span>
                     </div>

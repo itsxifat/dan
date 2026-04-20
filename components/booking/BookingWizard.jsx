@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Montserrat, Playfair_Display } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 import { getProperties } from "@/actions/accommodation/propertyActions";
 import { getCategoriesByProperty } from "@/actions/accommodation/categoryActions";
 import { getAvailableRoomsForBooking } from "@/actions/accommodation/bookingActions";
@@ -16,8 +16,8 @@ import { createPendingBooking } from "@/actions/accommodation/bookingActions";
 import { getActiveDayLongPackages } from "@/actions/accommodation/dayLongPackageActions";
 import { validateCoupon, getActiveOffers } from "@/actions/discount/discountActions";
 
-const montserrat = Montserrat({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
-const playfair   = Playfair_Display({ subsets: ["latin"], weight: ["400", "500", "600"] });
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
 function todayISO() {
@@ -271,7 +271,7 @@ function Calendar({ mode, selected, onSelect, minDate }) {
   const DAYS   = ["Su","Mo","Tu","We","Th","Fr","Sa"];
 
   return (
-    <div className={`bg-white rounded-2xl border border-[#EDE5F0] p-4 ${montserrat.className}`}>
+    <div className={`bg-white rounded-2xl border border-[#EDE5F0] p-4 ${josefin.className}`}>
       <div className="flex items-center justify-between mb-4">
         <button onClick={() => setMonth((m) => {
           if (m.m === 0) return { y: m.y - 1, m: 11 };
@@ -394,7 +394,7 @@ function FixedBottomBar({ showBack, showNext, onBack, onNext, nextDisabled, next
   if (!mounted) return null;
 
   return createPortal(
-    <div className={`${montserrat.className} fixed bottom-0 inset-x-0 z-40`}>
+    <div className={`${josefin.className} fixed bottom-0 inset-x-0 z-40`}>
       <AnimatePresence>
         {barError && (
           <motion.div
@@ -590,6 +590,7 @@ export default function BookingWizard({ settings, preselect }) {
 
   // Error
   const [error, setError] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const cartRooms = useMemo(() => Array.from(cart.values()), [cart]);
   const totalPrice = useMemo(() => {
@@ -1023,6 +1024,7 @@ export default function BookingWizard({ settings, preselect }) {
           couponId:        couponApplied?.id       || null,
           couponCode:      couponApplied?.code      || "",
           couponDiscount:  couponApplied?.discountAmount || 0,
+          termsAccepted,
         });
 
         if (!result.success) {
@@ -1111,7 +1113,7 @@ export default function BookingWizard({ settings, preselect }) {
     if (!showPriceBar) return null;
     const hasDiscount = dayLongDiscount > 0 || autoOfferDiscount > 0 || couponDiscount > 0;
     return (
-      <div className={`${montserrat.className} bg-gradient-to-r from-[#FDFBFE] to-[#FAF7FC] border border-[#EDE5F0] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-4 mb-4`}>
+      <div className={`${josefin.className} bg-gradient-to-r from-[#FDFBFE] to-[#FAF7FC] border border-[#EDE5F0] rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] p-4 mb-4`}>
         <div className="flex items-center justify-between mb-2">
           <p className="text-[9.5px] uppercase tracking-[0.2em] text-[#9B8BAB] font-semibold">Price Summary</p>
           {hasDiscount && (
@@ -1223,7 +1225,7 @@ export default function BookingWizard({ settings, preselect }) {
 
   // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <div className={`${montserrat.className} pb-24`}>
+    <div className={`${josefin.className} pb-24`}>
       <StepIndicator step={step} total={5} />
 
       <FixedBottomBar
@@ -1246,7 +1248,7 @@ export default function BookingWizard({ settings, preselect }) {
             transition={{ duration: 0.3 }}>
             <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
               <div className="p-6 sm:p-8">
-                <h2 className={`text-[22px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>
+                <h2 className={`text-[22px] font-semibold text-[#1a1410] mb-1 ${lora.className}`}>
                   How would you like to stay?
                 </h2>
                 <p className="text-[12.5px] text-[#9B8BAB] mb-7">Choose between a night stay or a full-day experience.</p>
@@ -1275,7 +1277,7 @@ export default function BookingWizard({ settings, preselect }) {
                         : "bg-[#F0E8F4] text-[#7A2267] group-hover:bg-[#E8DAF0]"}`}>
                       <MoonIcon />
                     </div>
-                    <p className={`relative z-10 text-[17px] font-semibold text-[#1a1410] mb-1.5 ${playfair.className}`}>Night Stay</p>
+                    <p className={`relative z-10 text-[17px] font-semibold text-[#1a1410] mb-1.5 ${lora.className}`}>Night Stay</p>
                     <p className="relative z-10 text-[12px] text-[#9B8BAB] leading-relaxed">Stay overnight — one or more nights of comfort.</p>
                     {ciTime && coTime && (
                       <div className="relative z-10 mt-4 pt-3 border-t border-[#F0E8F4] grid grid-cols-2 gap-2 text-[10.5px]">
@@ -1313,7 +1315,7 @@ export default function BookingWizard({ settings, preselect }) {
                         : "bg-[#F0E8F4] text-[#7A2267] group-hover:bg-[#E8DAF0]"}`}>
                       <SunIcon />
                     </div>
-                    <p className={`relative z-10 text-[17px] font-semibold text-[#1a1410] mb-1.5 ${playfair.className}`}>Day Long</p>
+                    <p className={`relative z-10 text-[17px] font-semibold text-[#1a1410] mb-1.5 ${lora.className}`}>Day Long</p>
                     <p className="relative z-10 text-[12px] text-[#9B8BAB] leading-relaxed">A full-day resort experience from morning to evening.</p>
                     {settings?.dayLongCheckInTime && settings?.dayLongCheckOutTime && (
                       <div className="relative z-10 mt-4 pt-3 border-t border-[#F0E8F4] grid grid-cols-2 gap-2 text-[10.5px]">
@@ -1342,7 +1344,7 @@ export default function BookingWizard({ settings, preselect }) {
             <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
 
               <div className="p-6 sm:p-8">
-                <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>
+                <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${lora.className}`}>
                   {bookingMode === "day_long" ? "Select your date" : "Select your dates"}
                 </h2>
                 <p className="text-[12px] text-[#9B8BAB] mb-5">
@@ -1390,7 +1392,7 @@ export default function BookingWizard({ settings, preselect }) {
             {/* Guest counts */}
             <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
               <div className="p-6">
-                <h3 className={`text-[16px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>How many guests?</h3>
+                <h3 className={`text-[16px] font-semibold text-[#1a1410] mb-1 ${lora.className}`}>How many guests?</h3>
                 <p className="text-[11.5px] text-[#C4B3CE] mb-5">Rooms are assigned based on your group size.</p>
                 <div className="grid grid-cols-2 gap-6">
                   <Counter label="Adults" value={adults} min={1} max={20}
@@ -1598,7 +1600,7 @@ export default function BookingWizard({ settings, preselect }) {
                     <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
         
                       <div className="p-6 sm:p-8">
-                        <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>Choose your day package</h2>
+                        <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${lora.className}`}>Choose your day package</h2>
                         <p className="text-[12px] text-[#9B8BAB] mb-5">Select an entry option and any optional add-ons.</p>
 
                         {/* Entry — required */}
@@ -1665,7 +1667,7 @@ export default function BookingWizard({ settings, preselect }) {
                   <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
       
                     <div className="p-6 sm:p-8">
-                      <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>Choose your property</h2>
+                      <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${lora.className}`}>Choose your property</h2>
                       <p className="text-[12px] text-[#9B8BAB] mb-5">Select the property that fits your stay.</p>
 
                       {properties.filter((p) => p.type === "building").length === 0 ? (
@@ -1699,7 +1701,7 @@ export default function BookingWizard({ settings, preselect }) {
                                   </div>
                                 )}
                                 <div className="absolute bottom-0 inset-x-0 p-4">
-                                  <p className={`text-white text-[16px] font-semibold leading-tight ${playfair.className}`}>{p.name}</p>
+                                  <p className={`text-white text-[16px] font-semibold leading-tight ${lora.className}`}>{p.name}</p>
                                   {p.tagline && <p className="text-white/60 text-[11px] mt-0.5 line-clamp-1">{p.tagline}</p>}
                                   {p.location && (
                                     <p className="text-white/45 text-[10px] mt-1 flex items-center gap-1">
@@ -1727,7 +1729,7 @@ export default function BookingWizard({ settings, preselect }) {
                   <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
       
                     <div className="p-6 sm:p-8">
-                      <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>Choose room category</h2>
+                      <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${lora.className}`}>Choose room category</h2>
                       <p className="text-[12px] text-[#9B8BAB] mb-5">Select the type of room you prefer.</p>
 
                       {categories.length === 0 ? (
@@ -1880,7 +1882,7 @@ export default function BookingWizard({ settings, preselect }) {
             <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
 
               <div className="p-6 sm:p-8">
-                <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${playfair.className}`}>Your details</h2>
+                <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${lora.className}`}>Your details</h2>
                 <p className="text-[12px] text-[#9B8BAB] mb-6">Just a few details to complete your reservation.</p>
 
                 {/* Primary Guest */}
@@ -2213,7 +2215,7 @@ export default function BookingWizard({ settings, preselect }) {
                     <path d="M4 20c0-4 3.582-7 8-7s8 3 8 7" stroke="#7A2267" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
                 </div>
-                <h3 className={`text-[18px] font-semibold text-[#1a1410] mb-2 ${playfair.className}`}>Sign in to continue</h3>
+                <h3 className={`text-[18px] font-semibold text-[#1a1410] mb-2 ${lora.className}`}>Sign in to continue</h3>
                 <p className="text-[12.5px] text-[#9B8BAB] mb-5">You need an account to complete your booking.</p>
                 <div className="flex flex-col gap-3 max-w-xs mx-auto">
                   <Link href={`/login?callbackUrl=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "/booking")}`}
@@ -2240,7 +2242,7 @@ export default function BookingWizard({ settings, preselect }) {
                 <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
     
                   <div className="p-6">
-                    <h2 className={`text-[18px] font-semibold text-[#1a1410] mb-4 ${playfair.className}`}>Booking Summary</h2>
+                    <h2 className={`text-[18px] font-semibold text-[#1a1410] mb-4 ${lora.className}`}>Booking Summary</h2>
 
                     <div className="space-y-2 text-[13px] mb-4">
                       <div className="flex justify-between">
@@ -2418,13 +2420,61 @@ export default function BookingWizard({ settings, preselect }) {
 
                     {error && <p className="text-[12px] text-red-600 bg-red-50 border border-red-200 px-4 py-3 rounded-xl mb-4">{error}</p>}
 
+                    {/* ── Terms & Conditions checkbox ── */}
+                    <label className={`flex items-start gap-3 mb-4 p-3.5 rounded-xl border cursor-pointer
+                      transition-all duration-200 select-none
+                      ${termsAccepted
+                        ? "bg-[#FAF7FC] border-[#7A2267]/30"
+                        : "bg-[#FAFAFA] border-[#EDE5F0] hover:border-[#C4B3CE]"
+                      }`}>
+                      <div className="relative mt-0.5 shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={termsAccepted}
+                          onChange={(e) => setTermsAccepted(e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className={`w-4.5 h-4.5 w-[18px] h-[18px] rounded-md border-2 flex items-center justify-center
+                          transition-all duration-150
+                          ${termsAccepted
+                            ? "bg-[#7A2267] border-[#7A2267]"
+                            : "bg-white border-[#C4B3CE]"
+                          }`}>
+                          {termsAccepted && (
+                            <svg viewBox="0 0 10 8" width="10" height="8" fill="none">
+                              <path d="M1 4l3 3 5-6" stroke="white" strokeWidth="1.5"
+                                strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                      <span className={`text-[12px] leading-[1.6] ${josefin.className}
+                        ${termsAccepted ? "text-[#4a3a5a]" : "text-[#9B8BAB]"}`}>
+                        I have read and agree to the{" "}
+                        <Link href="/terms" target="_blank" rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-[#7A2267] underline underline-offset-2 hover:text-[#8e2878]
+                            font-medium transition-colors duration-150">
+                          Terms &amp; Conditions
+                        </Link>
+                        {" "}and{" "}
+                        <Link href="/privacy" target="_blank" rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-[#7A2267] underline underline-offset-2 hover:text-[#8e2878]
+                            font-medium transition-colors duration-150">
+                          Privacy Policy
+                        </Link>
+                        {" "}of Dhali&apos;s Amber Nivaas.
+                      </span>
+                    </label>
+
                     <div className="space-y-3">
                       <button
                         onClick={() => handleSubmit("sslcommerz")}
-                        disabled={isPending}
+                        disabled={isPending || !termsAccepted}
                         className="w-full bg-[#7A2267] hover:bg-[#8e2878] text-white font-semibold text-[13.5px]
                           py-4 rounded-2xl transition-all duration-200 shadow-[0_4px_20px_rgba(122,34,103,0.25)]
-                          disabled:opacity-60 flex items-center justify-center gap-2">
+                          disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                         {isPending ? (
                           <>
                             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -2496,7 +2546,7 @@ export default function BookingWizard({ settings, preselect }) {
               {/* Room title on image */}
               {roomDisplayImage && (
                 <div className="absolute bottom-0 inset-x-0 px-4 pb-3">
-                  <p className={`text-white text-[18px] font-semibold ${playfair.className}`}>Room {previewRoom.roomNumber}</p>
+                  <p className={`text-white text-[18px] font-semibold ${lora.className}`}>Room {previewRoom.roomNumber}</p>
                   <p className="text-white/55 text-[11px] mt-0.5">
                     Floor {previewRoom.floor}{previewRoom.block ? ` · ${previewRoom.block}` : ""}
                   </p>
@@ -2509,7 +2559,7 @@ export default function BookingWizard({ settings, preselect }) {
               {!roomDisplayImage && (
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div>
-                    <p className={`text-[17px] font-semibold text-[#1a1410] ${playfair.className}`}>Room {previewRoom.roomNumber}</p>
+                    <p className={`text-[17px] font-semibold text-[#1a1410] ${lora.className}`}>Room {previewRoom.roomNumber}</p>
                     <p className="text-[11.5px] text-[#9B8BAB] mt-0.5">
                       Floor {previewRoom.floor}{previewRoom.block ? ` · ${previewRoom.block}` : ""}
                     </p>

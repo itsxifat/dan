@@ -64,6 +64,13 @@ export async function getPublishedCorporateEvents({ limit = 12 } = {}) {
   return JSON.parse(JSON.stringify(events));
 }
 
+// ── Public: get single published event by id ─────────────────────────────────
+export async function getCorporateEventById(id) {
+  await dbConnect();
+  const event = await CorporateEvent.findOne({ _id: id, isPublished: true }).lean();
+  return event ? JSON.parse(JSON.stringify(event)) : null;
+}
+
 // ── Public: get published venues ─────────────────────────────────────────────
 export async function getPublishedVenues() {
   await dbConnect();

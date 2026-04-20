@@ -5,13 +5,12 @@ import { motion, useInView } from "framer-motion";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Lora, Josefin_Sans, Raleway } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
 const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
-const raleway = Raleway({ subsets: ["latin"], weight: ["300", "400", "500"] });
 
 const features = [
   {
@@ -220,7 +219,7 @@ function FeatureCard({ feature, index }) {
       </h3>
 
       {/* Desc */}
-      <p className={`${raleway.className} text-[11px] sm:text-[12px] lg:text-[12.5px]
+      <p className={`${josefin.className} text-[11px] sm:text-[12px] lg:text-[12.5px]
         font-light text-white/35 group-hover:text-white/55 leading-[1.75] sm:leading-[1.85]
         line-clamp-3 sm:line-clamp-none transition-colors duration-500`}>
         {feature.desc}
@@ -292,7 +291,7 @@ export default function ExperienceSection() {
             <em className="italic text-[#c084b8]">Unlike Any Other</em>
           </h2>
 
-          <p className={`${raleway.className} mt-4 text-[12.5px] sm:text-[13px] font-light text-white/35
+          <p className={`${josefin.className} mt-4 text-[12.5px] sm:text-[13px] font-light text-white/35
             max-w-xs sm:max-w-sm mx-auto leading-relaxed tracking-wide`}>
             Every detail, curated for those who expect nothing less than excellence.
           </p>

@@ -259,6 +259,8 @@ export async function createPendingBooking(bookingData) {
     // Auto-offer fields (optional)
     offerId,
     offerDiscount: clientOfferDiscount,
+    // Terms acceptance
+    termsAccepted,
   } = bookingData;
 
   const taxPercent   = settings.taxPercent ?? 0;
@@ -417,6 +419,8 @@ export async function createPendingBooking(bookingData) {
     paymentStatus: "unpaid",
     status:    "pending",
     bookedBy:  session?.user?.id || null,
+    termsAccepted:   termsAccepted === true,
+    termsAcceptedAt: termsAccepted === true ? new Date() : null,
   });
 
   // Notify admin activity feed (non-blocking)

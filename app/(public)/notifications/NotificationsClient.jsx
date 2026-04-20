@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Montserrat, Playfair_Display } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 import Link from "next/link";
 import { markNotificationRead, markAllNotificationsRead } from "@/actions/notifications/notificationActions";
 
-const sans     = Montserrat({ subsets: ["latin"], weight: ["400", "500", "600"] });
-const playfair = Playfair_Display({ subsets: ["latin"], weight: ["400", "500"] });
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function timeAgo(iso) {
@@ -111,11 +111,11 @@ function NotifCard({ notif, onRead }) {
           <p className={`text-[13px] font-semibold text-[#1a1410] leading-snug ${!notif.isRead ? "" : "text-[#4a3a40]"}`}>
             {notif.header}
           </p>
-          <span className={`${sans.className} text-[9.5px] text-[#C4B3CE] shrink-0 mt-0.5`}>
+          <span className={`${josefin.className} text-[9.5px] text-[#C4B3CE] shrink-0 mt-0.5`}>
             {timeAgo(notif.createdAt)}
           </span>
         </div>
-        <p className={`${sans.className} text-[12px] text-[#9B8BAB] leading-relaxed`}>{notif.body}</p>
+        <p className={`${josefin.className} text-[12px] text-[#9B8BAB] leading-relaxed`}>{notif.body}</p>
 
         {/* Image */}
         {notif.image && (
@@ -181,7 +181,7 @@ export default function NotificationsClient({ initialNotifications, initialUnrea
   const read   = notifications.filter((n) =>  n.isRead);
 
   return (
-    <div className={sans.className}>
+    <div className={josefin.className}>
       {/* Toolbar */}
       {unreadCount > 0 && (
         <div className="flex items-center justify-between mb-5">
@@ -205,7 +205,7 @@ export default function NotificationsClient({ initialNotifications, initialUnrea
               <path d="M10 15.5a2 2 0 0 0 4 0" stroke="#C4B3CE" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
           </div>
-          <h3 className={`text-[18px] font-medium text-[#1a1410] mb-2 ${playfair.className}`}>All caught up</h3>
+          <h3 className={`text-[18px] font-medium text-[#1a1410] mb-2 ${lora.className}`}>All caught up</h3>
           <p className="text-[12.5px] text-[#9B8BAB]">No notifications yet. Check back later.</p>
         </div>
       ) : (

@@ -2,25 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Montserrat, Playfair_Display } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 
-const montserrat = Montserrat({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
-
-const playfair = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 function cx(...parts) {
   return parts.filter(Boolean).join(" ");
 }
 
 export const authFonts = {
-  body: montserrat.className,
-  display: playfair.className,
+  body: josefin.className,
+  display: lora.className,
 };
 
 export const AUTH_LABEL =

@@ -189,22 +189,18 @@ const NAV = [
     ],
   },
   {
-    group: "Content",
+    group: "Wedding",
     items: [
       {
-        label: "Gallery",
-        href: "/admin/gallery",
+        label: "Enquiries",
+        href: "/admin/wedding/enquiries",
         permission: "settings.write",
         Icon: ({ active }) => (
           <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
-            <rect x="1.5" y="1.5" width="6.5" height="6.5" rx="1.3" stroke="currentColor" strokeWidth="1.3"
-              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.18" : "0"} />
-            <rect x="10" y="1.5" width="6.5" height="6.5" rx="1.3" stroke="currentColor" strokeWidth="1.3"
-              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.18" : "0"} />
-            <rect x="1.5" y="10" width="6.5" height="6.5" rx="1.3" stroke="currentColor" strokeWidth="1.3"
-              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.18" : "0"} />
-            <rect x="10" y="10" width="6.5" height="6.5" rx="1.3" stroke="currentColor" strokeWidth="1.3"
-              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.18" : "0"} />
+            <path d="M9 2C6.5 4 3 6.5 3 10a6 6 0 0 0 12 0C15 6.5 11.5 4 9 2z"
+              stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.12" : "0"} />
+            <path d="M6.5 10.5a2.5 2.5 0 0 0 5 0" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
           </svg>
         ),
       },
@@ -231,6 +227,28 @@ const NAV = [
             <rect x="6" y="10" width="6" height="6" rx="0.8" stroke="currentColor" strokeWidth="1.2"
               fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.15" : "0"} />
             <path d="M9 10v6" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" opacity={active ? "1" : "0.5"} />
+          </svg>
+        ),
+      },
+    ],
+  },
+  {
+    group: "Content",
+    items: [
+      {
+        label: "Gallery",
+        href: "/admin/gallery",
+        permission: "settings.write",
+        Icon: ({ active }) => (
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
+            <rect x="1.5" y="1.5" width="6.5" height="6.5" rx="1.3" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.18" : "0"} />
+            <rect x="10" y="1.5" width="6.5" height="6.5" rx="1.3" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.18" : "0"} />
+            <rect x="1.5" y="10" width="6.5" height="6.5" rx="1.3" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.18" : "0"} />
+            <rect x="10" y="10" width="6.5" height="6.5" rx="1.3" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.18" : "0"} />
           </svg>
         ),
       },
@@ -309,6 +327,33 @@ const NAV = [
             <path d="M3 3h12a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H6l-3 3V4a1 1 0 0 1 1-1z"
               stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"
               fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.08" : "0"} />
+          </svg>
+        ),
+      },
+      {
+        label: "Terms & Conditions",
+        href: "/admin/legal/terms",
+        permission: "settings.write",
+        Icon: ({ active }) => (
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
+            <rect x="3" y="2" width="12" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.3"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.08" : "0"} />
+            <path d="M6 6h6M6 9h6M6 12h4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"
+              opacity={active ? "1" : "0.6"} />
+          </svg>
+        ),
+      },
+      {
+        label: "Privacy Policy",
+        href: "/admin/legal/privacy",
+        permission: "settings.write",
+        Icon: ({ active }) => (
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
+            <path d="M9 2L3 4.5v5C3 13 5.7 16 9 17c3.3-1 6-4 6-7.5v-5L9 2z"
+              stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.1" : "0"} />
+            <path d="M6.5 9.5l2 2 3.5-3.5" stroke="currentColor" strokeWidth="1.3"
+              strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         ),
       },

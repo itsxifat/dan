@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
@@ -52,7 +52,7 @@ const pillars = [
     title: "Heartfelt Hospitality",
     desc:  "Warm, attentive care where every guest is welcomed like family from the moment they arrive.",
     icon: (
-      <svg viewBox="0 0 22 22" width="20" height="20" fill="none" stroke="currentColor"
+      <svg viewBox="-1 -1 24 24" width="20" height="20" fill="none" stroke="currentColor"
         strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L11 6.67l-2.06-2.06a5.5 5.5 0 0 0-7.78 7.78l2.06 2.06L11 21.23l7.78-7.78 2.06-2.06a5.5 5.5 0 0 0 0-7.78z" />
       </svg>
@@ -74,6 +74,7 @@ const pillars = [
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function AboutContent({ aboutData = {} }) {
+  const [imgError, setImgError] = useState(false);
   const chairman = {
     name:         aboutData.chairmanName         || "Md. Abdur Rahman Dhali",
     title:        aboutData.chairmanTitle         || "Chairman",
@@ -327,12 +328,12 @@ export default function AboutContent({ aboutData = {} }) {
                 <div className="w-56 h-56 sm:w-64 sm:h-64 rounded-full overflow-hidden
                   shadow-[0_24px_60px_-12px_rgba(13,9,5,0.22)] border-4 border-white
                   ring-1 ring-[#7A2267]/20 bg-[#f5ede8] flex items-center justify-center">
-                  {chairman.image ? (
-                    <Image
+                  {chairman.image && !imgError ? (
+                    <img
                       src={chairman.image}
                       alt={chairman.name}
-                      fill sizes="256px"
-                      className="object-cover object-top"
+                      onError={() => setImgError(true)}
+                      className="w-full h-full object-cover object-top"
                     />
                   ) : (
                     <span className={`${lora.className} text-[3rem] font-400 text-[#7A2267]/40 italic`}>
@@ -409,6 +410,61 @@ export default function AboutContent({ aboutData = {} }) {
               </motion.div>
             </motion.div>
 
+          </div>
+        </div>
+      </section>
+
+      {/* ── YEARLY ROADMAP ───────────────────────────────────────────────── */}
+      <section className="relative bg-[#1a1309] overflow-hidden py-24 md:py-32">
+        <div className="pointer-events-none absolute inset-0"
+          style={{ background: "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(122,34,103,0.12) 0%, transparent 70%)" }} />
+        <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-14">
+          <div className="text-center mb-16">
+            <p className={`${josefin.className} text-[9.5px] uppercase tracking-[0.45em] text-[#7A2267]/60 mb-4`}>
+              Our Journey
+            </p>
+            <h2 className={`${lora.className} text-[2.2rem] sm:text-[2.8rem] lg:text-[3.2rem]
+              font-400 text-white leading-[1.12] tracking-[-0.01em]`}>
+              Yearly{" "}
+              <em className={`${lora.className} italic text-[#7A2267]`}>Roadmap</em>
+            </h2>
+            <div className="h-px w-14 bg-[#7A2267]/30 mx-auto mt-6" />
+          </div>
+
+          <div className="relative">
+            {/* Vertical line */}
+            <div className="absolute left-1/2 -translate-x-px top-0 bottom-0 w-px bg-[#7A2267]/20 hidden md:block" />
+
+            <div className="space-y-10 md:space-y-0">
+              {[
+                { year: "2018", title: "Foundation", desc: "Dhali's Amber Nivaas Resort was established with a vision to create a halal-certified luxury retreat in the heart of Bangladesh's natural landscape.", side: "left" },
+                { year: "2019", title: "First Phase Expansion", desc: "Completion of the Tower Building and primary accommodation wings, opening our doors to the first guests and establishing our hallmark hospitality standards.", side: "right" },
+                { year: "2021", title: "Venue & Event Spaces", desc: "Launch of the Grand Banquet Hall, Conference Suite, and outdoor event fields — positioning the resort as a premier destination for corporate and wedding events.", side: "left" },
+                { year: "2022", title: "Wellness & Recreation", desc: "Addition of the iconic swimming pool, spa facilities, and recreational zones, elevating the guest experience beyond accommodation.", side: "right" },
+                { year: "2023", title: "Digital Transformation", desc: "Launched our digital booking platform, online gallery, and corporate booking portal to serve our growing national and international clientele.", side: "left" },
+                { year: "2024–25", title: "Continuous Growth", desc: "Expanding cottage offerings, enhancing wedding venues, and continuing our commitment to sustainable, halal-certified luxury hospitality.", side: "right" },
+              ].map((item, i) => (
+                <div key={i} className={`md:grid md:grid-cols-2 md:gap-16 items-center mb-10 md:mb-16 ${item.side === "right" ? "md:[direction:rtl]" : ""}`}>
+                  <div className={`md:[direction:ltr] ${item.side === "right" ? "md:text-right" : ""}`}>
+                    <div className={`inline-block mb-3 px-3 py-1 rounded-full text-[9.5px] font-semibold uppercase tracking-[0.22em]
+                      bg-[#7A2267]/20 text-[#7A2267] border border-[#7A2267]/30`}>
+                      {item.year}
+                    </div>
+                    <h3 className={`${lora.className} text-[1.3rem] sm:text-[1.5rem] text-white font-400 mb-3`}>
+                      {item.title}
+                    </h3>
+                    <p className={`${josefin.className} text-[13px] font-light text-white/45 leading-[1.9] max-w-sm ${item.side === "right" ? "md:ml-auto" : ""}`}>
+                      {item.desc}
+                    </p>
+                  </div>
+                  {/* Center dot — desktop */}
+                  <div className="hidden md:flex items-center justify-center absolute left-1/2 -translate-x-1/2 mt-2">
+                    <div className="w-3 h-3 rounded-full bg-[#7A2267] border-2 border-[#7A2267]/40 shadow-[0_0_0_4px_rgba(122,34,103,0.12)]" />
+                  </div>
+                  <div />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>

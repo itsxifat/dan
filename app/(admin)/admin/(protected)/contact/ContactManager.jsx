@@ -35,10 +35,8 @@ const STATUS_COLOR = {
 
 // ── tab bar ────────────────────────────────────────────────────────────────────
 const TABS = [
-  { key: "info",      label: "Contact Info" },
-  { key: "map",       label: "Map & Location" },
-  { key: "directions",label: "Directions" },
-  { key: "messages",  label: "Messages" },
+  { key: "info",     label: "Contact Info" },
+  { key: "messages", label: "Messages" },
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -417,9 +415,9 @@ export default function ContactManager({ info, initialMessages, totalMessages, m
       )}
 
       {/* ════════════════════════════════════════════════════════════════════ */}
-      {/* TAB: Map & Location                                                  */}
+      {/* TAB: Map & Location (removed per client request)                    */}
       {/* ════════════════════════════════════════════════════════════════════ */}
-      {tab === "map" && (
+      {tab === "map_disabled" && (
         <div className="space-y-6">
 
           {/* Mode toggle */}
@@ -548,9 +546,9 @@ export default function ContactManager({ info, initialMessages, totalMessages, m
       )}
 
       {/* ════════════════════════════════════════════════════════════════════ */}
-      {/* TAB: Directions                                                       */}
+      {/* TAB: Directions (removed per client request)                         */}
       {/* ════════════════════════════════════════════════════════════════════ */}
-      {tab === "directions" && (
+      {tab === "directions_disabled" && (
         <div className={CARD}>
           <h3 className={SECT}>How to Find Us</h3>
           <div className="space-y-5">

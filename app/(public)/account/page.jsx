@@ -1,15 +1,12 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { Cormorant_Garamond } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 import { getAccountData } from "@/actions/account/accountActions";
 import AccountClient from "@/components/account/AccountClient";
 
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  style: ["normal", "italic"],
-});
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 export const metadata = { title: "My Account — Dhali's Amber Nivaas" };
 export const dynamic = "force-dynamic";
@@ -42,7 +39,7 @@ export default async function AccountPage({ searchParams }) {
             />
           ) : (
             <div className="w-16 h-16 rounded-full bg-[#7A2267]/20 border-2 border-[#7A2267]/40 flex items-center justify-center shrink-0">
-              <span className={`text-[2rem] font-light text-[#D4A8E0] ${cormorant.className}`}>
+              <span className={`text-[2rem] font-light text-[#D4A8E0] ${lora.className}`}>
                 {(data.user.name || "?")[0].toUpperCase()}
               </span>
             </div>
@@ -50,7 +47,7 @@ export default async function AccountPage({ searchParams }) {
 
           <div>
             <p className="text-[9px] uppercase tracking-[0.3em] text-[#D4A8E0] font-medium">My Account</p>
-            <h1 className={`text-[2rem] sm:text-[2.4rem] font-light text-white leading-tight mt-0.5 ${cormorant.className}`}>
+            <h1 className={`text-[2rem] sm:text-[2.4rem] font-light text-white leading-tight mt-0.5 ${lora.className}`}>
               {data.user.name}
             </h1>
             <p className="text-white/40 text-[12px] mt-0.5">{data.user.email}</p>

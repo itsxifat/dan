@@ -2,17 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Cormorant_Garamond, Montserrat } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  style: ["normal", "italic"],
-});
-const sans = Montserrat({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 function fmtDate(d) {
   if (!d) return "—";
@@ -38,7 +31,7 @@ export default function SuccessClient({ booking }) {
 
   if (!booking) {
     return (
-      <main className={`${sans.className} min-h-dvh bg-[#F7F4F0] flex items-center justify-center px-4`}>
+      <main className={`${josefin.className} min-h-dvh bg-[#F7F4F0] flex items-center justify-center px-4`}>
         <div className="text-center space-y-3">
           <p className="text-[#9B8BAB] text-[13px]">Booking not found.</p>
           <Link href="/" className="inline-block text-[12px] text-[#7A2267] font-semibold hover:underline">Return to home</Link>
@@ -74,7 +67,7 @@ export default function SuccessClient({ booking }) {
   });
 
   return (
-    <main className={`${sans.className} min-h-dvh bg-[#F7F4F0] flex flex-col`}>
+    <main className={`${josefin.className} min-h-dvh bg-[#F7F4F0] flex flex-col`}>
       <style>{`
         @keyframes circleIn {
           from { opacity: 0; transform: scale(0.5); }
@@ -145,19 +138,19 @@ export default function SuccessClient({ booking }) {
 
             {/* Status + title */}
             <p
-              className={`${sans.className} text-[9.5px] uppercase tracking-[0.28em] font-semibold mb-1`}
+              className={`${josefin.className} text-[9.5px] uppercase tracking-[0.28em] font-semibold mb-1`}
               style={{ color: "#9B6E00", ...s(200) }}
             >
               {isPartial ? "Advance Payment Received" : "Payment Successful"}
             </p>
             <h1
-              className={`${cormorant.className} text-[2.1rem] sm:text-[2.4rem] font-light text-[#1a1410] leading-tight mb-1`}
+              className={`${lora.className} text-[2.1rem] sm:text-[2.4rem] font-light text-[#1a1410] leading-tight mb-1`}
               style={s(280)}
             >
               <em className="italic" style={{ color: "#7A2267" }}>Booking Confirmed</em>
             </h1>
             <p
-              className={`${sans.className} text-[11px] text-[#9B8BAB] leading-relaxed`}
+              className={`${josefin.className} text-[11px] text-[#9B8BAB] leading-relaxed`}
               style={s(340)}
             >
               {isPartial
@@ -176,7 +169,7 @@ export default function SuccessClient({ booking }) {
           >
             {/* Booking ref */}
             <div className="text-center px-5 py-3 border-b border-[#F5F0F7]">
-              <p className={`${sans.className} text-[8.5px] uppercase tracking-[0.22em] text-[#C4B3CE] font-semibold mb-0.5`}>
+              <p className={`${josefin.className} text-[8.5px] uppercase tracking-[0.22em] text-[#C4B3CE] font-semibold mb-0.5`}>
                 Booking Reference
               </p>
               <p className="text-[20px] font-bold text-[#7A2267] tracking-[0.18em]" style={{ fontFamily: "monospace" }}>
@@ -188,8 +181,8 @@ export default function SuccessClient({ booking }) {
             <div className="px-5 py-3 border-b border-[#F5F0F7] space-y-2">
               {booking.property?.name && (
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className={`${sans.className} text-[11px] text-[#9B8BAB]`}>Property</span>
-                  <span className={`${sans.className} text-[11.5px] font-semibold text-[#1a1410] text-right`}>
+                  <span className={`${josefin.className} text-[11px] text-[#9B8BAB]`}>Property</span>
+                  <span className={`${josefin.className} text-[11.5px] font-semibold text-[#1a1410] text-right`}>
                     {booking.property.name}
                   </span>
                 </div>
@@ -197,30 +190,30 @@ export default function SuccessClient({ booking }) {
               {mode === "night_stay" ? (
                 <>
                   <div className="flex items-baseline justify-between gap-3">
-                    <span className={`${sans.className} text-[11px] text-[#9B8BAB]`}>Dates</span>
-                    <span className={`${sans.className} text-[11.5px] font-semibold text-[#1a1410]`}>
+                    <span className={`${josefin.className} text-[11px] text-[#9B8BAB]`}>Dates</span>
+                    <span className={`${josefin.className} text-[11.5px] font-semibold text-[#1a1410]`}>
                       {fmtDate(booking.checkIn)} → {fmtDate(booking.checkOut)}
                     </span>
                   </div>
                   <div className="flex items-baseline justify-between gap-3">
-                    <span className={`${sans.className} text-[11px] text-[#9B8BAB]`}>Duration</span>
-                    <span className={`${sans.className} text-[11.5px] font-medium text-[#5C4A6E]`}>
+                    <span className={`${josefin.className} text-[11px] text-[#9B8BAB]`}>Duration</span>
+                    <span className={`${josefin.className} text-[11.5px] font-medium text-[#5C4A6E]`}>
                       {nights} night{nights !== 1 ? "s" : ""}
                     </span>
                   </div>
                 </>
               ) : (
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className={`${sans.className} text-[11px] text-[#9B8BAB]`}>Date</span>
-                  <span className={`${sans.className} text-[11.5px] font-semibold text-[#1a1410]`}>
+                  <span className={`${josefin.className} text-[11px] text-[#9B8BAB]`}>Date</span>
+                  <span className={`${josefin.className} text-[11.5px] font-semibold text-[#1a1410]`}>
                     {fmtDate(booking.checkIn)}
                   </span>
                 </div>
               )}
               {rooms.length > 0 && (
                 <div className="flex items-baseline justify-between gap-3">
-                  <span className={`${sans.className} text-[11px] text-[#9B8BAB]`}>Room{rooms.length > 1 ? "s" : ""}</span>
-                  <span className={`${sans.className} text-[11.5px] font-semibold text-[#1a1410]`}>
+                  <span className={`${josefin.className} text-[11px] text-[#9B8BAB]`}>Room{rooms.length > 1 ? "s" : ""}</span>
+                  <span className={`${josefin.className} text-[11.5px] font-semibold text-[#1a1410]`}>
                     {rooms.join(", ")}
                   </span>
                 </div>
@@ -230,25 +223,25 @@ export default function SuccessClient({ booking }) {
             {/* Payment — compact */}
             <div className="px-5 py-3">
               <div className="flex items-baseline justify-between mb-2.5">
-                <span className={`${sans.className} text-[11px] text-[#9B8BAB]`}>Total</span>
-                <span className={`${sans.className} text-[13.5px] font-bold text-[#7A2267]`}>{fmtBDT(total)}</span>
+                <span className={`${josefin.className} text-[11px] text-[#9B8BAB]`}>Total</span>
+                <span className={`${josefin.className} text-[13.5px] font-bold text-[#7A2267]`}>{fmtBDT(total)}</span>
               </div>
 
               {isPartial ? (
                 <div className="grid grid-cols-2 gap-2">
                   <div className="rounded-xl px-3 py-2.5" style={{ background: "#F8F0FC", border: "1px solid #E8D5F0" }}>
-                    <p className={`${sans.className} text-[8.5px] uppercase tracking-[0.12em] font-semibold mb-1`} style={{ color: "#7A2267" }}>
+                    <p className={`${josefin.className} text-[8.5px] uppercase tracking-[0.12em] font-semibold mb-1`} style={{ color: "#7A2267" }}>
                       Paid Now
                     </p>
-                    <p className={`${sans.className} text-[16px] font-bold`} style={{ color: "#7A2267" }}>
+                    <p className={`${josefin.className} text-[16px] font-bold`} style={{ color: "#7A2267" }}>
                       {fmtBDT(paidNow)}
                     </p>
                   </div>
                   <div className="rounded-xl px-3 py-2.5" style={{ background: "#FFF5EE", border: "1px solid #FFE0C8" }}>
-                    <p className={`${sans.className} text-[8.5px] uppercase tracking-[0.12em] font-semibold mb-1`} style={{ color: "#C05A00" }}>
+                    <p className={`${josefin.className} text-[8.5px] uppercase tracking-[0.12em] font-semibold mb-1`} style={{ color: "#C05A00" }}>
                       At Check-in
                     </p>
-                    <p className={`${sans.className} text-[16px] font-bold`} style={{ color: "#C05A00" }}>
+                    <p className={`${josefin.className} text-[16px] font-bold`} style={{ color: "#C05A00" }}>
                       {fmtBDT(displayRemaining)}
                     </p>
                   </div>
@@ -256,10 +249,10 @@ export default function SuccessClient({ booking }) {
               ) : (
                 <div className="flex items-center justify-between rounded-xl px-3.5 py-2.5" style={{ background: "#F0FAF4", border: "1px solid #C8EDD7" }}>
                   <div>
-                    <p className={`${sans.className} text-[8.5px] uppercase tracking-[0.12em] text-emerald-700 font-semibold mb-0.5`}>
+                    <p className={`${josefin.className} text-[8.5px] uppercase tracking-[0.12em] text-emerald-700 font-semibold mb-0.5`}>
                       Paid in Full
                     </p>
-                    <p className={`${sans.className} text-[17px] font-bold text-emerald-700`}>{fmtBDT(paidNow)}</p>
+                    <p className={`${josefin.className} text-[17px] font-bold text-emerald-700`}>{fmtBDT(paidNow)}</p>
                   </div>
                   <svg viewBox="0 0 20 20" width="20" height="20" fill="none">
                     <circle cx="10" cy="10" r="9" stroke="#059669" strokeWidth="1.4" />
@@ -270,11 +263,11 @@ export default function SuccessClient({ booking }) {
 
               {/* Via / Txn — tiny */}
               <div className="mt-2.5 flex items-center justify-between">
-                <span className={`${sans.className} text-[10px] text-[#C4B3CE]`}>
+                <span className={`${josefin.className} text-[10px] text-[#C4B3CE]`}>
                   via {fmtMethod(booking.paymentMethod, booking.cardType)}
                 </span>
                 {booking.bankTxnId && (
-                  <span className={`${sans.className} text-[9.5px] font-mono text-[#C4B3CE] tracking-wide`}>
+                  <span className={`${josefin.className} text-[9.5px] font-mono text-[#C4B3CE] tracking-wide`}>
                     {booking.bankTxnId}
                   </span>
                 )}
@@ -285,12 +278,12 @@ export default function SuccessClient({ booking }) {
           {/* ── Savings + email — tiny, below card ── */}
           <div className="flex items-center justify-between px-1 mt-2.5" style={s(460)}>
             {totalSaved > 0 ? (
-              <span className={`${sans.className} text-[10px] font-semibold`} style={{ color: "#1A7A45" }}>
+              <span className={`${josefin.className} text-[10px] font-semibold`} style={{ color: "#1A7A45" }}>
                 Saved {fmtBDT(totalSaved)}
               </span>
             ) : <span />}
             {booking.primaryGuest?.email && (
-              <span className={`${sans.className} text-[10px] text-[#C4B3CE]`}>
+              <span className={`${josefin.className} text-[10px] text-[#C4B3CE]`}>
                 Confirmation → {booking.primaryGuest.email}
               </span>
             )}
@@ -300,7 +293,7 @@ export default function SuccessClient({ booking }) {
           <div className="mt-4 space-y-2" style={s(500)}>
             <Link
               href="/account?tab=bookings"
-              className={`${sans.className} flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-white text-[13px] font-semibold`}
+              className={`${josefin.className} flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-white text-[13px] font-semibold`}
               style={{
                 background: "linear-gradient(135deg, #7A2267 0%, #a3388d 100%)",
                 boxShadow: "0 4px 18px rgba(122,34,103,0.22)",
@@ -315,7 +308,7 @@ export default function SuccessClient({ booking }) {
 
             <Link
               href="/"
-              className={`${sans.className} flex items-center justify-center w-full py-3 rounded-xl text-[12px] font-medium text-[#9B8BAB] hover:text-[#7A2267] transition-colors duration-200`}
+              className={`${josefin.className} flex items-center justify-center w-full py-3 rounded-xl text-[12px] font-medium text-[#9B8BAB] hover:text-[#7A2267] transition-colors duration-200`}
             >
               Return to Home
             </Link>

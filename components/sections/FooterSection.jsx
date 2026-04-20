@@ -53,6 +53,11 @@ const quickLinks = [
   { label: "Contact",       href: "/contact" },
 ];
 
+const legalLinks = [
+  { label: "Terms & Conditions", href: "/terms" },
+  { label: "Privacy Policy",     href: "/privacy" },
+];
+
 const stayLinks = [
   { label: "Our Rooms",          href: "/accommodation" },
   { label: "Night Packages",     href: "/packages/night" },
@@ -70,7 +75,7 @@ export default function FooterSection({ contactInfo = {} }) {
 
       {/* ── Top 4-column grid ─────────────────────────────────────────────── */}
       <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12
-        grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-8 pb-14 md:pb-16">
+        grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-6 pb-14 md:pb-16">
 
         {/* ── Col 1: Brand ─────────────────────────────────────────────────── */}
         <div className="flex flex-col gap-5 lg:col-span-1">
@@ -80,7 +85,7 @@ export default function FooterSection({ contactInfo = {} }) {
               Dhali&apos;s Amber Nivaas
             </p>
             {/* Gold decorative line */}
-            <div className="mt-3 h-px w-16 bg-gradient-to-r from-[#7A2267] to-transparent" />
+            <div className="mt-3 h-px w-16 bg-linear-to-r from-[#7A2267] to-transparent" />
           </div>
 
           {/* Tagline */}
@@ -160,6 +165,26 @@ export default function FooterSection({ contactInfo = {} }) {
           </ul>
         </div>
 
+        {/* ── Col 3b: Legal ────────────────────────────────────────────────── */}
+        <div className="flex flex-col gap-5">
+          <p className={`${josefin.className} text-[10px] uppercase tracking-[0.22em] font-semibold text-white/50`}>
+            Legal
+          </p>
+          <ul className="flex flex-col gap-3">
+            {legalLinks.map((link) => (
+              <li key={link.href}>
+                <Link
+                  href={link.href}
+                  className={`${josefin.className} text-[13px] font-light text-white/35
+                    hover:text-[#c084b8] transition-colors duration-200`}
+                >
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+
         {/* ── Col 4: Contact ───────────────────────────────────────────────── */}
         <div className="flex flex-col gap-5">
           <p className={`${josefin.className} text-[10px] uppercase tracking-[0.22em] font-semibold text-white/50`}>
@@ -211,12 +236,39 @@ export default function FooterSection({ contactInfo = {} }) {
       {/* ── Bottom bar ────────────────────────────────────────────────────── */}
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-5
-          flex flex-col sm:flex-row items-center justify-between gap-2">
+          flex flex-col sm:flex-row items-center justify-between gap-3">
+
+          {/* Left: copyright */}
           <p className={`${josefin.className} text-[11px] text-white/30`}>
             &copy; {new Date().getFullYear()} Dhali&apos;s Amber Nivaas. All rights reserved.
           </p>
-          <p className={`${josefin.className} text-[11px] text-white/30`}>
-            Designed with care for your experience.
+
+          {/* Centre: legal links */}
+          <div className="flex items-center gap-5">
+            <Link href="/terms"
+              className={`${josefin.className} text-[10.5px] text-white/25
+                hover:text-white/55 transition-colors duration-200`}>
+              Terms &amp; Conditions
+            </Link>
+            <span className="w-px h-3 bg-white/10" />
+            <Link href="/privacy"
+              className={`${josefin.className} text-[10.5px] text-white/25
+                hover:text-white/55 transition-colors duration-200`}>
+              Privacy Policy
+            </Link>
+          </div>
+
+          {/* Right: developer credit */}
+          <p className={`${josefin.className} text-[10.5px] text-white/25`}>
+            Developed by{" "}
+            <a
+              href="https://enfinito.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white/40 hover:text-[#c084b8] transition-colors duration-200 font-medium"
+            >
+              Enfinito
+            </a>
           </p>
         </div>
       </div>

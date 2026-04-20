@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useTransition, useMemo, useRef, useEffect } from "react";
+import { useState, useTransition, useMemo, useRef, useEffect, lazy, Suspense } from "react";
 import PageHeader from "@/components/admin/PageHeader";
+import ImageUpload from "@/components/ui/ImageUpload";
 import {
   createMenuItem,
   updateMenuItem,
@@ -16,7 +17,7 @@ const VENUE_TABS = [
 
 const BLANK_FORM = {
   name: "", category: "", description: "", price: "",
-  isPopular: false, isAvailable: true,
+  image: "", isPopular: false, isAvailable: true,
 };
 
 /* ─── Toggle Switch ─────────────────────────────────────────── */
@@ -365,6 +366,19 @@ function FormDrawer({ open, editing, form, onField, onSubmit, onClose, isPending
               />
             </div>
 
+            {/* Image */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] uppercase tracking-wider text-white/30">
+                Photo
+                <span className="normal-case tracking-normal text-white/20 ml-1">(optional)</span>
+              </label>
+              <ImageUpload
+                value={form.image}
+                onChange={(url) => onField("image", url)}
+                dark
+              />
+            </div>
+
             {/* Toggles */}
             <div className="p-4 rounded-xl border border-white/[0.06] bg-white/[0.01] flex flex-col gap-3.5">
               <p className="text-[10px] uppercase tracking-wider text-white/20 font-semibold">Options</p>
@@ -459,6 +473,7 @@ export default function MenuManager({ initialItems = [] }) {
       category:    item.category,
       description: item.description || "",
       price:       String(item.price),
+      image:       item.image || "",
       isPopular:   item.isPopular,
       isAvailable: item.isAvailable,
     });

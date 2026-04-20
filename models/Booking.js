@@ -107,6 +107,9 @@ const BookingSchema = new mongoose.Schema({
   bankTxnId:     { type: String, default: "" },
   cardType:      { type: String, default: "" },
 
+  termsAccepted:   { type: Boolean, default: false },
+  termsAcceptedAt: { type: Date,    default: null },
+
   bookedBy:   { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   adminNotes: { type: String, default: "" },
 

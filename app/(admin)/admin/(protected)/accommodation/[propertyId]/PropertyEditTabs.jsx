@@ -11,54 +11,41 @@ const TYPE_STYLE = {
   cottage:  { badge: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20", dot: "bg-emerald-400" },
 };
 
-const TABS = {
-  building: [
-    {
-      id: "details", label: "Property Details",
-      icon: (
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
-          <path d="M2 14V7L8 2l6 5v7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-          <rect x="5.5" y="9" width="5" height="5" rx="0.8" stroke="currentColor" strokeWidth="1.2"/>
-        </svg>
-      ),
-    },
-    {
-      id: "categories", label: "Categories",
-      icon: (
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
-          <rect x="1" y="1" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.2"/>
-          <rect x="9" y="1" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.2"/>
-          <rect x="1" y="9" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.2"/>
-          <rect x="9" y="9" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.2"/>
-        </svg>
-      ),
-    },
-    {
-      id: "rooms", label: "Rooms",
-      icon: (
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
-          <rect x="1.5" y="4.5" width="13" height="9" rx="1.3" stroke="currentColor" strokeWidth="1.2"/>
-          <path d="M1.5 8.5h13" stroke="currentColor" strokeWidth="1.1"/>
-          <path d="M5.5 4.5V3M10.5 4.5V3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-        </svg>
-      ),
-    },
-  ],
-  cottage: [
-    {
-      id: "details", label: "Property Details",
-      icon: (
-        <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
-          <path d="M2 14V7L8 2l6 5v7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-          <rect x="5.5" y="9" width="5" height="5" rx="0.8" stroke="currentColor" strokeWidth="1.2"/>
-        </svg>
-      ),
-    },
-  ],
-};
+const ALL_TABS = [
+  {
+    id: "details", label: "Property Details",
+    icon: (
+      <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
+        <path d="M2 14V7L8 2l6 5v7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+        <rect x="5.5" y="9" width="5" height="5" rx="0.8" stroke="currentColor" strokeWidth="1.2"/>
+      </svg>
+    ),
+  },
+  {
+    id: "categories", label: "Categories",
+    icon: (
+      <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
+        <rect x="1" y="1" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.2"/>
+        <rect x="9" y="1" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.2"/>
+        <rect x="1" y="9" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.2"/>
+        <rect x="9" y="9" width="6" height="6" rx="1.2" stroke="currentColor" strokeWidth="1.2"/>
+      </svg>
+    ),
+  },
+  {
+    id: "rooms", label: "Rooms",
+    icon: (
+      <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
+        <rect x="1.5" y="4.5" width="13" height="9" rx="1.3" stroke="currentColor" strokeWidth="1.2"/>
+        <path d="M1.5 8.5h13" stroke="currentColor" strokeWidth="1.1"/>
+        <path d="M5.5 4.5V3M10.5 4.5V3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+];
 
 export default function PropertyEditTabs({ property, categories, roomsByCategory, canWrite, amenities = [] }) {
-  const tabs    = TABS[property.type] ?? TABS.cottage;
+  const tabs    = ALL_TABS;
   const [tab, setTab] = useState("details");
 
   const allRooms = Object.values(roomsByCategory).flat();

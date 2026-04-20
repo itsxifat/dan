@@ -4,11 +4,10 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Playfair_Display, Montserrat, Cormorant_Garamond } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 
-const playfair  = Playfair_Display({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
-const sans      = Montserrat({ subsets: ["latin"], weight: ["300", "400", "500", "600"] });
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400", "500"], style: ["italic"] });
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0, transition: { duration: 0.65, ease: [0.22,1,0.36,1] } } };
 const stagger= { hidden: {}, show: { transition: { staggerChildren: 0.08, delayChildren: 0.02 } } };
@@ -61,22 +60,22 @@ function MenuCard({ item }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className={`${sans.className} text-[13px] font-semibold text-[#1a1309] leading-snug`}>
+            <p className={`${josefin.className} text-[13px] font-semibold text-[#1a1309] leading-snug`}>
               {item.name}
             </p>
             {item.isPopular && (
-              <span className={`${sans.className} text-[8px] uppercase tracking-wider font-semibold
+              <span className={`${josefin.className} text-[8px] uppercase tracking-wider font-semibold
                 px-2 py-0.5 rounded-full bg-[#c9a96e]/15 text-[#a07a3a] border border-[#c9a96e]/25`}>
                 Popular
               </span>
             )}
           </div>
-          <p className={`${sans.className} text-[13px] font-semibold text-[#c9a96e] shrink-0`}>
+          <p className={`${josefin.className} text-[13px] font-semibold text-[#c9a96e] shrink-0`}>
             ৳{item.price}
           </p>
         </div>
         {item.description && (
-          <p className={`${sans.className} text-[11px] font-light text-[#7a6a52] mt-1 leading-relaxed`}>
+          <p className={`${josefin.className} text-[11px] font-light text-[#7a6a52] mt-1 leading-relaxed`}>
             {item.description}
           </p>
         )}
@@ -108,14 +107,14 @@ export default function CafeContent({ menuItems = [] }) {
         <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 pb-12 md:pb-16 pt-28">
           <motion.div variants={stagger} initial="hidden" animate="show" className="max-w-2xl">
 <motion.h1 variants={fadeUp}
-              className={`${playfair.className} text-[2.6rem] sm:text-[3.4rem] lg:text-[4.2rem]
+              className={`${lora.className} text-[2.6rem] sm:text-[3.4rem] lg:text-[4.2rem]
                 text-white leading-[1.1] tracking-[-0.01em]`}>
               Amber{" "}
-              <em className={`${cormorant.className} not-italic text-[#c9a96e]`}>Café</em>
+              <em className={`${lora.className} not-italic text-[#c9a96e]`}>Café</em>
             </motion.h1>
 
             <motion.p variants={fadeUp}
-              className={`${sans.className} text-[13px] font-light text-white/60 leading-[1.85] mt-4 max-w-lg`}>
+              className={`${josefin.className} text-[13px] font-light text-white/60 leading-[1.85] mt-4 max-w-lg`}>
               A warm corner to unwind with freshly brewed beverages, homemade pastries, and halal-certified bites — all day, every day.
             </motion.p>
           </motion.div>
@@ -147,8 +146,8 @@ export default function CafeContent({ menuItems = [] }) {
             <div key={s.label} className="flex items-center gap-2.5">
               <div className="text-white/25">{s.icon}</div>
               <div>
-                <p className={`${sans.className} text-[8.5px] uppercase tracking-[0.22em] text-white/30 leading-none mb-0.5`}>{s.label}</p>
-                <p className={`${sans.className} text-[12px] font-medium text-white/70`}>{s.value}</p>
+                <p className={`${josefin.className} text-[8.5px] uppercase tracking-[0.22em] text-white/30 leading-none mb-0.5`}>{s.label}</p>
+                <p className={`${josefin.className} text-[12px] font-medium text-white/70`}>{s.value}</p>
               </div>
               {i < arr.length - 1 && <div className="hidden md:block w-px h-6 bg-white/10 ml-8 md:ml-14" style={{marginLeft: 0}} />}
             </div>
@@ -163,12 +162,12 @@ export default function CafeContent({ menuItems = [] }) {
           {/* Header */}
           <div className="flex items-center justify-center gap-5 mb-4">
             <div className="h-px w-10 bg-[#c9a96e]/50" />
-            <p className={`${sans.className} text-[9.5px] uppercase tracking-[0.28em] font-semibold text-[#c9a96e]`}>
+            <p className={`${josefin.className} text-[9.5px] uppercase tracking-[0.28em] font-semibold text-[#c9a96e]`}>
               Our Menu
             </p>
             <div className="h-px w-10 bg-[#c9a96e]/50" />
           </div>
-          <h2 className={`${playfair.className} text-[1.9rem] sm:text-[2.4rem] text-[#1a1309] text-center mb-10 leading-[1.2]`}>
+          <h2 className={`${lora.className} text-[1.9rem] sm:text-[2.4rem] text-[#1a1309] text-center mb-10 leading-[1.2]`}>
             What We Serve
           </h2>
 
@@ -178,7 +177,7 @@ export default function CafeContent({ menuItems = [] }) {
             {displayCats.map((cat) => (
               <button key={cat}
                 onClick={() => setActive(cat)}
-                className={`${sans.className} relative shrink-0 px-4 py-2.5 text-[10.5px] uppercase
+                className={`${josefin.className} relative shrink-0 px-4 py-2.5 text-[10.5px] uppercase
                   tracking-[0.15em] font-medium transition-colors duration-200 whitespace-nowrap rounded-lg
                   ${active === cat
                     ? "bg-[#1a1309] text-[#c9a96e]"
@@ -201,7 +200,7 @@ export default function CafeContent({ menuItems = [] }) {
           </AnimatePresence>
 
           {displayItems.length === 0 && (
-            <p className={`${sans.className} text-center text-[13px] text-[#aaa] py-16`}>
+            <p className={`${josefin.className} text-center text-[13px] text-[#aaa] py-16`}>
               No items in this category yet.
             </p>
           )}
@@ -215,7 +214,7 @@ export default function CafeContent({ menuItems = [] }) {
                   fill="none" stroke="#16a34a" strokeWidth="1.2" strokeLinejoin="round"/>
                 <path d="M5.5 8l2 2 3-3" stroke="#16a34a" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              <span className={`${sans.className} text-[9.5px] uppercase tracking-[0.18em] text-emerald-700 font-semibold`}>
+              <span className={`${josefin.className} text-[9.5px] uppercase tracking-[0.18em] text-emerald-700 font-semibold`}>
                 100% Halal Certified Kitchen
               </span>
             </div>
@@ -226,18 +225,18 @@ export default function CafeContent({ menuItems = [] }) {
       {/* ── Also visit ── */}
       <section className="bg-white py-14 md:py-18">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 text-center">
-          <p className={`${sans.className} text-[9.5px] uppercase tracking-[0.28em] text-[#c9a96e] font-semibold mb-3`}>
+          <p className={`${josefin.className} text-[9.5px] uppercase tracking-[0.28em] text-[#c9a96e] font-semibold mb-3`}>
             Also at Amber Nivaas
           </p>
-          <h2 className={`${playfair.className} text-[1.8rem] sm:text-[2.2rem] text-[#1a1309] mb-6`}>
+          <h2 className={`${lora.className} text-[1.8rem] sm:text-[2.2rem] text-[#1a1309] mb-6`}>
             Experience Fine Dining at{" "}
-            <em className={`${cormorant.className} not-italic text-[#7A2267]`}>Amber Restaurant</em>
+            <em className={`${lora.className} not-italic text-[#7A2267]`}>Amber Restaurant</em>
           </h2>
-          <p className={`${sans.className} text-[13px] font-light text-[#7a6a52] max-w-md mx-auto mb-8 leading-[1.85]`}>
+          <p className={`${josefin.className} text-[13px] font-light text-[#7a6a52] max-w-md mx-auto mb-8 leading-[1.85]`}>
             For an elevated dining experience with panoramic garden views and curated seasonal menus.
           </p>
           <Link href="/dining/amber-restaurant"
-            className={`${sans.className} inline-flex items-center gap-3 px-8 py-3.5 rounded-full
+            className={`${josefin.className} inline-flex items-center gap-3 px-8 py-3.5 rounded-full
               bg-[#7A2267] text-white text-[11px] font-semibold uppercase tracking-[0.18em]
               hover:bg-[#8a256f] transition-colors duration-300 group`}>
             View Amber Restaurant

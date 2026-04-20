@@ -3,8 +3,6 @@
 import { useState, useRef, useEffect, useTransition, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createRoom, updateRoom, deleteRoom, updateRoomStatus } from "@/actions/accommodation/roomActions";
-import ImageUpload from "@/components/ui/ImageUpload";
-import MultiImageUpload from "@/components/ui/MultiImageUpload";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -177,7 +175,6 @@ function RoomForm({ propertyId, categories, blocks = [], room = null, onDone }) 
   const isEdit = !!room;
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
-  const [showImages, setShowImages] = useState(false);
 
   // Resolve initial category
   const initCatId = idStr(room?.category ?? categories[0]?._id ?? "");
@@ -192,8 +189,6 @@ function RoomForm({ propertyId, categories, blocks = [], room = null, onDone }) 
     floor:            room?.floor            ?? 1,
     block:            initBlock,
     status:           room?.status           ?? "available",
-    coverImage:       room?.coverImage       ?? "",
-    images:           room?.images           ?? [],
     description:      room?.description      ?? "",
     notes:            room?.notes            ?? "",
     variantId:        room?.variantId        ? String(room.variantId) : "",
@@ -241,8 +236,6 @@ function RoomForm({ propertyId, categories, blocks = [], room = null, onDone }) 
           floor:            Number(form.floor),
           block:            form.block || "",
           status:           form.status,
-          coverImage:       form.coverImage,
-          images:           form.images,
           description:      form.description,
           notes:            form.notes,
           variantId:        form.variantId || null,
@@ -482,48 +475,6 @@ function RoomForm({ propertyId, categories, blocks = [], room = null, onDone }) 
             placeholder="Optional staff notes…"
           />
         </div>
-      </div>
-
-      {/* Images — collapsible */}
-      <div className="border border-white/6 rounded-xl overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setShowImages((v) => !v)}
-          className="w-full flex items-center justify-between px-4 py-3
-            text-[11.5px] font-medium text-white/45 hover:text-white/70
-            hover:bg-white/2 transition-all duration-200"
-        >
-          <span>Images (optional)</span>
-          <motion.svg
-            animate={{ rotate: showImages ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
-            viewBox="0 0 10 6" width="9" height="9" fill="none"
-          >
-            <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-          </motion.svg>
-        </button>
-        <AnimatePresence>
-          {showImages && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.25 }}
-              className="overflow-hidden"
-            >
-              <div className="px-4 pb-4 pt-3 space-y-4 border-t border-white/6">
-                <div>
-                  <label className={LABEL}>Cover Image</label>
-                  <ImageUpload dark value={form.coverImage} onChange={(url) => setForm((f) => ({ ...f, coverImage: url }))} />
-                </div>
-                <div>
-                  <label className={LABEL}>Gallery Images</label>
-                  <MultiImageUpload dark values={form.images} onChange={(urls) => setForm((f) => ({ ...f, images: urls }))} />
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       <div className="flex items-center gap-2 pt-1">
@@ -841,25 +792,9 @@ export default function RoomManager({ propertyId, categories, blocks = [], initi
                                 <>
                                   {/* Room number */}
                                   <td className="px-4 py-3 w-28">
-                                    <div className="flex items-center gap-2.5">
-                                      {room.coverImage ? (
-                                        <img src={room.coverImage} alt=""
-                                          className="w-8 h-8 rounded-lg object-cover opacity-70 shrink-0"/>
-                                      ) : (
-                                        <div className="w-8 h-8 rounded-lg bg-white/4 border border-white/6
-                                          flex items-center justify-center shrink-0">
-                                          <svg viewBox="0 0 14 14" width="11" height="11" fill="none"
-                                            className="text-white/15">
-                                            <rect x="1" y="3" width="12" height="9" rx="1.3"
-                                              stroke="currentColor" strokeWidth="1.2"/>
-                                            <path d="M1 6.5h12" stroke="currentColor" strokeWidth="1.1"/>
-                                          </svg>
-                                        </div>
-                                      )}
-                                      <span className="text-[13px] font-mono font-semibold text-white/80">
-                                        {room.roomNumber}
-                                      </span>
-                                    </div>
+                                    <span className="text-[13px] font-mono font-semibold text-white/80">
+                                      {room.roomNumber}
+                                    </span>
                                   </td>
 
                                   {/* Category */}

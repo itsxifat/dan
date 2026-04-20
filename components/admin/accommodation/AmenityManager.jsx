@@ -12,7 +12,7 @@ const MediaPicker = lazy(() => import("@/components/admin/MediaPicker"));
 const INPUT = "w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-[13px] text-white placeholder-white/20 focus:outline-none focus:border-[#7A2267]/60 focus:bg-white/[0.06] transition-all duration-200";
 const LABEL = "block text-[10px] uppercase tracking-wider text-white/35 font-semibold mb-2";
 
-const ALL_CATS = ["General", ...ICON_CATEGORIES];
+const ALL_CATS = ["General", ...ICON_CATEGORIES.filter((c) => c !== "General")];
 
 // ── Custom Dropdown ────────────────────────────────────────────────────────────
 function CustomSelect({ value, onChange, options, placeholder = "Select…" }) {

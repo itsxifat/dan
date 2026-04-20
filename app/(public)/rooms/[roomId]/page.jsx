@@ -1,17 +1,14 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { notFound } from "next/navigation";
-import { Cormorant_Garamond } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 import { getRoomProfile } from "@/actions/accommodation/roomProfileActions";
 import { getReviewsForRoom, canUserReview } from "@/actions/accommodation/reviewActions";
 import ReviewForm from "./ReviewForm";
 import RoomGallery from "./RoomGallery";
 
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  style: ["normal", "italic"],
-});
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 export const dynamic = "force-dynamic";
 
@@ -109,7 +106,7 @@ export default async function RoomProfilePage({ params }) {
               {property.name}
             </p>
           )}
-          <h1 className={`text-[2.8rem] sm:text-[3.5rem] font-light text-white leading-none ${cormorant.className}`}>
+          <h1 className={`text-[2.8rem] sm:text-[3.5rem] font-light text-white leading-none ${lora.className}`}>
             Room <em className="italic text-[#D4A8E0]">#{room.roomNumber}</em>
           </h1>
           <p className="text-white/55 text-[13px] mt-1.5">Floor {room.floor}</p>

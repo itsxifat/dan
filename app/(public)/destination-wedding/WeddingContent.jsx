@@ -8,31 +8,40 @@ import { Lora, Josefin_Sans } from "next/font/google";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { submitWeddingEnquiry } from "@/actions/wedding/weddingActions";
 
 gsap.registerPlugin(ScrollTrigger);
 
 const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
 const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
-// ── Hero bg photo ──────────────────────────────────────────────────────────────
-const HERO_IMAGE = "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1920&q=85";
+const EASE = [0.22, 1, 0.36, 1];
 
-// ── Venue data comes from DB (passed as props) ─────────────────────────────────
+const fadeUp = {
+  hidden: { opacity: 0, y: 26 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.85, ease: EASE } },
+};
+const stagger = {
+  hidden: {},
+  show:   { transition: { staggerChildren: 0.12, delayChildren: 0.04 } },
+};
+
+const HERO_IMAGE = "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1920&q=85";
 
 // ── Services ───────────────────────────────────────────────────────────────────
 const SERVICES = [
-  { title:"Nikah Ceremony",        desc:"Beautifully arranged Nikah settings with floral décor, privacy, and the serenity your ceremony deserves." },
-  { title:"Holud & Mehndi",        desc:"Vibrant pre-wedding events in our garden venues, styled with traditional warmth and modern elegance." },
-  { title:"Grand Reception",       desc:"From intimate banquets to 15,000-guest outdoor galas — your reception, your vision, our flawless execution." },
-  { title:"Halal Catering",        desc:"Bespoke wedding menus by our in-house culinary team — traditional Bangladeshi feasts to multi-cuisine spreads." },
-  { title:"On-site Accommodation", desc:"Exclusive room blocks for the bridal party and out-of-town guests, coordinated with your event schedule." },
-  { title:"Décor & Florals",       desc:"Our in-house décor team brings your aesthetic to life — from minimalist elegance to opulent floral installations." },
-  { title:"Dedicated Planner",     desc:"Your personal coordinator manages every detail — from the first site visit to the final farewell." },
-  { title:"Photography & AV",      desc:"Referrals to top-tier photographers and in-house state-of-the-art audio-visual systems for every venue." },
+  { title: "Nikah Ceremony",        desc: "Beautifully arranged Nikah settings with floral décor, privacy, and the serenity your ceremony deserves." },
+  { title: "Holud & Mehndi",        desc: "Vibrant pre-wedding events in our garden venues, styled with traditional warmth and modern elegance." },
+  { title: "Grand Reception",       desc: "From intimate banquets to 15,000-guest outdoor galas — your reception, your vision, our flawless execution." },
+  { title: "Halal Catering",        desc: "Bespoke wedding menus by our in-house culinary team — traditional Bangladeshi feasts to multi-cuisine spreads." },
+  { title: "On-site Accommodation", desc: "Exclusive room blocks for the bridal party and out-of-town guests, coordinated with your event schedule." },
+  { title: "Décor & Florals",       desc: "Our in-house décor team brings your aesthetic to life — from minimalist elegance to opulent floral installations." },
+  { title: "Dedicated Planner",     desc: "Your personal coordinator manages every detail — from the first site visit to the final farewell." },
+  { title: "Photography & AV",      desc: "Referrals to top-tier photographers and in-house state-of-the-art audio-visual systems for every venue." },
 ];
 
 // ── Gallery ────────────────────────────────────────────────────────────────────
-const GALLERY_CATS = ["All","Ceremony","Reception","Holud · Mehndi","Venue","Décor"];
+const GALLERY_CATS = ["All", "Ceremony", "Reception", "Holud · Mehndi", "Venue", "Décor"];
 const GALLERY_PHOTOS = [
   { id:"c1", cat:"Ceremony",       title:"Nikah Moment",         span:"row",  src:"https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=900&q=80" },
   { id:"c2", cat:"Ceremony",       title:"Sacred Vows",          span:"none", src:"https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=900&q=80" },
@@ -43,10 +52,10 @@ const GALLERY_PHOTOS = [
   { id:"r3", cat:"Reception",      title:"Evening Celebration",  span:"none", src:"https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=900&q=80" },
   { id:"r4", cat:"Reception",      title:"First Dance",          span:"row",  src:"https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?auto=format&fit=crop&w=900&q=80" },
   { id:"r5", cat:"Reception",      title:"Feast Table",          span:"none", src:"https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=900&q=80" },
-  { id:"h1", cat:"Holud · Mehndi", title:"Holud Ceremony",      span:"col",  src:"https://images.unsplash.com/photo-1585241936939-be4099591252?auto=format&fit=crop&w=900&q=80" },
-  { id:"h2", cat:"Holud · Mehndi", title:"Mehndi Night",        span:"none", src:"https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=900&q=80" },
-  { id:"h3", cat:"Holud · Mehndi", title:"Traditional Ritual",  span:"none", src:"https://images.unsplash.com/photo-1596797882870-8c0e5c2f82d4?auto=format&fit=crop&w=900&q=80" },
-  { id:"h4", cat:"Holud · Mehndi", title:"Mehndi Details",      span:"row",  src:"https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=900&q=80" },
+  { id:"h1", cat:"Holud · Mehndi", title:"Holud Ceremony",       span:"col",  src:"https://images.unsplash.com/photo-1585241936939-be4099591252?auto=format&fit=crop&w=900&q=80" },
+  { id:"h2", cat:"Holud · Mehndi", title:"Mehndi Night",         span:"none", src:"https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=900&q=80" },
+  { id:"h3", cat:"Holud · Mehndi", title:"Traditional Ritual",   span:"none", src:"https://images.unsplash.com/photo-1596797882870-8c0e5c2f82d4?auto=format&fit=crop&w=900&q=80" },
+  { id:"h4", cat:"Holud · Mehndi", title:"Mehndi Details",       span:"row",  src:"https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=900&q=80" },
   { id:"v1", cat:"Venue",          title:"Grand Outdoor Field",  span:"col",  src:"https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=900&q=80" },
   { id:"v2", cat:"Venue",          title:"Garden Setting",       span:"none", src:"https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=900&q=80" },
   { id:"v3", cat:"Venue",          title:"Banquet Hall",         span:"none", src:"https://images.unsplash.com/photo-1561912774-79769a0a0a7a?auto=format&fit=crop&w=900&q=80" },
@@ -72,23 +81,22 @@ function HeroTitle() {
   }, { scope: containerRef });
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} className="text-center">
       <div className="overflow-hidden mb-1">
-        <span className={`hw inline-block ${lora.className} text-[2.8rem] sm:text-[4rem] lg:text-[5.2rem] xl:text-[6rem]
-          font-semibold text-white leading-[1.05]`} style={{ opacity: 0 }}>
+        <span className={`hw inline-block ${lora.className} text-[2.8rem] sm:text-[4rem] lg:text-[5.2rem]
+          text-white leading-[1.05]`} style={{ opacity: 0 }}>
           Where Every
         </span>
       </div>
       <div className="overflow-hidden mb-1">
-        <span className={`hw inline-block ${lora.className} text-[2.8rem] sm:text-[4rem] lg:text-[5.2rem] xl:text-[6rem]
-          font-semibold text-white leading-[1.05]`} style={{ opacity: 0 }}>
-          Moment&nbsp;
-          <em className={`${lora.className} italic text-[#7A2267]`}>Becomes</em>
+        <span className={`hw inline-block ${lora.className} text-[2.8rem] sm:text-[4rem] lg:text-[5.2rem]
+          text-white leading-[1.05]`} style={{ opacity: 0 }}>
+          Moment&nbsp;<em className={`${lora.className} italic`}>Becomes</em>
         </span>
       </div>
       <div className="overflow-hidden">
-        <span className={`hw inline-block ${lora.className} italic text-[3.2rem] sm:text-[4.6rem] lg:text-[6rem] xl:text-[7rem]
-          font-light text-[#7A2267] leading-[1.0]`} style={{ opacity: 0 }}>
+        <span className={`hw inline-block ${lora.className} italic text-[3.2rem] sm:text-[4.6rem] lg:text-[6rem]
+          text-[#7A2267] leading-none`} style={{ opacity: 0 }}>
           Forever
         </span>
       </div>
@@ -96,35 +104,14 @@ function HeroTitle() {
   );
 }
 
-// ── Ornamental Divider ──────────────────────────────────────────────────────────
-function OrnamentalDivider({ light = false }) {
-  return (
-    <div className="flex items-center justify-center gap-3 py-3">
-      <div className={`h-px flex-1 max-w-[80px] ${light ? "bg-white/10" : "bg-[#7A2267]/20"}`} />
-      <svg viewBox="0 0 20 20" width="14" height="14" fill="none" className={light ? "text-white/20" : "text-[#7A2267]/40"}>
-        <path d="M10 1 L11.8 7H18L13 11L14.8 17L10 13L5.2 17L7 11L2 7H8.2Z" fill="currentColor"/>
-      </svg>
-      <div className={`h-px flex-1 max-w-[80px] ${light ? "bg-white/10" : "bg-[#7A2267]/20"}`} />
-    </div>
-  );
-}
-
 // ── Infinite Marquee ───────────────────────────────────────────────────────────
 function Marquee() {
   const trackRef = useRef(null);
-
   useGSAP(() => {
-    gsap.to(trackRef.current, {
-      x: "-50%",
-      duration: 28,
-      repeat: -1,
-      ease: "linear",
-    });
+    gsap.to(trackRef.current, { x: "-50%", duration: 28, repeat: -1, ease: "linear" });
   });
-
   const items = ["Nikah Ceremony","·","Holud · Mehndi","·","Wedding Reception","·","Walima Feast","·","Pre-Wedding Brunch","·","Valima Gathering","·","Bou Bhat","·","Family Dawat","·"];
   const doubled = [...items, ...items];
-
   return (
     <div className="bg-[#7A2267] py-3 overflow-hidden relative">
       <div className="absolute inset-0 pointer-events-none"
@@ -132,24 +119,22 @@ function Marquee() {
       <div ref={trackRef} className="flex items-center gap-6 whitespace-nowrap will-change-transform" style={{ width: "max-content" }}>
         {doubled.map((item, i) => (
           <span key={i} className={`${josefin.className} text-[10px] uppercase tracking-[0.22em] font-semibold
-            ${item === "·" ? "text-white/25" : "text-white/70"}`}>
-            {item}
-          </span>
+            ${item === "·" ? "text-white/25" : "text-white/70"}`}>{item}</span>
         ))}
       </div>
     </div>
   );
 }
 
-// ── Stats with GSAP counters ───────────────────────────────────────────────────
+// ── Stats strip with GSAP counters ─────────────────────────────────────────────
 function StatsBar() {
   const sectionRef = useRef(null);
   const statRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
   const STATS = [
-    { target: 6,      suffix: "",   label: "Stunning Venues" },
-    { target: 15000,  suffix: "+",  label: "Max Guest Capacity" },
-    { target: 100,    suffix: "%",  label: "Halal Certified" },
-    { target: 1,      suffix: "",   label: "Dedicated Planner" },
+    { target: 6,     suffix: "",  label: "Stunning Venues" },
+    { target: 15000, suffix: "+", label: "Max Guest Capacity" },
+    { target: 100,   suffix: "%", label: "Halal Certified" },
+    { target: 1,     suffix: "",  label: "Dedicated Planner" },
   ];
 
   useGSAP(() => {
@@ -178,173 +163,119 @@ function StatsBar() {
   }, { scope: sectionRef });
 
   return (
-    <div ref={sectionRef} className="relative py-16 md:py-20 overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #0e0710 0%, #1a0d1a 50%, #0e0710 100%)" }}>
-      <div className="pointer-events-none absolute inset-0"
-        style={{ backgroundImage: "radial-gradient(ellipse 60% 40% at 50% 50%, rgba(122,34,103,0.15) 0%, transparent 70%)" }} />
-      <div className="relative z-10 max-w-5xl mx-auto px-5 sm:px-8 lg:px-12">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
-          {STATS.map((s, i) => (
-            <div key={i} className="stat-item" style={{ opacity: 0 }}>
-              <div className="mb-1">
-                <span
-                  ref={statRefs[i]}
-                  className={`${lora.className} text-[2.6rem] sm:text-[3.2rem] font-semibold text-[#7A2267] leading-none`}
-                >
-                  0{s.suffix}
-                </span>
-              </div>
-              <OrnamentalDivider light />
-              <p className={`${josefin.className} text-[9px] uppercase tracking-[0.22em] text-white/35 font-semibold mt-1`}>
-                {s.label}
-              </p>
-            </div>
-          ))}
-        </div>
+    <div ref={sectionRef} className="bg-[#1a1309] py-8 border-y border-white/5">
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-14 grid grid-cols-2 lg:grid-cols-4 gap-6
+        divide-x-0 lg:divide-x divide-white/6">
+        {STATS.map((s, i) => (
+          <div key={i} className="stat-item text-center lg:px-8 py-2" style={{ opacity: 0 }}>
+            <p className={`${lora.className} text-[1.8rem] sm:text-[2.2rem] text-white`}>
+              <span ref={statRefs[i]}>0{s.suffix}</span>
+            </p>
+            <p className={`${josefin.className} text-[9.5px] uppercase tracking-[0.18em] text-white/35 mt-1`}>{s.label}</p>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-// ── Venue Cards ────────────────────────────────────────────────────────────────
+// ── Venues Section ─────────────────────────────────────────────────────────────
 function VenuesSection({ venues = [] }) {
   const sectionRef = useRef(null);
-  const headRef    = useRef(null);
-  const cardsRef   = useRef(null);
-
-  useGSAP(() => {
-    gsap.fromTo(headRef.current?.querySelectorAll(".reveal-item"),
-      { opacity: 0, y: 40 },
-      { opacity: 1, y: 0, stagger: 0.12, duration: 0.9, ease: "power3.out",
-        scrollTrigger: { trigger: headRef.current, start: "top 82%", once: true } }
-    );
-    const cards = cardsRef.current?.querySelectorAll(".venue-card");
-    if (cards?.length) {
-      gsap.set(cards, { opacity: 0, y: 60, scale: 0.97 });
-      gsap.to(cards, {
-        opacity: 1, y: 0, scale: 1, stagger: 0.1, duration: 0.9, ease: "power3.out",
-        scrollTrigger: { trigger: cardsRef.current, start: "top 85%", once: true },
-      });
-    }
-  }, { scope: sectionRef });
+  const inView     = useInView(sectionRef, { once: true, margin: "-80px" });
 
   return (
-    <div ref={sectionRef} id="venues"
-      className="py-20 md:py-28 relative overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #0e0710 0%, #150d1c 100%)" }}>
-      <div className="pointer-events-none absolute inset-0"
-        style={{ backgroundImage: "radial-gradient(ellipse 70% 50% at 80% 20%, rgba(122,34,103,0.12) 0%, transparent 60%)" }} />
+    <section ref={sectionRef} id="venues" className="relative bg-white overflow-hidden py-24 md:py-32">
+      <div className="pointer-events-none absolute top-0 right-0 w-125 h-125 rounded-full bg-[#7A2267]/3 blur-[120px]" />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
-        {/* Header */}
-        <div ref={headRef} className="mb-14 md:mb-16">
-          <p className={`reveal-item ${josefin.className} text-[9.5px] uppercase tracking-[0.35em] text-[#7A2267]/60 font-semibold mb-4`}
-            style={{ opacity: 0 }}>
+      <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-14">
+        <motion.div variants={stagger} initial="hidden" animate={inView ? "show" : "hidden"}
+          className="flex flex-col items-center text-center mb-16">
+          <motion.p variants={fadeUp}
+            className={`${josefin.className} text-[9.5px] uppercase tracking-[0.45em] text-[#7A2267]/60 mb-6`}>
             Our Wedding Venues
-          </p>
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-            <h2 className={`reveal-item ${lora.className} text-[2rem] sm:text-[2.8rem] lg:text-[3.2rem]
-              font-semibold text-white leading-[1.1] max-w-xl`} style={{ opacity: 0 }}>
-              Every Celebration Finds Its{" "}
-              <em className={`${lora.className} italic text-[#7A2267]`}>Perfect Stage</em>
-            </h2>
-            <p className={`reveal-item ${josefin.className} text-[12px] text-white/35 font-light max-w-xs leading-relaxed lg:text-right`}
-              style={{ opacity: 0 }}>
-              Six distinct venues — from intimate suites to grand fields for 15,000.
-            </p>
-          </div>
-        </div>
+          </motion.p>
+          <motion.h2 variants={fadeUp}
+            className={`${lora.className} text-[2.2rem] sm:text-[2.8rem] lg:text-[3.2rem]
+              font-400 text-[#1a1309] leading-[1.12] tracking-[-0.01em]`}>
+            Every Celebration Finds Its{" "}
+            <em className={`${lora.className} italic text-[#7A2267]`}>Perfect Stage</em>
+          </motion.h2>
+          <motion.div variants={fadeUp} className="h-px w-14 bg-[#7A2267]/30 mt-7" />
+          <motion.p variants={fadeUp}
+            className={`${josefin.className} text-[13px] text-[#6b5e4e] font-light mt-6 max-w-md leading-relaxed`}>
+            Six distinct venues — from intimate suites to grand fields for 15,000.
+          </motion.p>
+        </motion.div>
 
-        {/* Grid */}
         {venues.length === 0 ? (
-          <div className={`${josefin.className} text-center py-16 text-white/20 text-[13px]`}>
-            Venues coming soon. Check back shortly.
-          </div>
+          <p className={`${josefin.className} text-center py-16 text-[#9b8e78] text-[13px]`}>
+            Venues coming soon.
+          </p>
         ) : (
-        <div ref={cardsRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-5">
-          {venues.map((v) => (
-            <div key={v._id} className="venue-card group relative rounded-2xl overflow-hidden"
-              style={{
-                background: "linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
-                border: "1px solid rgba(122,34,103,0.12)" }}>
+          <motion.div variants={stagger} initial="hidden" animate={inView ? "show" : "hidden"}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 xl:gap-6">
+            {venues.map((v) => (
+              <motion.div key={v._id} variants={fadeUp}>
+                <Link href={`/destination-wedding/venues/${v.slug}`}
+                  className="group flex flex-col h-full bg-[#faf8f5] border border-[#ede5d8] rounded-2xl overflow-hidden
+                    hover:border-[#7A2267]/40 hover:shadow-[0_12px_40px_-8px_rgba(122,34,103,0.16)]
+                    transition-all duration-300">
 
-              {/* Cover image or gradient placeholder */}
-              <div className="relative h-44 overflow-hidden"
-                style={{ background: "linear-gradient(135deg, rgba(122,34,103,0.12) 0%, rgba(122,34,103,0.06) 100%)" }}>
-                {v.coverImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={v.coverImage}
-                    alt={v.name}
-                    className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <svg viewBox="0 0 40 36" className="w-14 h-14 text-[#7A2267]/20 group-hover:text-[#7A2267]/40 transition-colors duration-500" fill="none" stroke="currentColor" strokeWidth="1">
-                      <rect x="2" y="8" width="36" height="26" rx="3"/>
-                      <path d="M20 16v8M16 19.5h8"/>
-                    </svg>
-                  </div>
-                )}
-                {/* Dark overlay for readability */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0e0710]/80 via-transparent to-transparent" />
-                {v.badge && (
-                  <div className="absolute top-3 left-3 bg-[#7A2267] text-white text-[8px] font-bold
-                    px-2.5 py-1 rounded-full uppercase tracking-[0.15em]">
-                    {v.badge}
-                  </div>
-                )}
-                {v.capacity && (
-                  <span className={`${josefin.className} absolute bottom-3 right-3 text-[9px] font-semibold
-                    text-[#7A2267] bg-[#0e0710]/70 backdrop-blur-sm border border-[#7A2267]/25
-                    px-2.5 py-1 rounded-full whitespace-nowrap`}>
-                    {v.capacity}
-                  </span>
-                )}
-                {/* Glow on hover */}
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                  style={{ background: "radial-gradient(ellipse at center, rgba(122,34,103,0.06) 0%, transparent 70%)" }} />
-              </div>
-
-              {/* Content */}
-              <div className="px-5 pb-5 pt-4">
-                <h3 className={`${lora.className} text-[1.05rem] font-semibold text-white/90 leading-tight mb-2`}>
-                  {v.name}
-                </h3>
-                {v.description && (
-                  <p className={`${josefin.className} text-[11.5px] text-white/35 leading-[1.75] font-light mb-3 line-clamp-2`}>
-                    {v.description}
-                  </p>
-                )}
-                {v.features?.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {v.features.slice(0, 3).map((f) => (
-                      <span key={f} className={`${josefin.className} text-[9.5px] text-[#7A2267]/50
-                        bg-[#7A2267]/[0.06] border border-[#7A2267]/10 px-2.5 py-0.5 rounded-full`}>
-                        {f}
+                  <div className="relative h-44 overflow-hidden bg-[#f0e8dc]">
+                    {v.coverImage ? (
+                      <img src={v.coverImage} alt={v.name}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                    ) : (
+                      <div className="flex items-center justify-center h-full">
+                        <svg viewBox="0 0 40 36" className="w-14 h-14 text-[#7A2267]/15" fill="none" stroke="currentColor" strokeWidth="1">
+                          <rect x="2" y="8" width="36" height="26" rx="3"/><path d="M20 16v8M16 19.5h8"/>
+                        </svg>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-linear-to-t from-[#1a1309]/60 via-transparent to-transparent" />
+                    {v.badge && (
+                      <span className={`${josefin.className} absolute top-3 left-3 text-[8px] uppercase tracking-[0.18em]
+                        font-semibold px-2.5 py-1 rounded-full bg-[#7A2267] text-white`}>{v.badge}</span>
+                    )}
+                    {v.capacity && (
+                      <span className={`${josefin.className} absolute bottom-3 right-3 text-[9px] font-semibold
+                        text-white bg-black/40 backdrop-blur-sm border border-white/10 px-2.5 py-1 rounded-full`}>
+                        {v.capacity}
                       </span>
-                    ))}
+                    )}
+                    <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <span className={`${josefin.className} inline-flex items-center gap-1.5 text-[9px] uppercase tracking-wider
+                        font-semibold px-3 py-1.5 rounded-full bg-[#7A2267] text-white`}>
+                        View Details
+                        <svg viewBox="0 0 8 8" width="6" height="6" fill="none">
+                          <path d="M1 4h5M4 2l2 2-2 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </span>
+                    </div>
                   </div>
-                )}
-                <Link
-                  href={`/destination-wedding/venues/${v.slug}`}
-                  className={`${josefin.className} inline-flex items-center gap-1.5 text-[9.5px] uppercase
-                    tracking-[0.18em] font-semibold text-[#7A2267]/60 hover:text-[#7A2267]
-                    transition-colors duration-200 group/link`}
-                >
-                  View Details
-                  <svg viewBox="0 0 10 10" width="7" height="7" fill="none"
-                    className="transition-transform duration-200 group-hover/link:translate-x-0.5">
-                    <path d="M1 5h7M5 2l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
+
+                  <div className="px-6 py-5 flex flex-col flex-1 gap-2">
+                    <h3 className={`${lora.className} text-[1.05rem] font-500 text-[#1a1309] leading-tight`}>{v.name}</h3>
+                    {v.description && (
+                      <p className={`${josefin.className} text-[11.5px] text-[#6b5e4e] leading-[1.8] font-light line-clamp-2`}>{v.description}</p>
+                    )}
+                    {v.features?.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-auto pt-3 border-t border-[#f0e8dc]">
+                        {v.features.slice(0, 3).map((f) => (
+                          <span key={f} className={`${josefin.className} text-[9.5px] text-[#7A2267]/70
+                            bg-[#7A2267]/6 border border-[#7A2267]/10 px-2.5 py-0.5 rounded-full`}>{f}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </Link>
-              </div>
-            </div>
-          ))}
-        </div>
+              </motion.div>
+            ))}
+          </motion.div>
         )}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -362,79 +293,60 @@ const SERVICE_ICONS = [
 
 function ServicesSection() {
   const sectionRef = useRef(null);
-  const headRef    = useRef(null);
-  const gridRef    = useRef(null);
-
-  useGSAP(() => {
-    gsap.fromTo(headRef.current?.querySelectorAll(".rev"),
-      { opacity: 0, y: 35 },
-      { opacity: 1, y: 0, stagger: 0.1, duration: 0.85, ease: "power3.out",
-        scrollTrigger: { trigger: headRef.current, start: "top 83%", once: true } }
-    );
-    gsap.fromTo(gridRef.current?.querySelectorAll(".svc-card"),
-      { opacity: 0, y: 40 },
-      { opacity: 1, y: 0, stagger: 0.08, duration: 0.75, ease: "power3.out",
-        scrollTrigger: { trigger: gridRef.current, start: "top 83%", once: true } }
-    );
-  }, { scope: sectionRef });
+  const inView     = useInView(sectionRef, { once: true, margin: "-80px" });
 
   return (
-    <div ref={sectionRef} className="py-20 md:py-28 relative overflow-hidden"
-      style={{ background: "linear-gradient(160deg, #120a18 0%, #0d0612 100%)" }}>
+    <section ref={sectionRef} className="relative bg-[#1a1309] overflow-hidden py-24 md:py-28">
+      <div className="pointer-events-none absolute top-0 left-0 w-100 h-100 rounded-full bg-[#7A2267]/[0.07] blur-[100px]" />
+      <div className="pointer-events-none absolute bottom-0 right-0 w-87.5 h-87.5 rounded-full bg-[#7A2267]/4 blur-[80px]" />
 
-      {/* Soft rose glow */}
-      <div className="pointer-events-none absolute top-0 right-0 w-[500px] h-[500px] rounded-full blur-[140px]"
-        style={{ background: "radial-gradient(circle, rgba(122,34,103,0.07) 0%, transparent 70%)" }} />
-
-      <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
-        <div ref={headRef} className="mb-12 md:mb-14">
-          <p className={`rev ${josefin.className} text-[9.5px] uppercase tracking-[0.35em] text-[#7A2267]/55 font-semibold mb-4`}
-            style={{ opacity: 0 }}>
+      <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-14">
+        <motion.div variants={stagger} initial="hidden" animate={inView ? "show" : "hidden"}
+          className="flex flex-col items-center text-center mb-16">
+          <motion.p variants={fadeUp}
+            className={`${josefin.className} text-[9.5px] uppercase tracking-[0.45em] text-white/40 mb-6`}>
             What We Offer
-          </p>
-          <h2 className={`rev ${lora.className} text-[2rem] sm:text-[2.8rem] font-semibold text-white leading-[1.1] max-w-2xl`}
-            style={{ opacity: 0 }}>
+          </motion.p>
+          <motion.h2 variants={fadeUp}
+            className={`${lora.className} text-[2.2rem] sm:text-[2.8rem] lg:text-[3.2rem]
+              font-400 text-white leading-[1.12] tracking-[-0.01em]`}>
             Everything Your Wedding Needs,{" "}
-            <em className={`${lora.className} italic text-[#7A2267]`}>Under One Roof</em>
-          </h2>
-        </div>
+            <em className={`${lora.className} italic`}>Under One Roof</em>
+          </motion.h2>
+          <motion.div variants={fadeUp} className="h-px w-14 bg-white/20 mt-7" />
+        </motion.div>
 
-        <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+        <motion.div variants={stagger} initial="hidden" animate={inView ? "show" : "hidden"}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {SERVICES.map((s, i) => (
-            <div key={i} className="svc-card group relative p-5 rounded-2xl cursor-default
-              transition-all duration-500 hover:-translate-y-1"
-              style={{ opacity: 0,
-                background: "linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%)",
-                border: "1px solid rgba(122,34,103,0.1)" }}>
-              {/* Hover glow */}
-              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-                style={{ background: "radial-gradient(ellipse at top left, rgba(122,34,103,0.06) 0%, transparent 60%)" }} />
-              <div className="relative z-10">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 text-[#7A2267]/50
-                  group-hover:text-[#7A2267]/80 transition-colors duration-300"
-                  style={{ background: "rgba(122,34,103,0.08)", border: "1px solid rgba(122,34,103,0.1)" }}>
-                  {SERVICE_ICONS[i]}
-                </div>
-                <h3 className={`${lora.className} text-[1rem] font-semibold text-white/85 mb-2 leading-tight`}>{s.title}</h3>
-                <p className={`${josefin.className} text-[11.5px] text-white/30 leading-[1.75] font-light`}>{s.desc}</p>
+            <motion.div key={i} variants={fadeUp}
+              className="group flex flex-col gap-4 p-6 rounded-2xl border border-white/6 bg-white/3
+                hover:border-[#7A2267]/25 hover:bg-white/5 transition-all duration-300">
+              <div className="w-11 h-11 rounded-xl bg-white/5 border border-white/8
+                flex items-center justify-center text-[#7A2267] shrink-0
+                group-hover:bg-[#7A2267]/10 group-hover:border-[#7A2267]/20 transition-colors duration-300">
+                {SERVICE_ICONS[i]}
               </div>
-            </div>
+              <div>
+                <h3 className={`${lora.className} text-[1rem] font-500 text-white mb-2 leading-tight`}>{s.title}</h3>
+                <p className={`${josefin.className} text-[11.5px] text-white/40 leading-[1.8] font-light`}>{s.desc}</p>
+              </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </section>
   );
 }
 
 // ── Lightbox ───────────────────────────────────────────────────────────────────
 function Lightbox({ photos, index, onClose, onPrev, onNext }) {
   const photo = photos[index];
-
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key === "Escape")      onClose();
-      if (e.key === "ArrowLeft")   onPrev();
-      if (e.key === "ArrowRight")  onNext();
+      if (e.key === "Escape")     onClose();
+      if (e.key === "ArrowLeft")  onPrev();
+      if (e.key === "ArrowRight") onNext();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -445,7 +357,7 @@ function Lightbox({ photos, index, onClose, onPrev, onNext }) {
       key="lightbox"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       transition={{ duration: 0.25 }}
-      className="fixed inset-0 z-[999] bg-black/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-8"
+      className="fixed inset-0 z-999 bg-black/95 backdrop-blur-md flex items-center justify-center p-4 sm:p-8"
       onClick={onClose}
     >
       <button onClick={onClose}
@@ -479,7 +391,7 @@ function Lightbox({ photos, index, onClose, onPrev, onNext }) {
         <img src={photo.src} alt={photo.title}
           className="w-full max-h-[72vh] object-contain rounded-2xl" />
         <div className="mt-4 text-center">
-          <p className={`${lora.className} text-white text-[1.1rem] font-semibold`}>{photo.title}</p>
+          <p className={`${lora.className} text-white text-[1.1rem]`}>{photo.title}</p>
           <p className={`${josefin.className} text-white/35 text-[9px] uppercase tracking-[0.2em] mt-1`}>{photo.cat}</p>
         </div>
       </motion.div>
@@ -489,7 +401,8 @@ function Lightbox({ photos, index, onClose, onPrev, onNext }) {
 
 // ── Gallery Section ────────────────────────────────────────────────────────────
 function WeddingGallery({ photos = [] }) {
-  const sectionRef = useRef(null);
+  const sectionRef    = useRef(null);
+  const inView        = useInView(sectionRef, { once: true, margin: "-80px" });
   const [activeCat, setActiveCat]     = useState("All");
   const [lightboxIdx, setLightboxIdx] = useState(null);
 
@@ -497,57 +410,56 @@ function WeddingGallery({ photos = [] }) {
     ? photos.map((p) => ({ id: p._id, cat: p.category, title: p.title || "", span: p.span || "none", src: p.image }))
     : GALLERY_PHOTOS;
 
-  const filtered    = activeCat === "All" ? allPhotos : allPhotos.filter((p) => p.cat === activeCat);
+  const dynamicCats = ["All", ...Array.from(new Set(allPhotos.map((p) => p.cat).filter(Boolean))).sort()];
+
+  const filtered      = activeCat === "All" ? allPhotos : allPhotos.filter((p) => p.cat === activeCat);
   const openLightbox  = (i) => setLightboxIdx(i);
   const closeLightbox = useCallback(() => setLightboxIdx(null), []);
   const prevPhoto     = useCallback(() => setLightboxIdx((i) => (i - 1 + filtered.length) % filtered.length), [filtered.length]);
   const nextPhoto     = useCallback(() => setLightboxIdx((i) => (i + 1) % filtered.length), [filtered.length]);
 
-  useGSAP(() => {
-    gsap.fromTo(sectionRef.current?.querySelectorAll(".gallery-head"),
-      { opacity: 0, y: 30 },
-      { opacity: 1, y: 0, stagger: 0.12, duration: 0.85, ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current, start: "top 82%", once: true } }
-    );
-  }, { scope: sectionRef });
-
   return (
-    <div ref={sectionRef} className="py-20 md:py-28 overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #faf5f0 0%, #f5ece8 100%)" }}>
-      <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
+    <section ref={sectionRef} className="relative bg-[#f9f6f2] overflow-hidden py-24 md:py-28">
+      <div className="pointer-events-none absolute top-0 right-0 w-100 h-100 rounded-full bg-[#7A2267]/5 blur-[90px]" />
 
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 mb-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-14">
+        <motion.div variants={stagger} initial="hidden" animate={inView ? "show" : "hidden"}
+          className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
           <div>
-            <p className={`gallery-head ${josefin.className} text-[9.5px] uppercase tracking-[0.35em] text-[#7A2267]/55 font-semibold mb-3`}
-              style={{ opacity: 0 }}>
+            <motion.p variants={fadeUp}
+              className={`${josefin.className} text-[9.5px] uppercase tracking-[0.45em] text-[#7A2267]/60 mb-5`}>
               Wedding Gallery
-            </p>
-            <h2 className={`gallery-head ${lora.className} text-[2rem] sm:text-[2.8rem] font-semibold text-[#1a0d14] leading-[1.1]`}
-              style={{ opacity: 0 }}>
+            </motion.p>
+            <motion.h2 variants={fadeUp}
+              className={`${lora.className} text-[2.2rem] sm:text-[2.8rem] lg:text-[3.2rem]
+                font-400 text-[#1a1309] leading-[1.12] tracking-[-0.01em]`}>
               Moments That Tell{" "}
               <em className={`${lora.className} italic text-[#7A2267]`}>Your Story</em>
-            </h2>
+            </motion.h2>
+            <motion.div variants={fadeUp} className="h-px w-14 bg-[#7A2267]/30 mt-6" />
           </div>
-          <p className={`gallery-head ${josefin.className} text-[11.5px] text-[#9B7A8A] font-light max-w-xs leading-relaxed sm:text-right`}
-            style={{ opacity: 0 }}>
-            A glimpse into the celebrations that have unfolded at Dhali's Amber Nivaas.
-          </p>
-        </div>
+          <motion.p variants={fadeUp}
+            className={`${josefin.className} text-[12px] text-[#9b8e78] font-light max-w-xs leading-relaxed sm:text-right`}>
+            A glimpse into the celebrations that have unfolded at Dhali&apos;s Amber Nivaas.
+          </motion.p>
+        </motion.div>
 
         {/* Filter tabs */}
-        <motion.div className="flex flex-wrap gap-2 mb-8">
-          {GALLERY_CATS.map((cat) => (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }} animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="flex flex-wrap gap-2 mb-8">
+          {dynamicCats.map((cat) => (
             <button key={cat} onClick={() => { setActiveCat(cat); setLightboxIdx(null); }}
               className={`${josefin.className} text-[10px] font-semibold px-4 py-1.5 rounded-full
                 border transition-all duration-200
                 ${activeCat === cat
                   ? "bg-[#7A2267] border-[#7A2267] text-white shadow-[0_2px_12px_rgba(122,34,103,0.3)]"
-                  : "border-[#D4B8C4] text-[#9B7A8A] hover:border-[#7A2267]/40 hover:text-[#7A2267]"
+                  : "border-[#ede5d8] text-[#9b8e78] hover:border-[#7A2267]/40 hover:text-[#7A2267]"
                 }`}>
               {cat}
               {cat !== "All" && (
-                <span className={`ml-1.5 text-[8.5px] ${activeCat === cat ? "text-white/55" : "text-[#C4A8B4]"}`}>
+                <span className={`ml-1.5 text-[8.5px] ${activeCat === cat ? "text-white/55" : "text-[#b8a898]"}`}>
                   {allPhotos.filter((p) => p.cat === cat).length}
                 </span>
               )}
@@ -565,15 +477,15 @@ function WeddingGallery({ photos = [] }) {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.92 }}
                 transition={{ duration: 0.4, delay: i * 0.04 }}
-                className={`group relative overflow-hidden rounded-2xl cursor-pointer mb-3 bg-[#F0E4EC]
-                  ${photo.span === "row" ? "aspect-[3/4]" : photo.span === "col" ? "aspect-[4/3]" : "aspect-square"}`}
+                className={`group relative overflow-hidden rounded-2xl cursor-pointer mb-3 bg-[#ede5d8]
+                  ${photo.span === "row" ? "aspect-3/4" : photo.span === "col" ? "aspect-4/3" : "aspect-square"}`}
                 onClick={() => openLightbox(i)}
               >
                 <Image src={photo.src} alt={photo.title} fill
                   sizes="(max-width:768px) 50vw, 33vw"
                   className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.07]" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#1a0d14]/80 via-transparent to-transparent
-                  opacity-0 group-hover:opacity-100 transition-opacity duration-400" />
+                <div className="absolute inset-0 bg-linear-to-t from-[#1a1309]/80 via-transparent to-transparent
+                  opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="absolute top-3 left-3 opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-300">
                   <span className={`${josefin.className} text-[8px] uppercase tracking-[0.15em] font-semibold
                     px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md text-white border border-white/20`}>
@@ -582,7 +494,7 @@ function WeddingGallery({ photos = [] }) {
                 </div>
                 <div className="absolute bottom-0 inset-x-0 px-3.5 pb-3.5 opacity-0 group-hover:opacity-100
                   translate-y-1 group-hover:translate-y-0 transition-all duration-300">
-                  <p className={`${lora.className} text-white text-[13px] font-semibold`}>{photo.title}</p>
+                  <p className={`${lora.className} text-white text-[13px]`}>{photo.title}</p>
                 </div>
                 <div className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/15 backdrop-blur-md
                   flex items-center justify-center opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100
@@ -596,7 +508,7 @@ function WeddingGallery({ photos = [] }) {
           </AnimatePresence>
         </div>
         {filtered.length === 0 && (
-          <div className="py-20 text-center text-[13px] text-[#C4A8B4]">No photos in this category yet.</div>
+          <div className="py-20 text-center text-[13px] text-[#9b8e78]">No photos in this category yet.</div>
         )}
       </div>
 
@@ -606,7 +518,7 @@ function WeddingGallery({ photos = [] }) {
             onClose={closeLightbox} onPrev={prevPhoto} onNext={nextPhoto} />
         )}
       </AnimatePresence>
-    </div>
+    </section>
   );
 }
 
@@ -619,22 +531,18 @@ function CustomCalendar({ value, onChange, onClose }) {
     const d = value ? new Date(value) : new Date();
     return { year: d.getFullYear(), month: d.getMonth() };
   });
-
-  const today     = new Date();
-  const todayStr  = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+  const today    = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
   const firstDay  = new Date(view.year, view.month, 1).getDay();
   const daysCount = new Date(view.year, view.month + 1, 0).getDate();
-
   const goBack = () => view.month === 0 ? setView({ year: view.year-1, month: 11 }) : setView({ ...view, month: view.month-1 });
   const goFwd  = () => view.month === 11 ? setView({ year: view.year+1, month: 0 }) : setView({ ...view, month: view.month+1 });
-
   const select = (day) => {
     const m = String(view.month+1).padStart(2,"0");
     const d = String(day).padStart(2,"0");
     onChange(`${view.year}-${m}-${d}`);
     onClose();
   };
-
   const cells = [...Array(firstDay).fill(null), ...Array.from({ length: daysCount }, (_, i) => i+1)];
 
   return (
@@ -643,37 +551,24 @@ function CustomCalendar({ value, onChange, onClose }) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 4, scale: 0.97 }}
       transition={{ duration: 0.2 }}
-      className="absolute top-full left-0 z-50 mt-2 w-[280px] rounded-2xl shadow-2xl shadow-black/60 overflow-hidden"
+      className="absolute top-full left-0 z-50 mt-2 w-70 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden"
       style={{ background: "#1a0e1f", border: "1px solid rgba(122,34,103,0.18)" }}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Calendar header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/6">
         <button onClick={goBack}
-          className="w-7 h-7 rounded-full bg-white/[0.06] hover:bg-[#7A2267]/15 text-white/50 hover:text-[#7A2267]
-            flex items-center justify-center transition-all text-sm">
-          ‹
-        </button>
-        <span className={`${josefin.className} text-[12px] font-semibold text-white/80`}>
-          {MONTHS[view.month]} {view.year}
-        </span>
+          className="w-7 h-7 rounded-full bg-white/6 hover:bg-[#7A2267]/15 text-white/50 hover:text-[#7A2267]
+            flex items-center justify-center transition-all text-sm">‹</button>
+        <span className={`${josefin.className} text-[12px] font-semibold text-white/80`}>{MONTHS[view.month]} {view.year}</span>
         <button onClick={goFwd}
-          className="w-7 h-7 rounded-full bg-white/[0.06] hover:bg-[#7A2267]/15 text-white/50 hover:text-[#7A2267]
-            flex items-center justify-center transition-all text-sm">
-          ›
-        </button>
+          className="w-7 h-7 rounded-full bg-white/6 hover:bg-[#7A2267]/15 text-white/50 hover:text-[#7A2267]
+            flex items-center justify-center transition-all text-sm">›</button>
       </div>
-
-      {/* Day labels */}
       <div className="grid grid-cols-7 px-3 pt-3">
         {WEEK.map((d) => (
-          <div key={d} className={`${josefin.className} text-center text-[8.5px] font-semibold text-white/20 uppercase tracking-wider py-1`}>
-            {d}
-          </div>
+          <div key={d} className={`${josefin.className} text-center text-[8.5px] font-semibold text-white/20 uppercase tracking-wider py-1`}>{d}</div>
         ))}
       </div>
-
-      {/* Days grid */}
       <div className="grid grid-cols-7 px-3 pb-3 gap-0.5">
         {cells.map((day, i) => {
           if (!day) return <div key={`e-${i}`} />;
@@ -688,7 +583,7 @@ function CustomCalendar({ value, onChange, onClose }) {
                 ${isSel   ? "bg-[#7A2267] text-white shadow-[0_0_12px_rgba(122,34,103,0.5)]"
                 : isToday ? "bg-[#7A2267]/15 text-[#7A2267] border border-[#7A2267]/30"
                 : isPast  ? "text-white/12 cursor-not-allowed"
-                :           "text-white/55 hover:bg-white/[0.08] hover:text-white"
+                :           "text-white/55 hover:bg-white/8 hover:text-white"
                 }`}>
               {day}
             </button>
@@ -699,25 +594,21 @@ function CustomCalendar({ value, onChange, onClose }) {
   );
 }
 
-// ── Custom Select Dropdown ─────────────────────────────────────────────────────
+// ── Custom Select ──────────────────────────────────────────────────────────────
 function CustomSelect({ value, onChange, options, placeholder }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
-
   const selected = options.find((o) => o.value === value);
-
   return (
     <div ref={ref} className="relative">
       <button type="button" onClick={() => setOpen((o) => !o)}
-        className={`w-full flex items-center justify-between gap-2 px-4 py-3.5 rounded-xl transition-all duration-200
-          text-left text-[12.5px] font-light
-          ${open ? "border-[#7A2267]/50 bg-white/[0.08]" : "border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.07]"}
+        className={`w-full flex items-center justify-between gap-2 px-4 py-3.5 rounded-xl transition-all duration-200 text-left text-[12.5px] font-light
+          ${open ? "border-[#7A2267]/50 bg-white/8" : "border-white/10 bg-white/6 hover:bg-white/8"}
           ${value ? "text-white/80" : "text-white/25"}`}
         style={{ border: `1px solid ${open ? "rgba(122,34,103,0.5)" : "rgba(255,255,255,0.1)"}` }}>
         <span className={`${josefin.className}`}>{selected ? selected.label : placeholder}</span>
@@ -726,7 +617,6 @@ function CustomSelect({ value, onChange, options, placeholder }) {
           <path d="M1 1l4 4 4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
         </motion.svg>
       </button>
-
       <AnimatePresence>
         {open && (
           <motion.div
@@ -739,12 +629,8 @@ function CustomSelect({ value, onChange, options, placeholder }) {
             {options.map((opt) => (
               <button key={opt.value} type="button"
                 onClick={() => { onChange(opt.value); setOpen(false); }}
-                className={`${josefin.className} w-full text-left px-4 py-2.5 text-[12.5px] font-light
-                  transition-colors duration-150
-                  ${value === opt.value
-                    ? "text-[#7A2267] bg-[#7A2267]/10"
-                    : "text-white/55 hover:text-white/85 hover:bg-white/[0.05]"
-                  }`}>
+                className={`${josefin.className} w-full text-left px-4 py-2.5 text-[12.5px] font-light transition-colors duration-150
+                  ${value === opt.value ? "text-[#7A2267] bg-[#7A2267]/10" : "text-white/55 hover:text-white/85 hover:bg-white/5"}`}>
                 {opt.label}
               </button>
             ))}
@@ -759,30 +645,18 @@ function CustomSelect({ value, onChange, options, placeholder }) {
 function FloatingInput({ label, type = "text", value, onChange, required, autoComplete }) {
   const [focused, setFocused] = useState(false);
   const active = focused || !!value;
-
   return (
     <div className="relative">
-      <label
-        className={`${josefin.className} absolute left-4 pointer-events-none transition-all duration-200 font-medium
-          ${active
-            ? "top-2 text-[9px] text-[#7A2267] tracking-[0.12em] uppercase"
-            : "top-3.5 text-[12.5px] text-white/25"
-          }`}>
+      <label className={`${josefin.className} absolute left-4 pointer-events-none transition-all duration-200 font-medium
+        ${active ? "top-2 text-[9px] text-[#7A2267] tracking-[0.12em] uppercase" : "top-3.5 text-[12.5px] text-white/25"}`}>
         {label}{required && " *"}
       </label>
-      <input
-        type={type}
-        value={value}
-        required={required}
-        autoComplete={autoComplete}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        onChange={onChange}
-        className={`${josefin.className} w-full bg-white/[0.04] rounded-xl px-4 text-[12.5px] text-white/80
-          outline-none transition-all duration-200 font-light
-          ${active ? "pt-5 pb-2" : "pt-3.5 pb-3.5"}`}
+      <input type={type} value={value} required={required} autoComplete={autoComplete}
+        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} onChange={onChange}
+        className={`${josefin.className} w-full bg-white/6 rounded-xl px-4 text-[12.5px] text-white/80
+          outline-none transition-all duration-200 font-light ${active ? "pt-5 pb-2" : "pt-3.5 pb-3.5"}`}
         style={{
-          border: `1px solid ${focused ? "rgba(122,34,103,0.5)" : "rgba(255,255,255,0.08)"}`,
+          border: `1px solid ${focused ? "rgba(122,34,103,0.5)" : "rgba(255,255,255,0.1)"}`,
           boxShadow: focused ? "0 0 0 3px rgba(122,34,103,0.08)" : "none",
         }}
       />
@@ -794,18 +668,15 @@ function FloatingInput({ label, type = "text", value, onChange, required, autoCo
 function DateInput({ value, onChange }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
-
   const formatted = value ? (() => {
     const [y, m, d] = value.split("-");
     return `${MONTHS[parseInt(m)-1]} ${parseInt(d)}, ${y}`;
   })() : "";
-
   return (
     <div ref={ref} className="relative">
       <label className={`${josefin.className} absolute left-4 pointer-events-none transition-all duration-200 font-medium z-10
@@ -813,11 +684,10 @@ function DateInput({ value, onChange }) {
         Preferred Date
       </label>
       <button type="button" onClick={() => setOpen((o) => !o)}
-        className={`${josefin.className} w-full bg-white/[0.04] rounded-xl px-4 text-[12.5px] text-left transition-all duration-200 font-light
-          flex items-center justify-between
-          ${value ? "pt-5 pb-2 text-white/80" : "pt-3.5 pb-3.5 text-white/25"}`}
+        className={`${josefin.className} w-full bg-white/6 rounded-xl px-4 text-[12.5px] text-left transition-all duration-200 font-light
+          flex items-center justify-between ${value ? "pt-5 pb-2 text-white/80" : "pt-3.5 pb-3.5 text-white/25"}`}
         style={{
-          border: `1px solid ${open ? "rgba(122,34,103,0.5)" : "rgba(255,255,255,0.08)"}`,
+          border: `1px solid ${open ? "rgba(122,34,103,0.5)" : "rgba(255,255,255,0.1)"}`,
           boxShadow: open ? "0 0 0 3px rgba(122,34,103,0.08)" : "none",
         }}>
         <span>{formatted || ""}</span>
@@ -827,9 +697,7 @@ function DateInput({ value, onChange }) {
         </svg>
       </button>
       <AnimatePresence>
-        {open && (
-          <CustomCalendar value={value} onChange={onChange} onClose={() => setOpen(false)} />
-        )}
+        {open && <CustomCalendar value={value} onChange={onChange} onClose={() => setOpen(false)} />}
       </AnimatePresence>
     </div>
   );
@@ -845,16 +713,12 @@ function FloatingTextarea({ label, value, onChange }) {
         ${active ? "top-2 text-[9px] text-[#7A2267] tracking-[0.12em] uppercase" : "top-3.5 text-[12.5px] text-white/25"}`}>
         {label}
       </label>
-      <textarea
-        value={value} rows={4}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        onChange={onChange}
-        className={`${josefin.className} w-full bg-white/[0.04] rounded-xl px-4 text-[12.5px] text-white/80
-          outline-none transition-all duration-200 font-light resize-none
-          ${active ? "pt-6 pb-3" : "pt-3.5 pb-3.5"}`}
+      <textarea value={value} rows={4}
+        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} onChange={onChange}
+        className={`${josefin.className} w-full bg-white/6 rounded-xl px-4 text-[12.5px] text-white/80
+          outline-none transition-all duration-200 font-light resize-none ${active ? "pt-6 pb-3" : "pt-3.5 pb-3.5"}`}
         style={{
-          border: `1px solid ${focused ? "rgba(122,34,103,0.5)" : "rgba(255,255,255,0.08)"}`,
+          border: `1px solid ${focused ? "rgba(122,34,103,0.5)" : "rgba(255,255,255,0.1)"}`,
           boxShadow: focused ? "0 0 0 3px rgba(122,34,103,0.08)" : "none",
         }}
       />
@@ -864,28 +728,15 @@ function FloatingTextarea({ label, value, onChange }) {
 
 // ── Enquiry Form ───────────────────────────────────────────────────────────────
 function EnquiryForm({ venues = [] }) {
-  const sectionRef = useRef(null);
-  const headRef    = useRef(null);
+  const sectionRef   = useRef(null);
+  const inView       = useInView(sectionRef, { once: true, margin: "-80px" });
   const [isPending, startTransition] = useTransition();
   const [submitted, setSubmitted]    = useState(false);
+  const [error, setError]            = useState("");
   const [form, setForm] = useState({
     name: "", email: "", phone: "", eventDate: "", guestCount: "", venue: "", message: "",
   });
-
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-
-  useGSAP(() => {
-    gsap.fromTo(headRef.current?.querySelectorAll(".frev"),
-      { opacity: 0, y: 35 },
-      { opacity: 1, y: 0, stagger: 0.12, duration: 0.85, ease: "power3.out",
-        scrollTrigger: { trigger: headRef.current, start: "top 83%", once: true } }
-    );
-    gsap.fromTo(sectionRef.current?.querySelector(".form-card"),
-      { opacity: 0, y: 40 },
-      { opacity: 1, y: 0, duration: 0.9, ease: "power3.out",
-        scrollTrigger: { trigger: sectionRef.current?.querySelector(".form-card"), start: "top 85%", once: true } }
-    );
-  }, { scope: sectionRef });
 
   const venueOptions = [
     ...venues.map((v) => ({
@@ -897,68 +748,60 @@ function EnquiryForm({ venues = [] }) {
 
   function handleSubmit(e) {
     e.preventDefault();
+    setError("");
     startTransition(async () => {
-      await new Promise((r) => setTimeout(r, 900));
-      setSubmitted(true);
+      const res = await submitWeddingEnquiry(form);
+      if (res.success) setSubmitted(true);
+      else setError(res.error || "Something went wrong. Please try again.");
     });
   }
 
   return (
-    <div ref={sectionRef} id="enquiry" className="relative overflow-hidden py-20 md:py-28 lg:py-32"
-      style={{ background: "linear-gradient(160deg, #0e0710 0%, #150b1d 60%, #0e0710 100%)" }}>
-
-      {/* Bg glow */}
-      <div className="pointer-events-none absolute top-0 right-0 w-[600px] h-[600px] rounded-full blur-[160px]"
-        style={{ background: "radial-gradient(circle, rgba(122,34,103,0.12) 0%, transparent 70%)" }} />
-      <div className="pointer-events-none absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full blur-[120px]"
-        style={{ background: "radial-gradient(circle, rgba(122,34,103,0.07) 0%, transparent 70%)" }} />
+    <section ref={sectionRef} id="enquiry" className="relative bg-[#1a1309] overflow-hidden py-24 md:py-32">
+      <div className="pointer-events-none absolute top-0 right-0 w-125 h-125 rounded-full bg-[#7A2267]/8 blur-[120px]" />
+      <div className="pointer-events-none absolute bottom-0 left-0 w-100 h-100 rounded-full bg-[#7A2267]/5 blur-[100px]" />
 
       <div className="relative z-10 max-w-3xl mx-auto px-5 sm:px-8">
-
-        {/* Header */}
-        <div ref={headRef} className="text-center mb-12">
-          <p className={`frev ${josefin.className} text-[9.5px] uppercase tracking-[0.35em] text-[#7A2267]/55 font-semibold mb-4`}
-            style={{ opacity: 0 }}>
+        <motion.div variants={stagger} initial="hidden" animate={inView ? "show" : "hidden"}
+          className="flex flex-col items-center text-center mb-12">
+          <motion.p variants={fadeUp}
+            className={`${josefin.className} text-[9.5px] uppercase tracking-[0.45em] text-white/40 mb-6`}>
             Start Planning
-          </p>
-          <h2 className={`frev ${lora.className} text-[2rem] sm:text-[2.8rem] font-semibold text-white leading-[1.1] mb-4`}
-            style={{ opacity: 0 }}>
+          </motion.p>
+          <motion.h2 variants={fadeUp}
+            className={`${lora.className} text-[2.2rem] sm:text-[2.8rem] lg:text-[3.2rem]
+              font-400 text-white leading-[1.12] tracking-[-0.01em]`}>
             Begin Your{" "}
-            <em className={`${lora.className} italic text-[#7A2267]`}>Wedding Journey</em>
-          </h2>
-          <p className={`frev ${josefin.className} text-[12.5px] text-white/30 leading-[1.85] font-light max-w-lg mx-auto`}
-            style={{ opacity: 0 }}>
+            <em className={`${lora.className} italic`}>Wedding Journey</em>
+          </motion.h2>
+          <motion.div variants={fadeUp} className="h-px w-14 bg-white/20 mt-7 mb-2" />
+          <motion.p variants={fadeUp}
+            className={`${josefin.className} text-[13px] text-white/40 leading-[1.85] font-light max-w-md mt-5`}>
             Tell us about your dream day and our dedicated wedding team will be in touch within 24 hours.
-          </p>
-          <div className="mt-5 frev" style={{ opacity: 0 }}><OrnamentalDivider light /></div>
-        </div>
+          </motion.p>
+        </motion.div>
 
         {submitted ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="text-center py-16"
-          >
-            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
-              style={{ background: "rgba(122,34,103,0.12)", border: "1px solid rgba(122,34,103,0.3)" }}>
+            transition={{ duration: 0.5 }} className="text-center py-16">
+            <div className="w-16 h-16 rounded-full bg-[#7A2267]/15 border border-[#7A2267]/30
+              flex items-center justify-center mx-auto mb-5">
               <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
                 <path d="M5 12l5 5L20 7" stroke="#7A2267" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <p className={`${lora.className} text-[1.5rem] text-white font-semibold mb-2`}>Enquiry Received</p>
+            <p className={`${lora.className} text-[1.5rem] text-white mb-2`}>Enquiry Received</p>
             <p className={`${josefin.className} text-[12.5px] text-white/35 font-light`}>
               Thank you, {form.name || "dear guest"}. Our wedding team will contact you within 24 hours.
             </p>
           </motion.div>
         ) : (
-          <form onSubmit={handleSubmit} className="form-card rounded-3xl p-6 sm:p-8" style={{
-            opacity: 0,
-            background: "rgba(255,255,255,0.025)",
-            border: "1px solid rgba(122,34,103,0.1)",
-            backdropFilter: "blur(20px)",
-          }}>
-            {/* Gold accent top */}
-            <div className="h-[2px] rounded-full mb-6"
+          <motion.form onSubmit={handleSubmit}
+            initial={{ opacity: 0, y: 20 }} animate={inView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.7, delay: 0.3, ease: EASE }}
+            className="rounded-3xl p-6 sm:p-8 bg-white/3 border border-white/8">
+            <div className="h-0.5 rounded-full mb-6"
               style={{ background: "linear-gradient(90deg, transparent 0%, #7A2267 30%, #7A2267 60%, transparent 100%)" }} />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -970,11 +813,7 @@ function EnquiryForm({ venues = [] }) {
                 onChange={(e) => set("phone", e.target.value)} />
               <FloatingInput label="Expected Guest Count" type="number" value={form.guestCount}
                 onChange={(e) => set("guestCount", e.target.value)} />
-
-              {/* Custom date */}
               <DateInput value={form.eventDate} onChange={(v) => set("eventDate", v)} />
-
-              {/* Custom venue select */}
               <div className="relative">
                 {form.venue && (
                   <label className={`${josefin.className} absolute left-4 top-2 text-[9px] text-[#7A2267]/70
@@ -983,71 +822,61 @@ function EnquiryForm({ venues = [] }) {
                   </label>
                 )}
                 <div className={form.venue ? "pt-3" : ""}>
-                  <CustomSelect
-                    value={form.venue}
-                    onChange={(v) => set("venue", v)}
-                    placeholder="Preferred Venue"
-                    options={venueOptions}
-                  />
+                  <CustomSelect value={form.venue} onChange={(v) => set("venue", v)}
+                    placeholder="Preferred Venue" options={venueOptions} />
                 </div>
               </div>
             </div>
 
             <div className="mb-6">
-              <FloatingTextarea
-                label="Tell us about your vision"
-                value={form.message}
-                onChange={(e) => set("message", e.target.value)}
-              />
+              <FloatingTextarea label="Tell us about your vision" value={form.message}
+                onChange={(e) => set("message", e.target.value)} />
             </div>
 
-            {/* Submit */}
-            <button type="submit" disabled={isPending}
-              className={`${josefin.className} w-full py-4 rounded-2xl text-[11.5px] font-semibold
-                uppercase tracking-[0.18em] transition-all duration-300 relative overflow-hidden group
-                ${isPending ? "opacity-50 cursor-not-allowed" : "hover:-translate-y-0.5"}`}
-              style={{
-                background: "linear-gradient(135deg, #7A2267 0%, #9A3087 50%, #7A2267 100%)",
-                backgroundSize: "200% 100%",
-                boxShadow: "0 4px 20px rgba(122,34,103,0.4)",
-              }}>
-              <span className="relative z-10 text-white flex items-center justify-center gap-2.5">
-                {isPending ? (
-                  <><span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                    Sending…</>
-                ) : (
-                  <><svg viewBox="0 0 20 20" width="14" height="14" fill="none">
-                    <path d="M10 2L12 8H18L13 12L14.8 18L10 14L5.2 18L7 12L2 8H8Z" fill="currentColor"/>
-                  </svg>
-                    Send Wedding Enquiry</>
-                )}
-              </span>
-              {/* Shimmer */}
-              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700
-                bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-            </button>
+            {error && (
+              <p className={`${josefin.className} text-[11px] text-red-400/80 text-center mb-4 leading-[1.6]`}>
+                {error}
+              </p>
+            )}
 
-            <p className={`${josefin.className} text-center text-[10px] text-white/18 mt-3 font-light`}>
+            <button type="submit" disabled={isPending}
+              className={`${josefin.className} group w-full flex items-center justify-center gap-3
+                py-4 rounded-xl bg-[#7A2267] hover:bg-[#8a256f] text-white
+                text-[10.5px] uppercase tracking-[0.2em] font-semibold
+                transition-all duration-300 shadow-[0_4px_20px_rgba(122,34,103,0.28)]
+                hover:shadow-[0_6px_28px_rgba(122,34,103,0.4)]
+                disabled:opacity-60 disabled:cursor-not-allowed`}>
+              {isPending ? (
+                <><span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />Sending…</>
+              ) : (
+                <>Send Wedding Enquiry
+                  <svg viewBox="0 0 10 10" width="8" height="8" fill="none" className="transition-transform duration-300 group-hover:translate-x-0.5">
+                    <path d="M1 5h7M5 2l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </>
+              )}
+            </button>
+            <p className={`${josefin.className} text-center text-[9.5px] text-white/25 mt-3 leading-[1.6]`}>
               We respect your privacy. Your information will never be shared with third parties.
             </p>
-          </form>
+          </motion.form>
         )}
       </div>
-    </div>
+    </section>
   );
 }
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function WeddingContent({ photos = [], venues = [] }) {
   const heroRef    = useRef(null);
-  const heroBgRef  = useRef(null);
-  const heroTextRef = useRef(null);
+  const heroImgRef = useRef(null);
+  const closingRef = useRef(null);
+  const closingInView = useInView(closingRef, { once: true, margin: "-80px" });
 
-  // Hero parallax + initial badge reveal
+  // Hero parallax
   useGSAP(() => {
-    // Parallax on hero bg image
-    gsap.to(heroBgRef.current, {
-      y: "30%",
+    gsap.to(heroImgRef.current, {
+      yPercent: 20,
       ease: "none",
       scrollTrigger: {
         trigger: heroRef.current,
@@ -1056,106 +885,76 @@ export default function WeddingContent({ photos = [], venues = [] }) {
         scrub: true,
       },
     });
-
-    // Fade out hero content on scroll
-    gsap.to(heroTextRef.current, {
-      opacity: 0,
-      y: -40,
-      ease: "none",
-      scrollTrigger: {
-        trigger: heroRef.current,
-        start: "30% top",
-        end: "70% top",
-        scrub: true,
-      },
-    });
-
-    // Badge reveal
-    gsap.fromTo(heroRef.current?.querySelectorAll(".hero-badge"),
-      { opacity: 0, y: 20 },
-      { opacity: 1, y: 0, duration: 0.9, delay: 1.8, stagger: 0.12, ease: "power3.out" }
-    );
   }, { scope: heroRef });
 
   return (
-    <div  style={{ background: "#0e0710" }}>
+    <>
+      {/* ── HERO ─────────────────────────────────────────────────────────── */}
+      <section ref={heroRef} className="relative h-screen min-h-150 overflow-hidden">
 
-      {/* ── HERO ── */}
-      <div ref={heroRef} className="relative min-h-[100svh] flex flex-col justify-end overflow-hidden">
-
-        {/* BG Photo with parallax */}
-        <div ref={heroBgRef} className="absolute inset-0 will-change-transform" style={{ top: "-15%" }}>
-          <Image
-            src={HERO_IMAGE}
-            alt="Destination Wedding at Dhali's Amber Nivaas"
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-center"
-          />
+        {/* Parallax image */}
+        <div ref={heroImgRef} className="absolute inset-0 scale-110 will-change-transform">
+          <Image src={HERO_IMAGE} alt="Destination Wedding at Dhali's Amber Nivaas"
+            fill priority sizes="100vw" className="object-cover object-center" />
         </div>
 
-        {/* Layered overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0e0710] via-[#0e0710]/60 to-[#0e0710]/20" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0e0710]/70 via-transparent to-transparent" />
-        {/* Grain texture */}
-        <div className="absolute inset-0 opacity-[0.04] pointer-events-none"
-          style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\")",
-            backgroundSize: "200px 200px" }} />
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-linear-to-b from-[#0d0905]/60 via-[#0d0905]/25 to-[#0d0905]/70" />
 
-        {/* Content */}
-        <div ref={heroTextRef} className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 pb-16 sm:pb-20 lg:pb-24 pt-28 w-full">
+        {/* Centered content */}
+        <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-5">
+          <motion.p
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.25 }}
+            className={`${josefin.className} text-[9.5px] uppercase tracking-[0.45em] text-white/40 mb-8`}
+          >
+            Destination Wedding · Dhali&apos;s Amber Nivaas
+          </motion.p>
 
-          {/* Top badge */}
-          <div className="hero-badge flex items-center gap-2 mb-7" style={{ opacity: 0 }}>
-            <div className="h-px w-8 bg-[#7A2267]/50" />
-            <span className={`${josefin.className} text-[9px] uppercase tracking-[0.4em] text-[#7A2267]/70 font-semibold`}>
-              Destination Wedding · Dhali's Amber Nivaas
-            </span>
-          </div>
+          <HeroTitle />
 
-          {/* GSAP animated title */}
-          <div className="mb-7">
-            <HeroTitle />
-          </div>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.9, delay: 0.9 }}
+            className={`${josefin.className} text-[13px] font-light text-white/50 mt-7 max-w-sm leading-relaxed`}
+          >
+            From intimate Nikah ceremonies to grand receptions for 15,000 — impeccable halal catering and six stunning venues.
+          </motion.p>
 
-          {/* Subtitle */}
-          <p className={`hero-badge ${josefin.className} text-[13px] sm:text-[14px] text-white/40 leading-[1.9]
-            font-light max-w-xl mb-9`} style={{ opacity: 0 }}>
-            From intimate Nikah ceremonies to grand receptions for 15,000 — impeccable halal catering,
-            six stunning venues, and a dedicated team to make every detail flawless.
-          </p>
-
-          {/* CTAs */}
-          <div className="hero-badge flex flex-col sm:flex-row gap-3" style={{ opacity: 0 }}>
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 1.1 }}
+            className="flex flex-wrap items-center justify-center gap-3 mt-10"
+          >
             <a href="#enquiry"
-              className={`${josefin.className} group inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-full
-                text-[10.5px] uppercase tracking-[0.2em] font-semibold text-white transition-all duration-300
-                hover:-translate-y-0.5 relative overflow-hidden`}
-              style={{
-                background: "linear-gradient(135deg, #7A2267 0%, #9A3087 100%)",
-                boxShadow: "0 4px 24px rgba(122,34,103,0.45)",
-              }}>
-              <span className="relative z-10">Plan Your Wedding</span>
-              <svg viewBox="0 0 10 10" width="8" height="8" fill="none" className="relative z-10
-                transition-transform duration-300 group-hover:translate-x-0.5">
+              className={`${josefin.className} group inline-flex items-center gap-2.5
+                px-7 py-3.5 rounded-full bg-[#7A2267] hover:bg-[#8a256f] text-white
+                text-[10px] uppercase tracking-[0.2em] font-semibold
+                transition-all duration-300 shadow-[0_4px_20px_rgba(122,34,103,0.3)]`}>
+              Plan Your Wedding
+              <svg viewBox="0 0 10 10" width="7" height="7" fill="none" className="transition-transform duration-300 group-hover:translate-x-0.5">
                 <path d="M1 5h7M5 2l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-500 bg-gradient-to-r from-transparent via-white/10 to-transparent" />
             </a>
             <a href="#venues"
-              className={`${josefin.className} inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full
-                border border-white/15 text-white/50 hover:text-white hover:border-white/35
-                text-[10.5px] uppercase tracking-[0.2em] font-semibold transition-all duration-300 backdrop-blur-sm`}>
+              className={`${josefin.className} inline-flex items-center
+                px-7 py-3.5 rounded-full border border-white/20 text-white/60
+                hover:text-white hover:border-white/35
+                text-[10px] uppercase tracking-[0.2em] font-semibold transition-all duration-300`}>
               Explore Venues
             </a>
-          </div>
+          </motion.div>
         </div>
-
-      </div>
+      </section>
 
       {/* ── Marquee ── */}
       <Marquee />
+
+      {/* ── Stats strip ── */}
+      <StatsBar />
 
       {/* ── Venues ── */}
       <VenuesSection venues={venues} />
@@ -1166,32 +965,63 @@ export default function WeddingContent({ photos = [], venues = [] }) {
       {/* ── Gallery ── */}
       <WeddingGallery photos={photos} />
 
-      {/* ── Stats ── */}
-      <StatsBar />
-
-      {/* ── Form ── */}
+      {/* ── Enquiry Form ── */}
       <EnquiryForm venues={venues} />
 
-      {/* ── Footer strip ── */}
-      <div className="py-8 border-t" style={{ background: "#0e0710", borderColor: "rgba(122,34,103,0.08)" }}>
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <Link href="/"
-            className={`${josefin.className} inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.18em]
-              text-white/20 hover:text-[#7A2267] font-semibold transition-colors duration-200`}>
-            <svg viewBox="0 0 10 10" width="8" height="8" fill="none">
-              <path d="M9 5H2M5 2L2 5l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Back to Home
-          </Link>
-          <div className="flex items-center gap-3">
-            <div className="h-px w-8 bg-[#7A2267]/20" />
-            <span className={`${lora.className} italic text-[#7A2267]/30 text-[13px]`}>
-              Dhali's Amber Nivaas
-            </span>
-            <div className="h-px w-8 bg-[#7A2267]/20" />
-          </div>
+      {/* ── Closing ──────────────────────────────────────────────────────── */}
+      <section ref={closingRef} className="relative bg-[#f9f6f2] overflow-hidden py-28 md:py-36">
+        <div className="pointer-events-none absolute inset-0"
+          style={{ background: "radial-gradient(ellipse 70% 55% at 50% 100%, rgba(122,34,103,0.05) 0%, transparent 70%)" }} />
+
+        <div className="relative z-10 max-w-3xl mx-auto px-5 sm:px-8 text-center">
+          <motion.blockquote
+            initial={{ opacity: 0, y: 30 }}
+            animate={closingInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.95, ease: EASE }}
+            className={`${lora.className} text-[1.55rem] sm:text-[1.95rem] lg:text-[2.3rem]
+              italic text-[#1a1309] leading-[1.55] font-400`}
+          >
+            &ldquo;Your wedding is not just an event — it is the first chapter of a story
+            that will be told for generations.&rdquo;
+          </motion.blockquote>
+
+          <motion.div
+            initial={{ opacity: 0, scaleX: 0 }}
+            animate={closingInView ? { opacity: 1, scaleX: 1 } : {}}
+            transition={{ duration: 0.55, delay: 0.35, ease: EASE }}
+            className="h-px w-14 bg-[#7A2267]/40 mx-auto my-9 origin-center"
+          />
+
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={closingInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.7, delay: 0.45, ease: EASE }}
+            className="flex flex-wrap items-center justify-center gap-4"
+          >
+            <a href="#enquiry"
+              className={`${josefin.className} inline-flex items-center gap-3
+                px-8 py-4 rounded-full bg-[#7A2267] text-white
+                text-[11px] font-semibold uppercase tracking-[0.2em]
+                hover:bg-[#8a256f] transition-all duration-300 group
+                shadow-[0_4px_22px_rgba(122,34,103,0.28)]
+                hover:shadow-[0_6px_28px_rgba(122,34,103,0.4)]`}>
+              Begin Your Journey
+              <svg viewBox="0 0 16 10" width="11" height="11" fill="none"
+                className="group-hover:translate-x-1 transition-transform duration-300">
+                <path d="M1 5h14M10 1l5 4-5 4" stroke="currentColor" strokeWidth="1.5"
+                  strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </a>
+            <Link href="/accommodation"
+              className={`${josefin.className} inline-flex items-center
+                px-8 py-4 rounded-full border border-[#1a1309]/20 text-[#1a1309]
+                text-[11px] font-semibold uppercase tracking-[0.2em]
+                hover:border-[#7A2267] hover:text-[#7A2267] transition-all duration-300`}>
+              View Rooms
+            </Link>
+          </motion.div>
         </div>
-      </div>
-    </div>
+      </section>
+    </>
   );
 }

@@ -4,12 +4,11 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Playfair_Display, Montserrat, Cormorant_Garamond } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 import { IMAGE_SIZES } from "@/lib/galleryConstants";
 
-const playfair  = Playfair_Display({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
-const sans      = Montserrat({ subsets: ["latin"], weight: ["300", "400", "500", "600"] });
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400", "500"], style: ["italic"] });
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 // Desktop (4-col) and mobile (2-col) span maps
 // "dense" grid auto-flow fills gaps — no manual placement needed.
@@ -74,10 +73,10 @@ function Lightbox({ photos, index, onClose, onPrev, onNext }) {
         {(photo.title || photo.category) && (
           <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent px-5 py-4">
             {photo.title && (
-              <p className={`${playfair.className} text-white text-[1rem] font-medium`}>{photo.title}</p>
+              <p className={`${lora.className} text-white text-[1rem] font-medium`}>{photo.title}</p>
             )}
             {photo.category && (
-              <p className={`${sans.className} text-white/55 text-[9.5px] uppercase tracking-wider mt-0.5`}>{photo.category}</p>
+              <p className={`${josefin.className} text-white/55 text-[9.5px] uppercase tracking-wider mt-0.5`}>{photo.category}</p>
             )}
           </div>
         )}
@@ -111,7 +110,7 @@ function Lightbox({ photos, index, onClose, onPrev, onNext }) {
           <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
         </svg>
       </button>
-      <div className={`${sans.className} absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] text-white/40 tracking-widest`}>
+      <div className={`${josefin.className} absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] text-white/40 tracking-widest`}>
         {index + 1} / {photos.length}
       </div>
     </motion.div>
@@ -145,7 +144,7 @@ function PhotoTile({ photo, colSpan, rowSpan, onClick }) {
 
       <div className="absolute top-3.5 left-3.5 opacity-0 group-hover:opacity-100
         translate-y-1 group-hover:translate-y-0 transition-all duration-300">
-        <span className={`${sans.className} text-[8.5px] uppercase tracking-[0.18em] font-semibold
+        <span className={`${josefin.className} text-[8.5px] uppercase tracking-[0.18em] font-semibold
           px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md text-white border border-white/20`}>
           {photo.category}
         </span>
@@ -155,7 +154,7 @@ function PhotoTile({ photo, colSpan, rowSpan, onClick }) {
         <div className="absolute bottom-0 inset-x-0 p-4
           translate-y-2 group-hover:translate-y-0 opacity-0 group-hover:opacity-100
           transition-all duration-300 ease-out">
-          <p className={`${playfair.className} text-white font-medium leading-tight drop-shadow-lg text-[0.875rem]`}>
+          <p className={`${lora.className} text-white font-medium leading-tight drop-shadow-lg text-[0.875rem]`}>
             {photo.title}
           </p>
         </div>
@@ -233,28 +232,29 @@ export default function GalleryContent({ photos = [], categories = [] }) {
   return (
     <>
       {/* ── Page hero ─────────────────────────────────────────────────────── */}
-      <section className="relative bg-[#f8f4ee] py-16 md:py-20 overflow-hidden border-b border-[#ede5d8]">
-        <div className="pointer-events-none absolute top-0 right-0 w-[400px] h-[400px]
-          rounded-full bg-[#c9a96e]/[0.07] blur-[100px]" />
+      <section className="relative min-h-[60vh] flex flex-col justify-end overflow-hidden">
+        <div className="absolute inset-0 bg-[#1a1309]" />
+        <div className="pointer-events-none absolute inset-0"
+          style={{ background: "radial-gradient(ellipse 80% 60% at 60% 40%, rgba(122,34,103,0.12) 0%, transparent 70%)" }} />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
-          <div className={`${sans.className} flex items-center gap-2 text-[9.5px] uppercase
-            tracking-[0.18em] text-[#9b8e78] mb-8`}>
-            <Link href="/" className="hover:text-[#555] transition-colors">Home</Link>
+        <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 pb-14 md:pb-20 pt-32">
+          <div className={`${josefin.className} flex items-center gap-2 text-[9.5px] uppercase
+            tracking-[0.18em] text-white/30 mb-8`}>
+            <Link href="/" className="hover:text-white/60 transition-colors">Home</Link>
             <span>/</span>
-            <span className="text-[#555]">Gallery</span>
+            <span className="text-white/50">Gallery</span>
           </div>
 
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 max-w-4xl">
             <div>
               <motion.div
                 initial={{ opacity: 0, y: -8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="flex items-center gap-4 mb-3"
+                className="flex items-center gap-4 mb-4"
               >
-                <div className="h-px w-10 bg-[#c9a96e]/50" />
-                <p className={`${sans.className} text-[9.5px] uppercase tracking-[0.28em] font-semibold text-[#c9a96e]`}>
+                <div className="h-px w-10 bg-[#7A2267]/60" />
+                <p className={`${josefin.className} text-[10px] uppercase tracking-[0.3em] font-semibold text-[#7A2267]`}>
                   Photo Gallery
                 </p>
               </motion.div>
@@ -263,11 +263,11 @@ export default function GalleryContent({ photos = [], categories = [] }) {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
-                className={`${playfair.className} text-[2.2rem] sm:text-[2.8rem] lg:text-[3.2rem]
-                  text-[#1a1309] leading-[1.12]`}
+                className={`${lora.className} text-[2.6rem] sm:text-[3.4rem] lg:text-[4.2rem]
+                  text-white leading-[1.1] tracking-[-0.01em]`}
               >
                 Spaces That{" "}
-                <em className={`${cormorant.className} not-italic text-[#7A2267]`}>Speak for Themselves</em>
+                <em className={`${lora.className} italic text-[#7A2267]`}>Speak for Themselves</em>
               </motion.h1>
             </div>
 
@@ -275,7 +275,7 @@ export default function GalleryContent({ photos = [], categories = [] }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className={`${sans.className} text-[11.5px] text-[#9b8e78] max-w-xs leading-[1.75] font-light`}
+              className={`${josefin.className} text-[13px] font-light text-white/45 max-w-xs leading-[1.85] pb-1`}
             >
               {isRealData
                 ? `${source.length} curated photograph${source.length !== 1 ? "s" : ""} across ${allCatNames.length} ${allCatNames.length !== 1 ? "categories" : "category"}.`
@@ -286,7 +286,7 @@ export default function GalleryContent({ photos = [], categories = [] }) {
       </section>
 
       {/* ── Gallery body ──────────────────────────────────────────────────── */}
-      <section className="bg-white py-12 md:py-16">
+      <section className="bg-[#f9f6f2] py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
 
           {/* Category tabs */}
@@ -298,19 +298,19 @@ export default function GalleryContent({ photos = [], categories = [] }) {
                 <button
                   key={cat}
                   onClick={() => setActive(cat)}
-                  className={`${sans.className} relative shrink-0 px-4 py-2 text-[10.5px] uppercase
+                  className={`${josefin.className} relative shrink-0 px-4 py-2 text-[10.5px] uppercase
                     tracking-[0.16em] font-medium transition-colors duration-200 whitespace-nowrap
                     ${active === cat ? "text-[#1a1309]" : "text-[#aaa] hover:text-[#555]"}`}
                 >
                   {cat}
-                  <span className={`${sans.className} ml-1.5 text-[8.5px]
-                    ${active === cat ? "text-[#c9a96e]" : "text-[#ccc]"}`}>
+                  <span className={`${josefin.className} ml-1.5 text-[8.5px]
+                    ${active === cat ? "text-[#7A2267]" : "text-[#ccc]"}`}>
                     {count}
                   </span>
                   {active === cat && (
                     <motion.span
                       layoutId="galleryPageTab"
-                      className="absolute bottom-0 inset-x-2 h-[1.5px] rounded-full bg-[#c9a96e]"
+                      className="absolute bottom-0 inset-x-2 h-[1.5px] rounded-full bg-[#7A2267]"
                       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                     />
                   )}
@@ -330,7 +330,7 @@ export default function GalleryContent({ photos = [], categories = [] }) {
             >
               {filtered.length === 0 ? (
                 <div className="text-center py-20">
-                  <p className={`${sans.className} text-[12px] text-[#aaa]`}>
+                  <p className={`${josefin.className} text-[12px] text-[#aaa]`}>
                     No photos in this category yet.
                   </p>
                 </div>

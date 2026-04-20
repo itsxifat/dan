@@ -5,11 +5,10 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Lora, Josefin_Sans, Cormorant_Garamond } from "next/font/google";
+import { Lora, Josefin_Sans } from "next/font/google";
 
-const lora      = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
-const josefin   = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400", "500", "600"], style: ["normal", "italic"] });
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 // ─── Date Utilities ────────────────────────────────────────────────────────────
 function todayDate() {
@@ -497,7 +496,7 @@ export default function Hero() {
           <div className="mb-3 sm:mb-5 lg:mb-7">
             <motion.div variants={fadeUp}
               className={`text-[2rem] sm:text-[3.2rem] lg:text-[3.6rem] xl:text-[4.2rem]
-                text-white/80 leading-[1.12] tracking-[0.04em] font-[300] ${cormorant.className}`}>
+                text-white/80 leading-[1.12] tracking-[0.04em] font-[300] ${lora.className}`}>
               Where there&apos;s unity,
             </motion.div>
             <motion.div variants={fadeUp}

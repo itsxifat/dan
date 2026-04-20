@@ -4,7 +4,12 @@ import { useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useInView } from "framer-motion";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Lora, Josefin_Sans } from "next/font/google";
+
+gsap.registerPlugin(ScrollTrigger);
 
 const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
 const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
@@ -170,6 +175,7 @@ function ServiceCard({ s }) {
 // ─── Main ──────────────────────────────────────────────────────────────────────
 export default function FacilitiesContent() {
   const heroRef       = useRef(null);
+  const heroImgRef    = useRef(null);
   const poolRef       = useRef(null);
   const indoorRef     = useRef(null);
   const activitiesRef = useRef(null);
@@ -186,56 +192,81 @@ export default function FacilitiesContent() {
   const servicesInView   = useInView(servicesRef,   { once: true, margin: "-60px" });
   const ctaInView        = useInView(ctaRef,        { once: true, margin: "-60px" });
 
+  useGSAP(() => {
+    if (!heroImgRef.current || !heroRef.current) return;
+    gsap.fromTo(
+      heroImgRef.current,
+      { yPercent: 0 },
+      {
+        yPercent: -8,
+        ease: "none",
+        scrollTrigger: {
+          trigger: heroRef.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: true,
+        },
+      }
+    );
+  });
+
   return (
     <main className="overflow-x-hidden">
 
       {/* ══ HERO ══════════════════════════════════════════════════════════════ */}
       <section ref={heroRef} className="relative min-h-[88vh] md:min-h-[90vh] flex flex-col justify-end overflow-hidden">
-        <Image
-          src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1920&q=80"
-          alt="Resort facilities" fill priority sizes="100vw"
-          className="object-cover object-center"
-        />
+
+        <div ref={heroImgRef} className="absolute inset-0 scale-110">
+          <Image
+            src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1920&q=80"
+            alt="Resort facilities" fill priority sizes="100vw"
+            className="object-cover object-center"
+          />
+        </div>
         <div className="absolute inset-0 bg-gradient-to-b from-[#1a1309]/30 via-[#1a1309]/40 to-[#1a1309]/88 z-[1]" />
         <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#1a1309]/40 to-transparent z-[2]" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 pb-16 md:pb-20 lg:pb-24 pt-32">
-          <motion.div variants={stagger} initial="hidden" animate="show" className="max-w-3xl">
 
-<motion.div variants={fadeUp} className="flex items-center gap-4 mb-5">
-              <div className="h-px w-10 bg-[#7A2267]/60" />
-              <p className={`${josefin.className} text-[10px] uppercase tracking-[0.3em] font-semibold text-[#7A2267]`}>
-                World-Class Amenities
-              </p>
-            </motion.div>
+          <motion.div variants={stagger} initial="hidden" animate="show" className="max-w-3xl text-center mx-auto">
 
             <motion.h1 variants={fadeUp}
               className={`${lora.className} text-[2.8rem] sm:text-[3.8rem] lg:text-[5rem]
-                font-500 text-white leading-[1.1] tracking-[-0.02em]`}>
+                text-white leading-[1.1] tracking-[-0.02em]`}>
               Everything You Need{" "}
-              <em className={`${lora.className} italic text-[#7A2267] block`}>
+              <em className={`${lora.className} italic text-[#7A2267]`}>
                 for the Perfect Stay
               </em>
             </motion.h1>
 
-            <motion.p variants={fadeUp}
-              className={`${josefin.className} text-[14px] font-light text-white/60 leading-[1.85] mt-6 max-w-xl`}>
-              From iconic swimming pools to immersive indoor entertainment, curated dining, and
-              dedicated spaces for children — every amenity is thoughtfully designed for the whole family.
-            </motion.p>
-
-            {/* Halal badge */}
-            <motion.div variants={fadeUp} className="mt-8">
-              <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full
-                bg-white/[0.08] border border-white/15 backdrop-blur-sm">
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none">
+            {/* Halal & Family badges */}
+            <motion.div variants={fadeUp} className="mt-10 flex flex-wrap items-center justify-center gap-3">
+              <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-full
+                bg-[#7A2267]/20 border border-[#7A2267]/40 backdrop-blur-sm">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
                   <path d="M12 2l8 3v7c0 4.5-3.5 8.5-8 10-4.5-1.5-8-5.5-8-10V5l8-3z"
-                    stroke="#7A2267" strokeWidth="1.5" strokeLinejoin="round"/>
-                  <path d="M9 12l2 2 4-4" stroke="#7A2267" strokeWidth="1.5"
+                    stroke="#c084b8" strokeWidth="1.5" strokeLinejoin="round"/>
+                  <path d="M9 12l2 2 4-4" stroke="#c084b8" strokeWidth="1.5"
                     strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-                <span className={`${josefin.className} text-[9.5px] uppercase tracking-[0.2em] text-white/55`}>
-                  100% Halal · Family-Friendly Environment
+                <span className={`${josefin.className} text-[10px] uppercase tracking-[0.22em] font-semibold text-[#c084b8]`}>
+                  100% Halal
+                </span>
+              </div>
+
+              <div className="w-1 h-1 rounded-full bg-white/20 hidden sm:block" />
+
+              <div className="flex items-center gap-2.5 px-5 py-2.5 rounded-full
+                bg-white/[0.08] border border-white/15 backdrop-blur-sm">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
+                    stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="9" cy="7" r="4" stroke="white" strokeWidth="1.4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"
+                    stroke="white" strokeWidth="1.4" strokeLinecap="round"/>
+                </svg>
+                <span className={`${josefin.className} text-[10px] uppercase tracking-[0.22em] font-semibold text-white/55`}>
+                  Family-Friendly
                 </span>
               </div>
             </motion.div>
