@@ -19,9 +19,11 @@ async function requireAccom() {
   return session;
 }
 
-export async function getCategoriesByProperty(propertyId) {
+export async function getCategoriesByProperty(propertyId, { onlyActive = false } = {}) {
   await dbConnect();
-  const categories = await RoomCategory.find({ property: propertyId })
+  const q = { property: propertyId };
+  if (onlyActive) q.isActive = true;
+  const categories = await RoomCategory.find(q)
     .sort({ sortOrder: 1, createdAt: 1 })
     .lean();
 

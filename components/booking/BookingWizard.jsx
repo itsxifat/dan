@@ -654,13 +654,12 @@ export default function BookingWizard({ settings, preselect }) {
 
   // ── Load data ────────────────────────────────────────────────────────────────
   useEffect(() => {
-    getProperties().then((res) => {
+    getProperties({ onlyActive: true }).then((res) => {
       const props = res.properties || [];
       setProperties(props);
       // Auto-select if preselect or only one building property
       if (!preselect?.propertyId) {
-        const buildings = props.filter((p) => p.type === "building");
-        if (buildings.length === 1) setSelectedProp(buildings[0]._id);
+        if (props.length === 1) setSelectedProp(props[0]._id);
       }
     }).catch(() => {});
   }, []);
@@ -694,7 +693,7 @@ export default function BookingWizard({ settings, preselect }) {
 
   useEffect(() => {
     if (!selectedProp) return;
-    getCategoriesByProperty(selectedProp).then((cats) => {
+    getCategoriesByProperty(selectedProp, { onlyActive: true }).then((cats) => {
       const filtered = bookingMode === "day_long"
         ? cats.filter((c) => c.supportsDayLong)
         : cats;
@@ -1049,7 +1048,7 @@ export default function BookingWizard({ settings, preselect }) {
         if (payData.url) {
           window.location.href = payData.url;
         } else {
-          setError("Payment initiation failed. Please try again.");
+          setError(payData.error || "Payment initiation failed. Please try again.");
         }
       } catch (err) {
         setError(err.message || "Something went wrong. Please try again.");
@@ -1670,11 +1669,11 @@ export default function BookingWizard({ settings, preselect }) {
                       <h2 className={`text-[20px] font-semibold text-[#1a1410] mb-1 ${lora.className}`}>Choose your property</h2>
                       <p className="text-[12px] text-[#9B8BAB] mb-5">Select the property that fits your stay.</p>
 
-                      {properties.filter((p) => p.type === "building").length === 0 ? (
+                      {properties.length === 0 ? (
                         <p className="text-[13px] text-[#C4B3CE] text-center py-4">No properties available.</p>
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {properties.filter((p) => p.type === "building").map((p) => (
+                          {properties.map((p) => (
                             <button key={p._id}
                               onClick={() => { setSelectedProp(p._id); setSelectedCat(null); setRooms([]); setCart(new Map()); setPreviewRoom(null); setRoomSubStep(2); }}
                               className={`group relative text-left rounded-2xl overflow-hidden transition-all duration-300

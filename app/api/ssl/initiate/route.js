@@ -127,6 +127,13 @@ export async function POST(req) {
       chargeAmount = Math.ceil((booking.totalAmount * advancePct) / 100);
     }
 
+    if (!chargeAmount || chargeAmount <= 0) {
+      return NextResponse.json(
+        { error: "Booking total is zero. Please check pricing configuration." },
+        { status: 400 }
+      );
+    }
+
     await Booking.findByIdAndUpdate(bookingId, {
       transactionId: tran_id,
       advanceAmount: chargeAmount,
@@ -178,6 +185,7 @@ export async function POST(req) {
     const data = await res.json();
 
     if (data.status !== "SUCCESS") {
+      console.error("SSLCommerz failure:", data.failedreason, data);
       return NextResponse.json(
         { error: data.failedreason || "Payment gateway error. Please try again." },
         { status: 400 }
