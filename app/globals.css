@@ -1,9 +1,20 @@
 @import "tailwindcss";
 
+/* ── Scroll ─────────────────────────────────────────────────────────────────── */
 html {
   scroll-behavior: smooth;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Theme tokens ────────────────────────────────────────────────────────────── */
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -16,60 +27,77 @@ html {
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ── Custom font ─────────────────────────────────────────────────────────────── */
 @font-face {
-    font-family: 'Pristina';
-    font-style: normal;
-    font-weight: normal;
-    src: local('Pristina'), url('../public/PRISTINA.woff') format('woff');
-    }
-
-html {
-  scroll-behavior: auto !important;
+  font-family: 'Pristina';
+  font-style: normal;
+  font-weight: normal;
+  font-display: swap;
+  src: local('Pristina'), url('../public/PRISTINA.woff') format('woff');
 }
 
+/* ── Base ────────────────────────────────────────────────────────────────────── */
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  /* Prevent layout shift from scrollbar appearing */
+  scrollbar-gutter: stable;
 }
 
-/* AGGRESSIVE SCROLLBAR HIDING
-  Applying to '*' ensures Next.js root wrappers also lose their scrollbars
-*/
+/* ── Scrollbar hiding ────────────────────────────────────────────────────────── */
 * {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
-
 *::-webkit-scrollbar {
-  display: none; /* Chrome, Safari and Opera */
+  display: none;
 }
 
-/* ── Animation performance: isolate sections into their own compositor layers ── */
-/* Prevents adjacent-section repaints from bleeding into one another during scroll */
+/* ── Off-screen rendering skip ────────────────────────────────────────────────
+   Tells the browser to skip painting + layout for sections outside the viewport.
+   The browser re-activates each section as it scrolls into the visible area.
+   contain-intrinsic-size gives the browser a size estimate so the scrollbar
+   doesn't jump when a section is activated for the first time.
+────────────────────────────────────────────────────────────────────────────── */
 section {
   isolation: isolate;
+  content-visibility: auto;
+  contain-intrinsic-size: 0 650px;
 }
 
-/* GPU-promote elements with will-change so the browser pre-allocates a layer.
-   Tailwind's will-change-transform applies will-change:transform — these rules
-   ensure the element is always on its own composited layer during animation. */
+/* ── GPU compositing ─────────────────────────────────────────────────────────── */
 .will-change-transform {
-  -webkit-transform: translateZ(0);
   transform: translateZ(0);
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 }
 
-/* Prevent subpixel font flicker during transform animations */
 .will-change-transform * {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── CTA background Ken Burns — runs entirely on compositor thread ───────────── */
+@keyframes kenBurns {
+  from { transform: scale(1.0) translateZ(0); }
+  to   { transform: scale(1.14) translateZ(0); }
+}
+
+.cta-bg-animate {
+  animation: kenBurns 24s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+/* ── Shared fade-up animation (CSS alternative to JS-driven entrance) ──────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px) translateZ(0); }
+  to   { opacity: 1; transform: translateY(0) translateZ(0); }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

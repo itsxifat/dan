@@ -1,16 +1,6 @@
 "use client";
 
-import { useRef } from "react";
-import { motion, useInView } from "framer-motion";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Lora, Josefin_Sans } from "next/font/google";
-
-gsap.registerPlugin(ScrollTrigger);
-
-const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
-const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
+import { motion } from "framer-motion";
 
 const features = [
   {
@@ -91,182 +81,54 @@ const features = [
   },
 ];
 
-// ── Card ──────────────────────────────────────────────────────────────────────
+// ── Card — corner L-bracket drawn with pure CSS transition on hover ────────────
 function FeatureCard({ feature, index }) {
-  const cardRef = useRef(null);
-
-  useGSAP(() => {
-    const card = cardRef.current;
-    const h    = card.querySelector(".corner-h");
-    const v    = card.querySelector(".corner-v");
-    const mm   = gsap.matchMedia();
-
-    // Mobile: alternate left/right slide-in on scroll
-    mm.add("(max-width: 767px)", () => {
-      const fromX = index % 2 === 0 ? -24 : 24;
-      gsap.fromTo(card,
-        { opacity: 0, x: fromX },
-        {
-          opacity: 1, x: 0, duration: 0.7, ease: "power3.out",
-          immediateRender: false,
-          scrollTrigger: {
-            trigger: card,
-            start: "top 93%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
-    });
-
-    // Desktop: fade up on scroll + hover corner draw
-    mm.add("(min-width: 768px)", () => {
-      gsap.fromTo(card,
-        { opacity: 0, y: 28 },
-        {
-          opacity: 1, y: 0, duration: 0.8, ease: "power3.out",
-          immediateRender: false,
-          scrollTrigger: {
-            trigger: card,
-            start: "top 87%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
-
-      // Corner hover
-      gsap.set(h, { scaleX: 0 });
-      gsap.set(v, { scaleY: 0 });
-
-      let enterTimer  = null;   // debounce quick pass-throughs
-      let idleTimer   = null;   // auto-fade-out after mouse goes idle
-      let hovered     = false;
-
-      const fadeOut = () => {
-        hovered = false;
-        gsap.killTweensOf([h, v]);
-        gsap.to(h, { scaleX: 0, duration: 0.32, ease: "power2.in" });
-        gsap.to(v, { scaleY: 0, duration: 0.32, ease: "power2.in" });
-      };
-
-      const resetIdle = () => {
-        clearTimeout(idleTimer);
-        if (hovered) idleTimer = setTimeout(fadeOut, 1500);
-      };
-
-      const onEnter = () => {
-        clearTimeout(enterTimer);
-        clearTimeout(idleTimer);
-        // Only commit to the animation if mouse actually stays ≥ 80ms
-        enterTimer = setTimeout(() => {
-          hovered = true;
-          gsap.killTweensOf([h, v]);
-          gsap.to(h, { scaleX: 1, duration: 0.38, ease: "power2.out" });
-          gsap.to(v, { scaleY: 1, duration: 0.38, ease: "power2.out", delay: 0.04 });
-          idleTimer = setTimeout(fadeOut, 1500);
-        }, 80);
-      };
-
-      const onLeave = () => {
-        clearTimeout(enterTimer);
-        clearTimeout(idleTimer);
-        fadeOut();
-      };
-
-      const onMove = () => resetIdle();
-
-      card.addEventListener("mouseenter", onEnter);
-      card.addEventListener("mouseleave", onLeave);
-      card.addEventListener("mousemove",  onMove);
-      return () => {
-        clearTimeout(enterTimer);
-        clearTimeout(idleTimer);
-        card.removeEventListener("mouseenter", onEnter);
-        card.removeEventListener("mouseleave", onLeave);
-        card.removeEventListener("mousemove",  onMove);
-      };
-    });
-  });
-
   return (
-    <div
-      ref={cardRef}
-      className="exp-card group relative p-5 sm:p-6 lg:p-7
+    <motion.div
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-30px" }}
+      transition={{ duration: 0.7, delay: index * 0.07, ease: [0.22, 1, 0.36, 1] }}
+      className="group relative p-5 sm:p-6 lg:p-7
         border border-white/[0.07] rounded-xl sm:rounded-2xl overflow-hidden cursor-default
         hover:border-[#7A2267]/25 hover:bg-white/2 transition-colors duration-500"
     >
-      {/* L-bracket corner — hover on desktop, scrub on mobile */}
-      <div className="corner-h absolute top-0 left-0 w-8 h-px bg-[#7A2267] origin-left"
-        style={{ transform: "scaleX(0)" }} />
-      <div className="corner-v absolute top-0 left-0 h-8 w-px bg-[#7A2267] origin-top"
-        style={{ transform: "scaleY(0)" }} />
+      {/*
+        L-bracket corners: scaleX/scaleY from 0→1 driven purely by CSS group-hover.
+        No JS, runs on compositor → zero scroll/frame budget cost.
+      */}
+      <div className="absolute top-0 left-0 w-8 h-px bg-[#7A2267] origin-left
+        scale-x-0 group-hover:scale-x-100 transition-transform duration-380 ease-out" />
+      <div className="absolute top-0 left-0 h-8 w-px bg-[#7A2267] origin-top
+        scale-y-0 group-hover:scale-y-100 transition-transform duration-380 ease-out delay-40" />
 
-      {/* Number */}
-      <p className={`${josefin.className} text-[9px] tracking-[0.35em] text-[#7A2267]/30
-        font-light mb-3 sm:mb-4`}>
+      <p className="font-josefin text-[9px] tracking-[0.35em] text-[#7A2267]/30 font-light mb-3 sm:mb-4">
         {feature.num}
       </p>
 
-      {/* Icon */}
       <div className="text-[#7A2267]/50 group-hover:text-[#9d3a8a] transition-colors duration-500 mb-3 sm:mb-4">
         {feature.icon}
       </div>
 
-      {/* Title */}
-      <h3 className={`${josefin.className} text-[10px] sm:text-[11px] lg:text-[11.5px] font-semibold
+      <h3 className="font-josefin text-[10px] sm:text-[11px] lg:text-[11.5px] font-semibold
         text-white group-hover:text-white/90 tracking-[0.14em] uppercase mb-2 sm:mb-3
-        transition-colors duration-300`}>
+        transition-colors duration-300">
         {feature.title}
       </h3>
 
-      {/* Desc */}
-      <p className={`${josefin.className} text-[11px] sm:text-[12px] lg:text-[12.5px]
+      <p className="font-josefin text-[11px] sm:text-[12px] lg:text-[12.5px]
         font-light text-white/35 group-hover:text-white/55 leading-[1.75] sm:leading-[1.85]
-        line-clamp-3 sm:line-clamp-none transition-colors duration-500`}>
+        line-clamp-3 sm:line-clamp-none transition-colors duration-500">
         {feature.desc}
       </p>
-    </div>
+    </motion.div>
   );
 }
 
 // ── Section ───────────────────────────────────────────────────────────────────
 export default function ExperienceSection() {
-  const ref     = useRef(null);
-  const gridRef = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-80px" });
-
-  // Mobile only: corner sweep scrubbed to scroll position (floats with finger)
-  useGSAP(() => {
-    const cards = gridRef.current?.querySelectorAll(".exp-card");
-    if (!cards?.length) return;
-
-    const mm = gsap.matchMedia();
-
-    mm.add("(max-width: 767px)", () => {
-      gsap.set(gridRef.current.querySelectorAll(".corner-h"), { scaleX: 0 });
-      gsap.set(gridRef.current.querySelectorAll(".corner-v"), { scaleY: 0 });
-
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: gridRef.current,
-          start: "top 85%",
-          end: "bottom 30%",
-          scrub: 1.8,   // smooth lag — feels like it floats with scroll
-        },
-      });
-
-      // Sweep top-left → bottom-right: card 0,1 → 2,3 → 4,5
-      cards.forEach((card, i) => {
-        const h = card.querySelector(".corner-h");
-        const v = card.querySelector(".corner-v");
-        const t = i * 0.14;
-        tl.to(h, { scaleX: 1, duration: 0.4, ease: "none" }, t)
-          .to(v, { scaleY: 1, duration: 0.4, ease: "none" }, t + 0.05);
-      });
-    });
-  }, { scope: gridRef });
-
   return (
-    <section ref={ref} className="relative bg-[#1a1309] overflow-hidden py-20 md:py-28 lg:py-32">
+    <section className="relative bg-[#1a1309] overflow-hidden py-20 md:py-28 lg:py-32">
 
       <div
         className="pointer-events-none absolute inset-0"
@@ -281,27 +143,25 @@ export default function ExperienceSection() {
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
           className="text-center mb-12 md:mb-16 lg:mb-20"
         >
-          <h2 className={`${lora.className} text-[2rem] sm:text-[2.7rem] lg:text-[3.2rem]
-            font-400 text-white leading-[1.18] tracking-[-0.01em]`}>
+          <h2 className="font-lora text-[2rem] sm:text-[2.7rem] lg:text-[3.2rem]
+            font-normal text-white leading-[1.18] tracking-[-0.01em]">
             What Makes Us{" "}
             <em className="italic text-[#c084b8]">Unlike Any Other</em>
           </h2>
 
-          <p className={`${josefin.className} mt-4 text-[12.5px] sm:text-[13px] font-light text-white/35
-            max-w-xs sm:max-w-sm mx-auto leading-relaxed tracking-wide`}>
+          <p className="font-josefin mt-4 text-[12.5px] sm:text-[13px] font-light text-white/35
+            max-w-xs sm:max-w-sm mx-auto leading-relaxed tracking-wide">
             Every detail, curated for those who expect nothing less than excellence.
           </p>
         </motion.div>
 
         {/* Grid */}
-        <div
-          ref={gridRef}
-          className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5"
-        >
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-5">
           {features.map((feature, i) => (
             <FeatureCard key={feature.num} feature={feature} index={i} />
           ))}

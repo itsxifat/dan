@@ -1,17 +1,7 @@
 "use client";
 
-import { useRef } from "react";
 import Link from "next/link";
-import { motion, useInView } from "framer-motion";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Lora, Josefin_Sans } from "next/font/google";
-
-gsap.registerPlugin(ScrollTrigger);
-
-const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
-const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
+import { motion } from "framer-motion";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80";
@@ -46,157 +36,92 @@ const PLACEHOLDER_PROPERTIES = [
   },
 ];
 
-// ── Single card ───────────────────────────────────────────────────────────────
-function PropertyCard({ property }) {
-  const cardRef  = useRef(null);
-  const imgRef   = useRef(null);
-  const slideRef = useRef(null);
-
+// ── Single card — pure CSS hover, zero JS per-card ───────────────────────────
+function PropertyCard({ property, index }) {
   const imgSrc    = property.coverImage || FALLBACK_IMAGE;
   const isCottage = property.type === "cottage";
-  const tagline   = property.tagline || "";
-
-  useGSAP(() => {
-    const card  = cardRef.current;
-    const img   = imgRef.current;
-    const slide = slideRef.current;
-
-    const mm = gsap.matchMedia();
-
-    // ── Desktop / pointer devices: hide slide, reveal on hover ──
-    mm.add("(hover: hover)", () => {
-      gsap.set(slide, { y: 18, opacity: 0 });
-
-      const tl = gsap.timeline({ paused: true })
-        .to(img,   { scale: 1.06, duration: 0.7,  ease: "power2.out" },    0)
-        .to(slide, { y: 0, opacity: 1, duration: 0.42, ease: "power3.out" }, 0);
-
-      const onEnter = () => tl.play();
-      const onLeave = () => tl.reverse();
-
-      card.addEventListener("mouseenter", onEnter);
-      card.addEventListener("mouseleave", onLeave);
-      return () => {
-        card.removeEventListener("mouseenter", onEnter);
-        card.removeEventListener("mouseleave", onLeave);
-        tl.kill();
-      };
-    });
-
-    // ── Touch devices: always show tagline ──
-    mm.add("(hover: none)", () => {
-      gsap.set(slide, { y: 0, opacity: 1 });
-    });
-  });
 
   return (
-    <Link
-      ref={cardRef}
-      href={`/accommodation/${property.slug}`}
-      className="property-card relative block rounded-2xl overflow-hidden cursor-pointer
-        aspect-4/3 w-[78vw] sm:w-[72vw] md:w-auto shrink-0 snap-start"
+    <motion.div
+      initial={{ opacity: 0, y: 28 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-40px" }}
+      transition={{ duration: 0.7, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}
     >
-      {/* Image */}
-      <img
-        ref={imgRef}
-        src={imgSrc}
-        alt={property.name}
-        className="absolute inset-0 w-full h-full object-cover will-change-transform"
-      />
+      <Link
+        href={`/accommodation/${property.slug}`}
+        className="group relative block rounded-2xl overflow-hidden cursor-pointer
+          aspect-4/3 w-[78vw] sm:w-[72vw] md:w-auto shrink-0 snap-start"
+      >
+        {/* Image — scale on CSS hover, compositor-only transform */}
+        <img
+          src={imgSrc}
+          alt={property.name}
+          className="absolute inset-0 w-full h-full object-cover
+            transition-transform duration-700 ease-out will-change-transform
+            group-hover:scale-[1.06]"
+        />
 
-      {/* Gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#0d0905]/75 via-[#0d0905]/15 to-transparent" />
+        {/* Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0d0905]/75 via-[#0d0905]/15 to-transparent" />
 
-      {/* Cottage badge */}
-      {isCottage && (
-        <div className="absolute top-4 left-4">
-          <span className={`${josefin.className} text-[9px] uppercase tracking-[0.2em] font-semibold
-            px-3 py-1.5 rounded-full backdrop-blur-md bg-white/12 text-white border border-white/20`}>
-            Cottage
-          </span>
+        {/* Cottage badge */}
+        {isCottage && (
+          <div className="absolute top-4 left-4">
+            <span className="font-josefin text-[9px] uppercase tracking-[0.2em] font-semibold
+              px-3 py-1.5 rounded-full backdrop-blur-md bg-white/12 text-white border border-white/20">
+              Cottage
+            </span>
+          </div>
+        )}
+
+        {/* Bottom content */}
+        <div className="absolute bottom-0 inset-x-0 p-5 sm:p-6 flex flex-col gap-2">
+          <h3 className="font-lora text-[1.25rem] sm:text-[1.35rem] font-medium text-white leading-snug">
+            {property.name}
+          </h3>
+
+          {/*
+            Touch devices  → always visible (no hover media available)
+            Hover devices  → hidden by default, slides up on group-hover
+            Arbitrary variant [@media(hover:hover)] targets pointer devices only
+          */}
+          <div className="
+            flex flex-col gap-2.5 will-change-transform
+            transition-all duration-500 ease-out
+            opacity-100 translate-y-0
+            [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:translate-y-[18px]
+            group-hover:opacity-100 group-hover:translate-y-0
+          ">
+            {property.tagline && (
+              <p className="font-lora text-[12.5px] italic text-white/65 leading-snug">
+                {property.tagline}
+              </p>
+            )}
+            <span className="font-josefin inline-flex items-center gap-2 text-[10px]
+              uppercase tracking-[0.22em] font-semibold text-[#c084b8]">
+              Explore
+              <svg viewBox="0 0 16 10" width="10" height="10" fill="none">
+                <path d="M1 5h14M10 1l5 4-5 4" stroke="currentColor" strokeWidth="1.7"
+                  strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </span>
+          </div>
         </div>
-      )}
-
-      {/* Bottom content */}
-      <div className="absolute bottom-0 inset-x-0 p-5 sm:p-6 flex flex-col gap-2">
-        {/* Name — always visible */}
-        <h3 className={`${lora.className} text-[1.25rem] sm:text-[1.35rem] font-500 text-white leading-snug`}>
-          {property.name}
-        </h3>
-
-        {/* Tagline + CTA — hidden on desktop until hover, always shown on touch */}
-        <div ref={slideRef} className="flex flex-col gap-2.5 will-change-transform">
-          {tagline && (
-            <p className={`${lora.className} text-[12.5px] italic text-white/65 leading-snug`}>
-              {tagline}
-            </p>
-          )}
-          <span className={`${josefin.className} inline-flex items-center gap-2 text-[10px]
-            uppercase tracking-[0.22em] font-semibold text-[#c084b8]`}>
-            Explore
-            <svg viewBox="0 0 16 10" width="10" height="10" fill="none">
-              <path d="M1 5h14M10 1l5 4-5 4" stroke="currentColor" strokeWidth="1.7"
-                strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </span>
-        </div>
-      </div>
-    </Link>
+      </Link>
+    </motion.div>
   );
 }
 
 // ── Section ───────────────────────────────────────────────────────────────────
 export default function RoomsSection({ properties }) {
-  const sectionRef = useRef(null);
-  const cardsRef   = useRef(null);
-  const isInView   = useInView(sectionRef, { once: true, margin: "-60px" });
-
   const displayProperties =
     Array.isArray(properties) && properties.length > 0
       ? properties
       : PLACEHOLDER_PROPERTIES;
 
-  useGSAP(() => {
-    const cards = cardsRef.current?.querySelectorAll(".property-card");
-    if (!cards?.length) return;
-
-    const mm = gsap.matchMedia();
-
-    mm.add("(min-width: 768px)", () => {
-      gsap.fromTo(cards,
-        { opacity: 0, y: 32 },
-        {
-          opacity: 1, y: 0, duration: 0.9, ease: "power3.out", stagger: 0.12,
-          immediateRender: false,
-          scrollTrigger: {
-            trigger: cardsRef.current,
-            start: "top 85%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
-    });
-
-    mm.add("(max-width: 767px)", () => {
-      cards.forEach((card) => {
-        gsap.fromTo(card,
-          { opacity: 0, y: 24 },
-          {
-            opacity: 1, y: 0, duration: 0.75, ease: "power3.out",
-            immediateRender: false,
-            scrollTrigger: {
-              trigger: card,
-              start: "top 93%",
-              toggleActions: "play none none none",
-            },
-          }
-        );
-      });
-    });
-  });
-
   return (
-    <section ref={sectionRef} className="relative bg-white overflow-hidden py-20 md:py-28 lg:py-32">
+    <section className="relative bg-white overflow-hidden py-20 md:py-28 lg:py-32">
 
       <div className="pointer-events-none absolute inset-0"
         style={{ background: "radial-gradient(ellipse 60% 40% at 100% 0%, rgba(122,34,103,0.05) 0%, transparent 70%)" }} />
@@ -207,30 +132,31 @@ export default function RoomsSection({ properties }) {
         <div className="px-5 sm:px-8 lg:px-12">
           <motion.h2
             initial={{ opacity: 0, y: 20 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-            className={`${lora.className} text-center text-[2rem] sm:text-[2.6rem] lg:text-[3rem]
-              font-500 text-[#1a1309] leading-[1.15] mb-4`}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            className="font-lora text-center text-[2rem] sm:text-[2.6rem] lg:text-[3rem]
+              font-medium text-[#1a1309] leading-[1.15] mb-4"
           >
             Choose Your{" "}
-            <em className={`${lora.className} not-italic text-[#7A2267]`}>Perfect Escape</em>
+            <em className="font-lora not-italic text-[#7A2267]">Perfect Escape</em>
           </motion.h2>
 
           <motion.p
             initial={{ opacity: 0, y: 16 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.7, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className={`${josefin.className} text-center text-[13.5px] font-light text-[#7a6a52]
-              max-w-xl mx-auto mb-12 leading-[1.85]`}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            className="font-josefin text-center text-[13.5px] font-light text-[#7a6a52]
+              max-w-xl mx-auto mb-12 leading-[1.85]"
           >
             From private cottages nestled in greenery to suite-style rooms with sweeping views —
             each stay is crafted for comfort, elegance, and lasting memories.
           </motion.p>
         </div>
 
-        {/* Cards — horizontal scroll on mobile, grid on md+ */}
+        {/* Cards */}
         <div
-          ref={cardsRef}
           className="
             flex md:grid md:grid-cols-2 lg:grid-cols-3
             gap-4 sm:gap-5 md:gap-6
@@ -242,26 +168,22 @@ export default function RoomsSection({ properties }) {
           "
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
-          {/* Left-edge spacer so first card isn't flush to screen edge */}
           <div className="md:hidden w-0.5 flex-shrink-0" aria-hidden />
 
-          {displayProperties.map((property) => (
-            <PropertyCard key={property._id} property={property} />
+          {displayProperties.map((property, i) => (
+            <PropertyCard key={property._id} property={property} index={i} />
           ))}
 
-          {/* Right-edge spacer so last card isn't flush to screen edge */}
           <div className="md:hidden w-0.5 flex-shrink-0" aria-hidden />
         </div>
 
-        {/* Swipe hint dots — mobile only */}
+        {/* Dots — mobile only */}
         <div className="flex md:hidden justify-center gap-1.5 mt-5 px-5">
           {displayProperties.map((p, i) => (
             <div
               key={p._id}
               className={`rounded-full transition-all duration-300 ${
-                i === 0
-                  ? "w-5 h-1.5 bg-[#7A2267]"
-                  : "w-1.5 h-1.5 bg-[#7A2267]/25"
+                i === 0 ? "w-5 h-1.5 bg-[#7A2267]" : "w-1.5 h-1.5 bg-[#7A2267]/25"
               }`}
             />
           ))}
@@ -271,16 +193,17 @@ export default function RoomsSection({ properties }) {
         <div className="px-5 sm:px-8 lg:px-12">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
-            animate={isInView ? { opacity: 1, y: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-60px" }}
+            transition={{ duration: 0.6, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
             className="flex justify-center mt-10 md:mt-12"
           >
             <Link
               href="/accommodation"
-              className={`${josefin.className} inline-flex items-center gap-3
+              className="font-josefin inline-flex items-center gap-3
                 px-8 py-3.5 rounded-full
                 border border-[#1a1309]/20 text-[#1a1309] text-[12px] font-semibold uppercase tracking-[0.18em]
-                hover:bg-[#1a1309] hover:text-white hover:border-[#1a1309] transition-all duration-300 group`}
+                hover:bg-[#1a1309] hover:text-white hover:border-[#1a1309] transition-all duration-300 group"
             >
               View All Accommodation
               <svg viewBox="0 0 16 10" width="13" height="13" fill="none"

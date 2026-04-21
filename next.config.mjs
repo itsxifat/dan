@@ -1,27 +1,23 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  compress: true,
+  poweredByHeader: false,
+
   images: {
-    qualities: [75, 90, 100],
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 2592000, // 30 days
+    qualities: [60, 75, 90],
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "*.googleusercontent.com",
-        port: "",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "ui-avatars.com",
-        port: "",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-        port: "",
-        pathname: "/**",
-      },
+      { protocol: "https", hostname: "*.googleusercontent.com", pathname: "/**" },
+      { protocol: "https", hostname: "ui-avatars.com",          pathname: "/**" },
+      { protocol: "https", hostname: "images.unsplash.com",     pathname: "/**" },
+      { protocol: "https", hostname: "res.cloudinary.com",      pathname: "/**" },
     ],
+  },
+
+  experimental: {
+    // Tree-shake heavy packages so only used exports are bundled
+    optimizePackageImports: ["framer-motion", "gsap"],
   },
 };
 

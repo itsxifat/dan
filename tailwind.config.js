@@ -8,13 +8,17 @@ module.exports = {
     extend: {
       colors: {
         brand: {
-          purple: '#7A2267', // The deep plum/purple from the logo text and diamond
-          grey: '#9B9D9F',   // The silver/grey from the chevron accents
-          dark: '#1a1a1a',   // For deep contrast text
-          light: '#fcfcfc',  // A pristine off-white for the background
-        }
+          purple: '#7A2267',
+          grey:   '#9B9D9F',
+          dark:   '#1a1a1a',
+          light:  '#fcfcfc',
+        },
+      },
+      fontFamily: {
+        lora:    ['var(--font-lora)',    'Georgia', 'serif'],
+        josefin: ['var(--font-josefin)', 'Helvetica', 'sans-serif'],
       },
     },
   },
   plugins: [],
-}
+};
