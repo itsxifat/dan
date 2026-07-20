@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { uploadToCdn, cdnSignedUrl } from "@/lib/cdn";
+import { optimizeFile } from "@/lib/imageOptimize";
 
 const ALLOWED_TYPES = [
-  "image/jpeg", "image/jpg", "image/png", "image/webp", "application/pdf",
+  "image/jpeg", "image/jpg", "image/png", "image/webp",
 ];
-const MAX_SIZE = 1 * 1024 * 1024; // 1 MB
+const MAX_SIZE = 5 * 1024 * 1024; // 5 MB — ID documents / photos
 
 export async function POST(req) {
   try {
@@ -17,27 +17,27 @@ export async function POST(req) {
 
     if (!ALLOWED_TYPES.includes(file.type))
       return NextResponse.json(
-        { error: "Only JPG, PNG, WebP, or PDF files are allowed." },
+        { error: "Only JPG, PNG, or WebP images are allowed." },
         { status: 400 }
       );
 
     if (file.size > MAX_SIZE)
       return NextResponse.json(
-        { error: "File must be under 1 MB." },
+        { error: "File must be under 5 MB." },
         { status: 400 }
       );
 
-    const bytes  = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    if (file.size === 0)
+      return NextResponse.json({ error: "File is empty." }, { status: 400 });
 
-    const dir = path.join(process.cwd(), "public", "uploads", "docs");
-    await mkdir(dir, { recursive: true });
+    // Optimise (resize + WebP) then upload to EnCDN, and hand back a lifetime
+    // signed URL: these docs are viewed from admin/emails without a guaranteed
+    // whitelisted Referer, so the link must bypass domain-locking.
+    const optimised = await optimizeFile(file);
+    const cdn = await uploadToCdn(optimised);
+    const url = cdnSignedUrl(cdn.publicUrl, { lifetime: true });
 
-    const ext      = file.name.split(".").pop().toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
-    const filename = `doc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    await writeFile(path.join(dir, filename), buffer);
-
-    return NextResponse.json({ url: `/uploads/docs/${filename}` });
+    return NextResponse.json({ url });
   } catch (err) {
     console.error("Doc upload error:", err);
     return NextResponse.json({ error: "Upload failed. Please try again." }, { status: 500 });

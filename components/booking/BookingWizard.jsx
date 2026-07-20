@@ -1979,7 +1979,7 @@ export default function BookingWizard({ settings, preselect }) {
                             <path d="M2 14v1.5a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5V14" stroke="#7A2267" strokeWidth="1.3" strokeLinecap="round"/>
                           </svg>
                           <span className="text-[12px] font-semibold text-[#7A2267]">Click to upload NID / Passport</span>
-                          <input type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" className="hidden"
+                          <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden"
                             onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(f, setNidUrl); }} />
                         </label>
                       )}
@@ -2098,7 +2098,7 @@ export default function BookingWizard({ settings, preselect }) {
                                       <p className="text-[11px] text-amber-700 flex-1">Please bring your marriage certificate to check-in.</p>
                                       <label className="text-[10px] font-semibold text-[#7A2267] cursor-pointer underline underline-offset-2">
                                         Upload
-                                        <input type="file" accept=".jpg,.jpeg,.png,.webp,.pdf" className="hidden"
+                                        <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden"
                                           onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(f, (url) => updateGuestInfo(room._id, { coupleDocumentUrl: url, coupleDocMethod: "upload" })); }} />
                                       </label>
                                     </div>

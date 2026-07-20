@@ -507,7 +507,9 @@ function MediaCard({ item, selected, inClipboard, clipMode, gridSize, isDragging
 
   function handleCopyUrl(e) {
     e.stopPropagation();
-    navigator.clipboard.writeText(window.location.origin + item.url).then(() => {
+    // CDN URLs are already absolute; only relative (legacy) URLs need the origin.
+    const fullUrl = /^https?:\/\//.test(item.url) ? item.url : window.location.origin + item.url;
+    navigator.clipboard.writeText(fullUrl).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });

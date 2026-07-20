@@ -6,6 +6,7 @@ import { Montserrat } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
 import { claimOwner } from "@/actions/admin/setupActions";
+import { LOGO_URL } from "@/lib/assets";
 
 const montserrat = Montserrat({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
 
@@ -43,7 +44,7 @@ export default function SetupForm() {
         {/* Logo + badge */}
         <div className="flex flex-col items-center mb-8">
           <Image
-            src="/logo.png"
+            src={LOGO_URL}
             alt="Dhali's Amber Nivaas"
             width={100}
             height={32}

@@ -9,6 +9,7 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Lora, Josefin_Sans } from "next/font/google";
 import { submitContactForm } from "@/actions/contact/contactActions";
+import { ABOUT_MIDDLE_URL } from "@/lib/assets";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -183,7 +184,7 @@ export default function ContactContent({ info = {}, mapsApiKey = "" }) {
       <section ref={heroRef} className="relative h-screen min-h-[600px] overflow-hidden">
         <div ref={heroImgRef} className="absolute inset-0 scale-110 will-change-transform">
           <Image
-            src="/section/about/middle.png"
+            src={ABOUT_MIDDLE_URL}
             alt="Dhali's Amber Nivaas — Contact"
             fill sizes="100vw"
             className="object-cover"

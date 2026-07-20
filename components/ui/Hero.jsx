@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Lora, Josefin_Sans } from "next/font/google";
+import { HERO_URL } from "@/lib/assets";
 
 const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
 const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
@@ -467,7 +468,7 @@ export default function Hero() {
         className="absolute inset-0 z-0 will-change-transform"
         style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
       >
-        <Image src="/hero.png" alt="Dhali's Amber Nivaas" fill priority quality={100}
+        <Image src={HERO_URL} alt="Dhali's Amber Nivaas" fill priority quality={100}
           className="object-cover object-center" />
       </motion.div>
 

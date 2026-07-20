@@ -1,13 +1,19 @@
 import { NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import dbConnect from "@/lib/db";
 import Media from "@/models/Media";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { uploadToCdn } from "@/lib/cdn";
+import { optimizeFile } from "@/lib/imageOptimize";
 
-const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif", "image/avif"];
-const MAX_SIZE_MB   = 10;
+// EnCDN-supported types (images + video/audio). The Media Library UI is still
+// image-only; video/audio is accepted here so the API can grow into it.
+const ALLOWED_TYPES = [
+  "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif", "image/avif",
+  "video/mp4", "video/webm", "video/ogg",
+  "audio/mpeg", "audio/mp3", "audio/wav", "audio/aac", "audio/flac",
+];
+const MAX_SIZE_MB = 100; // EnCDN default ceiling
 
 function safeFolder(raw) {
   return String(raw || "general")
@@ -36,7 +42,7 @@ export async function POST(req) {
     // ── File type validation ──────────────────────────────────────────────────
     if (!ALLOWED_TYPES.includes(file.type)) {
       return NextResponse.json(
-        { error: "Only image files are allowed (JPEG, PNG, WebP, GIF, AVIF)." },
+        { error: "Unsupported file type." },
         { status: 415 }
       );
     }
@@ -54,39 +60,26 @@ export async function POST(req) {
       return NextResponse.json({ error: "File is empty." }, { status: 400 });
     }
 
-    // ── Sanitize folder ───────────────────────────────────────────────────────
+    // ── Sanitize folder (app-side organisation only — EnCDN is flat) ──────────
     const folder = safeFolder(formData.get("folder"));
 
-    // ── Build filename & path ─────────────────────────────────────────────────
-    const bytes  = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    const uploadsDir = path.join(process.cwd(), "public", "uploads");
-    await mkdir(uploadsDir, { recursive: true });
-
-    const ext      = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
-    const safeName = file.name
-      .replace(/\.[^.]+$/, "")
-      .replace(/[^a-zA-Z0-9_\-]/g, "-")
-      .replace(/-+/g, "-")
-      .slice(0, 40);
-    const filename = `${Date.now()}-${safeName}.${ext}`;
-    const filepath = path.join(uploadsDir, filename);
-
-    // ── Write file ────────────────────────────────────────────────────────────
-    await writeFile(filepath, buffer);
-
-    const url = `/uploads/${filename}`;
+    // ── Optimise (resize + WebP) then upload to EnCDN ─────────────────────────
+    // EnCDN serves files as-is, so we right-size here. Non-image types pass
+    // through untouched.
+    const optimised = await optimizeFile(file);
+    const cdn = await uploadToCdn(optimised);
+    const url = cdn.publicUrl;
 
     // ── Persist to DB (non-fatal) ─────────────────────────────────────────────
     try {
       await dbConnect();
       await Media.create({
-        filename,
+        filename:     cdn.filename,
+        cdnId:        cdn.id,
         url,
-        originalName: file.name,
-        size:         file.size,
-        mimeType:     file.type,
+        originalName: cdn.originalName || file.name,
+        size:         cdn.size || file.size,
+        mimeType:     cdn.mimeType || file.type,
         folder,
         uploadedBy:   session.user.id || session.user.email,
       });
@@ -94,10 +87,9 @@ export async function POST(req) {
       console.error("Media DB save failed (non-fatal):", dbErr);
     }
 
-    return NextResponse.json({ url, filename, folder });
+    return NextResponse.json({ url, filename: cdn.filename, folder });
   } catch (err) {
     console.error("Upload error:", err);
     return NextResponse.json({ error: "Upload failed. Please try again." }, { status: 500 });
   }
 }
-

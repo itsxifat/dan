@@ -3,11 +3,10 @@
 import dbConnect from "@/lib/db";
 import Media from "@/models/Media";
 import Folder from "@/models/Folder";
-import { unlink } from "fs/promises";
-import path from "path";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { hasPermission } from "@/lib/permissions";
+import { deleteFromCdn } from "@/lib/cdn";
 
 // ─── Auth guards ──────────────────────────────────────────────────────────────
 
@@ -184,10 +183,11 @@ export async function deleteMedia(id) {
 
   await Media.findByIdAndDelete(id);
 
+  // Only remove the underlying CDN file once no other Media row references it
+  // (copyMediaToFolder duplicates rows that share a single CDN file).
   const remaining = await Media.countDocuments({ url: media.url });
-  if (remaining === 0) {
-    const filepath = path.join(process.cwd(), "public", media.url);
-    try { await unlink(filepath); } catch { /* already gone */ }
+  if (remaining === 0 && media.filename) {
+    try { await deleteFromCdn(media.filename); } catch { /* idempotent / already gone */ }
   }
 }
 
@@ -202,9 +202,8 @@ export async function deleteMediaBulk(ids) {
   await Promise.all(
     items.map(async (media) => {
       const remaining = await Media.countDocuments({ url: media.url });
-      if (remaining === 0) {
-        const filepath = path.join(process.cwd(), "public", media.url);
-        try { await unlink(filepath); } catch { /* ignore */ }
+      if (remaining === 0 && media.filename) {
+        try { await deleteFromCdn(media.filename); } catch { /* idempotent / already gone */ }
       }
     })
   );

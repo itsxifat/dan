@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import User from "@/models/User";
-import { ADMIN_ROLES } from "@/models/User";
+import { ADMIN_ROLES } from "@/lib/permissions";
 
 export async function GET(request, { params }) {
   await dbConnect();

@@ -25,8 +25,40 @@ export default function AboutPageManager({ data }) {
     chairmanMessagePara2: data.chairmanMessagePara2  ?? "",
   });
 
+  const [executives, setExecutives] = useState(() =>
+    (data.executives ?? []).map((m) => ({
+      name:  m.name  ?? "",
+      role:  m.role  ?? "",
+      image: m.image ?? "",
+    }))
+  );
+
   function set(key) {
     return (e) => { setSaved(false); setForm((f) => ({ ...f, [key]: e.target.value })); };
+  }
+
+  // ── Executive panel row helpers ────────────────────────────────────────────
+  function setExec(i, key, value) {
+    setSaved(false);
+    setExecutives((prev) => prev.map((m, idx) => (idx === i ? { ...m, [key]: value } : m)));
+  }
+  function addExec() {
+    setSaved(false);
+    setExecutives((prev) => [...prev, { name: "", role: "", image: "" }]);
+  }
+  function removeExec(i) {
+    setSaved(false);
+    setExecutives((prev) => prev.filter((_, idx) => idx !== i));
+  }
+  function moveExec(i, dir) {
+    const j = i + dir;
+    setSaved(false);
+    setExecutives((prev) => {
+      if (j < 0 || j >= prev.length) return prev;
+      const next = [...prev];
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
   }
 
   function handleSave(e) {
@@ -35,7 +67,7 @@ export default function AboutPageManager({ data }) {
     setSaved(false);
     startTransition(async () => {
       try {
-        await updateAboutPage(form);
+        await updateAboutPage({ ...form, executives });
         setSaved(true);
       } catch (err) {
         setError(err.message || "Failed to save.");
@@ -138,6 +170,114 @@ export default function AboutPageManager({ data }) {
             placeholder="Our commitment to halal standards…"
           />
         </div>
+      </div>
+
+      {/* Executive panel */}
+      <div className={CARD}>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className={SECT}>Executive Panel</h3>
+            <p className="mt-1.5 text-[10px] text-white/25">
+              Shown as a card grid on the About page, in the order listed here.
+              Members with no name, role, or photo are dropped on save.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={addExec}
+            className="shrink-0 text-[11px] font-semibold px-4 py-2 rounded-full
+              bg-white/[0.06] border border-white/[0.08] text-white/70
+              hover:bg-[#7A2267] hover:border-[#7A2267] hover:text-white
+              transition-colors duration-200"
+          >
+            + Add Member
+          </button>
+        </div>
+
+        {executives.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-white/[0.08] px-4 py-8 text-center">
+            <p className="text-[12px] text-white/30">No executive members yet.</p>
+            <p className="mt-1 text-[10.5px] text-white/20">
+              Add members to show the Executive Panel section on the About page.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {executives.map((m, i) => (
+              <div
+                key={i}
+                className="rounded-xl border border-white/[0.07] bg-white/[0.02] p-4
+                  grid gap-4 sm:grid-cols-[140px_1fr_auto] items-start"
+              >
+                {/* Photo */}
+                <div>
+                  <label className={LABEL}>Photo</label>
+                  <ImageUpload
+                    value={m.image}
+                    onChange={(url) => setExec(i, "image", url)}
+                  />
+                </div>
+
+                {/* Name + role */}
+                <div className="space-y-3">
+                  <div>
+                    <label className={LABEL}>Full Name</label>
+                    <input
+                      className={INPUT}
+                      value={m.name}
+                      onChange={(e) => setExec(i, "name", e.target.value)}
+                      placeholder="e.g. Md. Abdur Rahman Dhali"
+                    />
+                  </div>
+                  <div>
+                    <label className={LABEL}>Title / Role</label>
+                    <input
+                      className={INPUT}
+                      value={m.role}
+                      onChange={(e) => setExec(i, "role", e.target.value)}
+                      placeholder="e.g. Managing Director"
+                    />
+                  </div>
+                </div>
+
+                {/* Reorder + remove */}
+                <div className="flex sm:flex-col gap-1.5 sm:pt-6">
+                  <button
+                    type="button"
+                    onClick={() => moveExec(i, -1)}
+                    disabled={i === 0}
+                    aria-label="Move up"
+                    className="w-8 h-8 rounded-lg border border-white/[0.08] text-white/40
+                      hover:text-white hover:border-white/20 transition-colors duration-200
+                      disabled:opacity-25 disabled:pointer-events-none text-[12px]"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveExec(i, 1)}
+                    disabled={i === executives.length - 1}
+                    aria-label="Move down"
+                    className="w-8 h-8 rounded-lg border border-white/[0.08] text-white/40
+                      hover:text-white hover:border-white/20 transition-colors duration-200
+                      disabled:opacity-25 disabled:pointer-events-none text-[12px]"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeExec(i)}
+                    aria-label="Remove member"
+                    className="w-8 h-8 rounded-lg border border-white/[0.08] text-white/40
+                      hover:text-red-400 hover:border-red-500/40 transition-colors duration-200 text-[13px]"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
     </form>

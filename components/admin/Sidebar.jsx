@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ROLE_STYLES, ROLE_LABELS, hasPermission } from "@/lib/permissions";
+import { LOGO_URL } from "@/lib/assets";
 
 const EASE = [0.16, 1, 0.3, 1];
 
@@ -385,7 +386,7 @@ function SidebarContent({ onClose }) {
       <div className="px-5 pt-6 pb-5 border-b border-white/[0.05]">
         <Link href="/admin/dashboard" onClick={onClose} className="flex items-center gap-3 group">
           <Image
-            src="/logo.png"
+            src={LOGO_URL}
             alt="Admin"
             width={82}
             height={26}

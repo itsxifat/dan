@@ -8,6 +8,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Lora, Josefin_Sans } from "next/font/google";
+import { ABOUT_LEFT_URL, ABOUT_MIDDLE_URL, ABOUT_RIGHT_URL, HERO_URL } from "@/lib/assets";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -25,56 +26,101 @@ const stagger = {
   show:   { transition: { staggerChildren: 0.13, delayChildren: 0.04 } },
 };
 
-const pillars = [
+// Journey flow — each node renders on alternating sides of the centre spine.
+const milestones = [
   {
-    title: "Halal Certified",
-    desc:  "Every meal served is 100% halal — a promise we keep without exception or compromise.",
-    icon: (
-      <svg viewBox="0 0 22 22" width="20" height="20" fill="none" stroke="currentColor"
-        strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 6L9 17l-5-5" />
-      </svg>
-    ),
+    step:  "01",
+    year:  "2017",
+    title: "Foundation",
+    desc:  "The land was chosen and the first stone laid. What began as one family's vision — a halal-certified retreat where guests could rest without compromise — took root in the quiet countryside outside Dhaka.",
+    image: ABOUT_LEFT_URL,
+    alt:   "The resort grounds at Dhali's Amber Nivaas",
   },
   {
-    title: "Harmony with Nature",
-    desc:  "Every structure is designed to complement, not overpower, the natural landscape surrounding it.",
-    icon: (
-      <svg viewBox="0 0 22 22" width="20" height="20" fill="none" stroke="currentColor"
-        strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M11 21V9M11 9C11 4 6 2 2 3c1 4 4 6 9 6z" />
-        <path d="M11 9c0-5 5-7 9-6-1 4-4 6-9 6z" />
-        <path d="M3 21h16" />
-      </svg>
-    ),
+    step:  "02",
+    year:  "2021",
+    title: "Tower Building",
+    desc:  "The Tower Building rose as our first full accommodation wing — premium rooms and suites with panoramic views across the landscape, welcoming the very first guests through our doors.",
+    image: ABOUT_MIDDLE_URL,
+    alt:   "The Tower Building accommodation wing",
   },
   {
-    title: "Heartfelt Hospitality",
-    desc:  "Warm, attentive care where every guest is welcomed like family from the moment they arrive.",
-    icon: (
-      <svg viewBox="-1 -1 24 24" width="20" height="20" fill="none" stroke="currentColor"
-        strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L11 6.67l-2.06-2.06a5.5 5.5 0 0 0-7.78 7.78l2.06 2.06L11 21.23l7.78-7.78 2.06-2.06a5.5 5.5 0 0 0 0-7.78z" />
-      </svg>
-    ),
+    step:  "03",
+    year:  "2021",
+    title: "Recreation Center",
+    desc:  "The Recreation Center followed in the same year. A swimming pool, indoor games and open recreation grounds turned a place to stay into a place to properly unwind.",
+    image: ABOUT_RIGHT_URL,
+    alt:   "Recreation facilities at the resort",
   },
   {
-    title: "Community & Heritage",
-    desc:  "We celebrate local culture, employ from the community, and honour the heritage of the land.",
-    icon: (
-      <svg viewBox="0 0 22 22" width="20" height="20" fill="none" stroke="currentColor"
-        strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    ),
+    step:  "04",
+    year:  "2023",
+    title: "Digital Transformation",
+    desc:  "Bookings, galleries and corporate enquiries moved online. A single platform now connects guests across the country to every corner of the resort, before they ever arrive.",
+    image: HERO_URL,
+    alt:   "Dhali's Amber Nivaas resort view",
   },
 ];
 
+/**
+ * Portrait that degrades to a monogram.
+ *
+ * Uses a plain <img> rather than next/image on purpose: these URLs are entered
+ * by an admin and can point at any host, which next/image rejects at runtime
+ * unless the host is listed in next.config remotePatterns. onError also lets a
+ * dead link fall back to the monogram instead of showing a broken image.
+ */
+function Portrait({ src, name, className = "", monogramClass = "" }) {
+  const [failed, setFailed] = useState(false);
+  const initial = (name || "").trim().charAt(0) || "—";
+
+  if (!src || failed) {
+    return (
+      <div className={`w-full h-full flex items-center justify-center bg-[#f0e7e0] ${className}`}>
+        <span className={`${lora.className} text-[#7A2267]/30 font-400 ${monogramClass}`}>
+          {initial}
+        </span>
+      </div>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element -- see note above
+    <img
+      src={src}
+      alt={name}
+      onError={() => setFailed(true)}
+      className={`w-full h-full object-cover object-top ${className}`}
+    />
+  );
+}
+
+function ExecutiveCard({ member }) {
+  return (
+    <motion.div variants={fadeUp} className="group">
+      <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-[#f0e7e0]
+        ring-1 ring-[#1a1309]/[0.06] shadow-[0_18px_40px_-24px_rgba(26,19,9,0.35)]">
+        <div className="w-full h-full transition-transform duration-[900ms] ease-out group-hover:scale-[1.04]">
+          <Portrait src={member.image} name={member.name} monogramClass="text-[2.6rem] italic" />
+        </div>
+      </div>
+
+      <div className="pt-4">
+        <p className={`${lora.className} text-[1rem] sm:text-[1.08rem] text-[#1a1309] font-500 leading-snug`}>
+          {member.name}
+        </p>
+        {member.role && (
+          <p className={`${josefin.className} mt-1.5 text-[10px] uppercase tracking-[0.22em]
+            text-[#7A2267]/75 font-semibold`}>
+            {member.role}
+          </p>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function AboutContent({ aboutData = {} }) {
-  const [imgError, setImgError] = useState(false);
   const chairman = {
     name:         aboutData.chairmanName         || "Md. Abdur Rahman Dhali",
     title:        aboutData.chairmanTitle         || "Chairman",
@@ -84,19 +130,18 @@ export default function AboutContent({ aboutData = {} }) {
     para1:        aboutData.chairmanMessagePara1  || "",
     para2:        aboutData.chairmanMessagePara2  || "",
   };
-  const heroRef    = useRef(null);
-  const heroImgRef = useRef(null);
-  const storyRef   = useRef(null);
-  const imgLeftRef = useRef(null);
-  const imgMidRef  = useRef(null);
-  const imgRtRef   = useRef(null);
-  const pillarsRef = useRef(null);
-  const closingRef = useRef(null);
+  const executives = (aboutData.executives ?? []).filter((m) => m?.name || m?.image);
 
-  const chairmanRef   = useRef(null);
-  const storyInView    = useInView(storyRef,    { once: true, margin: "-80px" });
-  const pillarsInView  = useInView(pillarsRef,  { once: true, margin: "-80px" });
+  const heroRef      = useRef(null);
+  const heroImgRef   = useRef(null);
+  const closingRef   = useRef(null);
+  const flowRef      = useRef(null);
+  const spineFillRef = useRef(null);
+  const chairmanRef  = useRef(null);
+  const execRef      = useRef(null);
+
   const chairmanInView = useInView(chairmanRef, { once: true, margin: "-80px" });
+  const execInView     = useInView(execRef,     { once: true, margin: "-80px" });
   const closingInView  = useInView(closingRef,  { once: true, margin: "-80px" });
 
   // Hero parallax
@@ -113,15 +158,47 @@ export default function AboutContent({ aboutData = {} }) {
     });
   }, { scope: heroRef });
 
-  // Story images reveal
+  // Journey flow — the spine draws itself on scrub, each node latches in as it arrives
   useGSAP(() => {
-    const shared = { ease: "power3.out", immediateRender: false };
-    const trig   = (el) => ({ scrollTrigger: { trigger: el, start: "top 88%", toggleActions: "play none none none" } });
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    gsap.fromTo(imgLeftRef.current, { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 1.0, ...shared, ...trig(imgLeftRef.current) });
-    gsap.fromTo(imgMidRef.current,  { opacity: 0, y:  30 }, { opacity: 1, y: 0, duration: 1.1, ...shared, ...trig(imgMidRef.current) });
-    gsap.fromTo(imgRtRef.current,   { opacity: 0, x:  30 }, { opacity: 1, x: 0, duration: 1.0, ...shared, ...trig(imgRtRef.current) });
-  }, { scope: storyRef });
+    // Spine fill tracks scroll position through the flow
+    gsap.fromTo(spineFillRef.current,
+      { scaleY: 0 },
+      {
+        scaleY: 1,
+        ease: "none",
+        scrollTrigger: {
+          trigger: flowRef.current,
+          start: "top 65%",
+          end:   "bottom 80%",
+          scrub: 0.6,
+        },
+      });
+
+    gsap.utils.toArray(".flow-node", flowRef.current).forEach((node) => {
+      const dot       = node.querySelector(".flow-dot");
+      const connector = node.querySelector(".flow-connector");
+      const card      = node.querySelector(".flow-card");
+      const img       = node.querySelector(".flow-img");
+      const fromX     = node.dataset.side === "right" ? 34 : -34;
+
+      gsap.timeline({
+        scrollTrigger: { trigger: node, start: "top 82%", toggleActions: "play none none none" },
+      })
+        .fromTo(dot,       { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(2.2)" })
+        .fromTo(connector, { scaleX: 0 },            { scaleX: 1, duration: 0.45, ease: "power2.out" }, "-=0.22")
+        .fromTo(card,      { opacity: 0, y: 42, x: fromX },
+                           { opacity: 1, y: 0, x: 0, duration: 0.95, ease: "power3.out" }, "-=0.28");
+
+      // Slow drift inside each frame as the node passes through the viewport
+      gsap.fromTo(img, { yPercent: -5 }, {
+        yPercent: 5,
+        ease: "none",
+        scrollTrigger: { trigger: node, start: "top bottom", end: "bottom top", scrub: true },
+      });
+    });
+  }, { scope: flowRef });
 
   return (
     <>
@@ -132,7 +209,7 @@ export default function AboutContent({ aboutData = {} }) {
         {/* Parallax image */}
         <div ref={heroImgRef} className="absolute inset-0 scale-110 will-change-transform">
           <Image
-            src="/section/about/middle.png"
+            src={ABOUT_MIDDLE_URL}
             alt="Dhali's Amber Nivaas"
             fill sizes="100vw"
             className="object-cover"
@@ -178,189 +255,51 @@ export default function AboutContent({ aboutData = {} }) {
 
       </section>
 
-      {/* ── STORY ────────────────────────────────────────────────────────── */}
-      <section ref={storyRef} className="relative bg-white overflow-hidden py-24 md:py-32">
-
-        <div className="pointer-events-none absolute top-0 right-0 w-[500px] h-[500px]
-          rounded-full bg-[#7A2267]/[0.03] blur-[120px]" />
-
-        <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-14">
-          <div className="grid lg:grid-cols-2 gap-16 lg:gap-20 xl:gap-28 items-center">
-
-            {/* Triptych */}
-            <div className="flex items-end gap-3 h-[400px] sm:h-[480px] lg:h-[560px] order-2 lg:order-1">
-
-              <div ref={imgLeftRef}
-                className="relative flex-1 h-[78%] rounded-2xl overflow-hidden will-change-transform
-                  shadow-[0_20px_50px_-12px_rgba(13,9,5,0.18)]">
-                <Image src="/section/about/left.png" alt="Accommodation"
-                  fill sizes="(max-width:1024px) 27vw, 20vw"
-                  className="object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0d0905]/40 to-transparent" />
-              </div>
-
-              <div ref={imgMidRef}
-                className="relative flex-[1.3] h-full rounded-2xl overflow-hidden will-change-transform
-                  shadow-[0_24px_60px_-12px_rgba(13,9,5,0.22)]">
-                <Image src="/section/about/middle.png" alt="Resort"
-                  fill sizes="(max-width:1024px) 34vw, 26vw"
-                  className="object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0d0905]/35 to-transparent" />
-              </div>
-
-              <div ref={imgRtRef}
-                className="relative flex-1 h-[78%] rounded-2xl overflow-hidden will-change-transform
-                  shadow-[0_20px_50px_-12px_rgba(13,9,5,0.18)]">
-                <Image src="/section/about/right.png" alt="Recreation"
-                  fill sizes="(max-width:1024px) 27vw, 20vw"
-                  className="object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0d0905]/40 to-transparent" />
-              </div>
-
-            </div>
-
-            {/* Text */}
-            <motion.div
-              variants={stagger}
-              initial="hidden"
-              animate={storyInView ? "show" : "hidden"}
-              className="flex flex-col gap-7 order-1 lg:order-2"
-            >
-              <motion.h2 variants={fadeUp}
-                className={`${lora.className} text-[2.2rem] sm:text-[2.8rem] lg:text-[3.2rem]
-                  font-400 text-[#1a1309] leading-[1.12] tracking-[-0.01em]`}>
-                Nestled in nature,<br />
-                <em className={`${lora.className} italic text-[#7A2267]`}>crafted for you.</em>
-              </motion.h2>
-
-              <motion.div variants={fadeUp} className="h-px w-14 bg-[#7A2267]/30" />
-
-              <motion.p variants={fadeUp}
-                className={`${josefin.className} text-[13.5px] font-light text-[#5a4e42] leading-[1.95]`}>
-                Dhali&apos;s Amber Nivaas is a proudly halal-certified luxury resort nestled in serene natural
-                surroundings just outside Dhaka. Built by a family passionate about hospitality, every detail
-                is crafted for guests who want to truly escape — where time slows, comfort is absolute, and
-                nature surrounds you at every step.
-              </motion.p>
-
-              <motion.p variants={fadeUp}
-                className={`${josefin.className} text-[13px] font-light text-[#7a6a52] leading-[1.9]`}>
-                From thoughtfully appointed rooms to expansive outdoor spaces — we believe real rest comes not
-                from excess, but from harmony. Every meal is halal. Every space is intentional. Every guest
-                is welcomed like family.
-              </motion.p>
-
-              <motion.div variants={fadeUp} className="flex flex-wrap gap-3 pt-1">
-                <Link href="/accommodation"
-                  className={`${josefin.className} inline-flex items-center gap-3
-                    px-7 py-3.5 rounded-full bg-[#1a1309] text-white
-                    text-[11px] font-semibold uppercase tracking-[0.18em]
-                    hover:bg-[#7A2267] transition-all duration-300 group
-                    shadow-[0_4px_16px_rgba(26,19,9,0.18)]`}>
-                  Explore Rooms
-                  <svg viewBox="0 0 16 10" width="11" height="11" fill="none"
-                    className="group-hover:translate-x-1 transition-transform duration-300">
-                    <path d="M1 5h14M10 1l5 4-5 4" stroke="currentColor" strokeWidth="1.5"
-                      strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </Link>
-                <Link href="/booking"
-                  className={`${josefin.className} inline-flex items-center
-                    px-7 py-3.5 rounded-full border border-[#1a1309]/20 text-[#1a1309]
-                    text-[11px] font-semibold uppercase tracking-[0.18em]
-                    hover:border-[#7A2267] hover:text-[#7A2267] transition-all duration-300`}>
-                  Book a Stay
-                </Link>
-              </motion.div>
-            </motion.div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ── PILLARS ───────────────────────────────────────────────────────── */}
-      <section ref={pillarsRef} className="bg-[#1a1309] py-20 md:py-28 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-14">
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            animate={pillarsInView ? "show" : "hidden"}
-            className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12"
-          >
-            {pillars.map((p) => (
-              <motion.div key={p.title} variants={fadeUp} className="flex flex-col gap-5">
-                <div className="w-11 h-11 rounded-xl bg-white/[0.05] border border-white/[0.08]
-                  flex items-center justify-center text-[#7A2267]">
-                  {p.icon}
-                </div>
-                <div>
-                  <p className={`${lora.className} text-[1.05rem] font-500 text-white leading-snug mb-2.5`}>
-                    {p.title}
-                  </p>
-                  <p className={`${josefin.className} text-[12px] font-light text-white/40 leading-[1.85]`}>
-                    {p.desc}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ── CHAIRMAN MESSAGE ─────────────────────────────────────────────── */}
-      <section ref={chairmanRef} className="relative bg-white overflow-hidden py-24 md:py-32">
+      {/* ── CHAIRMAN MESSAGE ─────────────────────────────────────────────
+          Editorial split: a large portrait held against the message. No
+          overflow-hidden here — it would break the sticky portrait on desktop.
+      ──────────────────────────────────────────────────────────────────── */}
+      <section ref={chairmanRef} className="relative bg-white py-24 md:py-32">
 
         <div className="pointer-events-none absolute inset-0"
-          style={{ background: "radial-gradient(ellipse 65% 50% at 0% 50%, rgba(122,34,103,0.04) 0%, transparent 70%)" }} />
+          style={{ background: "radial-gradient(ellipse 60% 45% at 8% 40%, rgba(122,34,103,0.05) 0%, transparent 70%)" }} />
 
         <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-14">
-          <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 xl:gap-32 items-center">
+          <div className="grid lg:grid-cols-[1.02fr_1fr] gap-12 lg:gap-20 xl:gap-24 items-start">
 
-            {/* Photo & identity */}
+            {/* Portrait */}
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={chairmanInView ? { opacity: 1, x: 0 } : {}}
+              initial={{ opacity: 0, y: 34 }}
+              animate={chairmanInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 1.0, ease: EASE }}
-              className="flex flex-col items-center lg:items-start gap-8"
+              className="lg:sticky lg:top-24"
             >
-              {/* Photo frame */}
-              <div className="relative">
-                <div className="w-56 h-56 sm:w-64 sm:h-64 rounded-full overflow-hidden
-                  shadow-[0_24px_60px_-12px_rgba(13,9,5,0.22)] border-4 border-white
-                  ring-1 ring-[#7A2267]/20 bg-[#f5ede8] flex items-center justify-center">
-                  {chairman.image && !imgError ? (
-                    <img
-                      src={chairman.image}
-                      alt={chairman.name}
-                      onError={() => setImgError(true)}
-                      className="w-full h-full object-cover object-top"
-                    />
-                  ) : (
-                    <span className={`${lora.className} text-[3rem] font-400 text-[#7A2267]/40 italic`}>
-                      {chairman.name.charAt(0)}
-                    </span>
-                  )}
+              <div className="relative w-full aspect-[4/5] lg:aspect-auto lg:h-[min(74vh,760px)]
+                rounded-[26px] overflow-hidden bg-[#f0e7e0]
+                shadow-[0_40px_80px_-40px_rgba(26,19,9,0.45)]">
+                <Portrait
+                  src={chairman.image}
+                  name={chairman.name}
+                  monogramClass="text-[6rem] italic"
+                />
+
+                {/* Identity plate */}
+                <div className="absolute inset-x-0 bottom-0 pt-24 pb-7 px-7
+                  bg-gradient-to-t from-[#120c07] via-[#120c07]/70 to-transparent">
+                  <p className={`${lora.className} text-[1.55rem] sm:text-[1.8rem] text-white font-400 leading-tight`}>
+                    {chairman.name}
+                  </p>
+                  <div className="flex items-center gap-3 mt-2.5">
+                    <span className="h-px w-6 bg-[#7A2267]" />
+                    <p className={`${josefin.className} text-[10px] uppercase tracking-[0.26em] text-white/85 font-semibold`}>
+                      {chairman.title}
+                    </p>
+                  </div>
+                  <p className={`${josefin.className} mt-2 text-[11px] font-light text-white/45 tracking-wide`}>
+                    {chairman.organization}
+                  </p>
                 </div>
-                {/* Accent ring */}
-                <div className="absolute -bottom-2 -right-2 w-16 h-16 rounded-full
-                  bg-gradient-to-br from-[#7A2267]/20 to-[#7A2267]/05 blur-xl" />
               </div>
-
-              {/* Name & title */}
-              <div className="text-center lg:text-left space-y-2">
-                <p className={`${lora.className} text-[1.4rem] font-500 text-[#1a1309] leading-snug`}>
-                  {chairman.name}
-                </p>
-                <p className={`${josefin.className} text-[10px] uppercase tracking-[0.28em] text-[#7A2267]/70 font-semibold`}>
-                  {chairman.title}
-                </p>
-                <p className={`${josefin.className} text-[11px] font-light text-[#7a6a52] tracking-wide`}>
-                  {chairman.organization}
-                </p>
-              </div>
-
-              {/* Signature line */}
-              <div className="h-px w-20 bg-gradient-to-r from-[#7A2267]/40 to-transparent" />
             </motion.div>
 
             {/* Message */}
@@ -368,27 +307,22 @@ export default function AboutContent({ aboutData = {} }) {
               variants={stagger}
               initial="hidden"
               animate={chairmanInView ? "show" : "hidden"}
-              className="flex flex-col gap-7"
+              className="flex flex-col gap-8 lg:pt-6"
             >
               <motion.p variants={fadeUp}
                 className={`${josefin.className} text-[9.5px] uppercase tracking-[0.45em] text-[#7A2267]/60`}>
                 Message from the Chairman
               </motion.p>
 
-              {/* Large quotation mark */}
-              <motion.div variants={fadeUp}>
-                <span className={`${lora.className} text-[5rem] leading-none text-[#7A2267]/15 font-600 select-none`}>&ldquo;</span>
-              </motion.div>
-
               {chairman.quote && (
-                <motion.p variants={fadeUp}
-                  className={`${lora.className} text-[1.2rem] sm:text-[1.35rem] lg:text-[1.45rem]
-                    italic font-400 text-[#1a1309] leading-[1.65] -mt-8`}>
-                  {chairman.quote}
-                </motion.p>
+                <motion.blockquote variants={fadeUp}
+                  className="border-l border-[#7A2267]/25 pl-6 sm:pl-7">
+                  <p className={`${lora.className} text-[1.4rem] sm:text-[1.7rem] lg:text-[1.9rem]
+                    font-400 text-[#1a1309] leading-[1.45] tracking-[-0.015em]`}>
+                    {chairman.quote}
+                  </p>
+                </motion.blockquote>
               )}
-
-              <motion.div variants={fadeUp} className="h-px w-14 bg-[#7A2267]/25" />
 
               {chairman.para1 && (
                 <motion.p variants={fadeUp}
@@ -404,67 +338,177 @@ export default function AboutContent({ aboutData = {} }) {
                 </motion.p>
               )}
 
-              <motion.div variants={fadeUp}
-                className={`${lora.className} text-[5rem] leading-none text-[#7A2267]/15 font-600 text-right select-none`}>
-                &rdquo;
-              </motion.div>
+              <motion.div variants={fadeUp} className="h-px w-16 bg-gradient-to-r from-[#7A2267]/40 to-transparent" />
             </motion.div>
 
           </div>
         </div>
       </section>
 
-      {/* ── YEARLY ROADMAP ───────────────────────────────────────────────── */}
-      <section className="relative bg-[#1a1309] overflow-hidden py-24 md:py-32">
+      {/* ── EXECUTIVE PANEL ──────────────────────────────────────────────
+          Admin-managed via Admin → About. Renders nothing when the list is
+          empty so the page never shows a bare heading over an empty grid.
+      ──────────────────────────────────────────────────────────────────── */}
+      {executives.length > 0 && (
+        <section ref={execRef} className="relative bg-[#f9f6f2] overflow-hidden py-24 md:py-32">
+
+          <div className="pointer-events-none absolute inset-0"
+            style={{ background: "radial-gradient(ellipse 55% 45% at 50% 0%, rgba(122,34,103,0.045) 0%, transparent 70%)" }} />
+
+          <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-14">
+
+            {/* Heading */}
+            <motion.div
+              variants={stagger}
+              initial="hidden"
+              animate={execInView ? "show" : "hidden"}
+              className="max-w-2xl mb-14 md:mb-18"
+            >
+              <motion.p variants={fadeUp}
+                className={`${josefin.className} text-[9.5px] uppercase tracking-[0.45em] text-[#7A2267]/60 mb-4`}>
+                Leadership
+              </motion.p>
+              <motion.h2 variants={fadeUp}
+                className={`${lora.className} text-[2.2rem] sm:text-[2.8rem] lg:text-[3.2rem]
+                  font-400 text-[#1a1309] leading-[1.12] tracking-[-0.015em]`}>
+                The people behind{" "}
+                <em className={`${lora.className} italic text-[#7A2267]`}>the promise</em>
+              </motion.h2>
+              <motion.div variants={fadeUp} className="h-px w-14 bg-[#7A2267]/30 mt-6" />
+            </motion.div>
+
+            {/* Grid */}
+            <motion.div
+              variants={stagger}
+              initial="hidden"
+              animate={execInView ? "show" : "hidden"}
+              className="grid grid-cols-2 lg:grid-cols-4 gap-x-5 gap-y-10 sm:gap-x-7 sm:gap-y-12"
+            >
+              {executives.map((m, i) => (
+                <ExecutiveCard key={`${m.name}-${i}`} member={m} />
+              ))}
+            </motion.div>
+
+          </div>
+        </section>
+      )}
+
+      {/* ── JOURNEY FLOW ─────────────────────────────────────────────────
+          Flow-chart of the four milestones. A centre spine draws itself on
+          scroll (scrub), and each node latches in as it reaches the viewport.
+          contentVisibility is forced on so the browser measures the full
+          section height up front — the global `content-visibility: auto` rule
+          would otherwise feed ScrollTrigger a stale height and desync the spine.
+      ──────────────────────────────────────────────────────────────────── */}
+      <section className="relative bg-[#1a1309] overflow-hidden py-24 md:py-32"
+        style={{ contentVisibility: "visible" }}>
+
         <div className="pointer-events-none absolute inset-0"
           style={{ background: "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(122,34,103,0.12) 0%, transparent 70%)" }} />
-        <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-14">
-          <div className="text-center mb-16">
+
+        <div className="relative z-10 max-w-6xl mx-auto px-5 sm:px-8 lg:px-14">
+
+          {/* Heading */}
+          <div className="text-center mb-20 md:mb-24">
             <p className={`${josefin.className} text-[9.5px] uppercase tracking-[0.45em] text-[#7A2267]/60 mb-4`}>
               Our Journey
             </p>
             <h2 className={`${lora.className} text-[2.2rem] sm:text-[2.8rem] lg:text-[3.2rem]
               font-400 text-white leading-[1.12] tracking-[-0.01em]`}>
-              Yearly{" "}
-              <em className={`${lora.className} italic text-[#7A2267]`}>Roadmap</em>
+              How it{" "}
+              <em className={`${lora.className} italic text-[#7A2267]`}>unfolded</em>
             </h2>
             <div className="h-px w-14 bg-[#7A2267]/30 mx-auto mt-6" />
           </div>
 
-          <div className="relative">
-            {/* Vertical line */}
-            <div className="absolute left-1/2 -translate-x-px top-0 bottom-0 w-px bg-[#7A2267]/20 hidden md:block" />
+          {/* Flow */}
+          <div ref={flowRef} className="relative">
 
-            <div className="space-y-10 md:space-y-0">
-              {[
-                { year: "2018", title: "Foundation", desc: "Dhali's Amber Nivaas Resort was established with a vision to create a halal-certified luxury retreat in the heart of Bangladesh's natural landscape.", side: "left" },
-                { year: "2019", title: "First Phase Expansion", desc: "Completion of the Tower Building and primary accommodation wings, opening our doors to the first guests and establishing our hallmark hospitality standards.", side: "right" },
-                { year: "2021", title: "Venue & Event Spaces", desc: "Launch of the Grand Banquet Hall, Conference Suite, and outdoor event fields — positioning the resort as a premier destination for corporate and wedding events.", side: "left" },
-                { year: "2022", title: "Wellness & Recreation", desc: "Addition of the iconic swimming pool, spa facilities, and recreational zones, elevating the guest experience beyond accommodation.", side: "right" },
-                { year: "2023", title: "Digital Transformation", desc: "Launched our digital booking platform, online gallery, and corporate booking portal to serve our growing national and international clientele.", side: "left" },
-                { year: "2024–25", title: "Continuous Growth", desc: "Expanding cottage offerings, enhancing wedding venues, and continuing our commitment to sustainable, halal-certified luxury hospitality.", side: "right" },
-              ].map((item, i) => (
-                <div key={i} className={`md:grid md:grid-cols-2 md:gap-16 items-center mb-10 md:mb-16 ${item.side === "right" ? "md:[direction:rtl]" : ""}`}>
-                  <div className={`md:[direction:ltr] ${item.side === "right" ? "md:text-right" : ""}`}>
-                    <div className={`inline-block mb-3 px-3 py-1 rounded-full text-[9.5px] font-semibold uppercase tracking-[0.22em]
-                      bg-[#7A2267]/20 text-[#7A2267] border border-[#7A2267]/30`}>
-                      {item.year}
+            {/* Spine — track + scroll-driven fill */}
+            <div className="absolute top-0 bottom-0 w-px bg-white/[0.07] left-[7px] md:left-1/2 md:-translate-x-1/2" />
+            <div ref={spineFillRef}
+              className="absolute top-0 bottom-0 w-px origin-top left-[7px] md:left-1/2 md:-translate-x-1/2
+                bg-gradient-to-b from-[#7A2267] to-[#7A2267]/30" />
+
+            {/* Start cap */}
+            <div className="absolute -top-1 left-[7px] md:left-1/2 -translate-x-1/2 w-2 h-2 rounded-full
+              bg-[#7A2267]/50 ring-4 ring-[#7A2267]/10" />
+
+            {milestones.map((m, i) => {
+              const right = i % 2 === 1;
+              return (
+                <div
+                  key={m.step}
+                  data-side={right ? "right" : "left"}
+                  className={`flow-node relative pl-11 md:pl-0 md:grid md:grid-cols-2 md:gap-16
+                    ${i === milestones.length - 1 ? "" : "mb-14 md:mb-20"}`}
+                >
+                  {/* Node dot on the spine */}
+                  <div className="flow-dot absolute z-10 top-9 w-[15px] h-[15px] rounded-full
+                    left-[7px] md:left-1/2 -translate-x-1/2 -translate-y-1/2
+                    bg-[#1a1309] border border-[#7A2267] flex items-center justify-center">
+                    <div className="w-[5px] h-[5px] rounded-full bg-[#7A2267]
+                      shadow-[0_0_0_4px_rgba(122,34,103,0.15)]" />
+                  </div>
+
+                  {/* Elbow connector, spine → card */}
+                  <div className={`flow-connector absolute top-9 h-px bg-gradient-to-r from-[#7A2267]/50 to-[#7A2267]/10
+                    left-[7px] w-[30px] origin-left
+                    ${right ? "md:left-1/2 md:w-8" : "md:left-auto md:right-1/2 md:w-8 md:origin-right"}`} />
+
+                  {/* Card */}
+                  <div className={`flow-card group relative rounded-2xl overflow-hidden
+                    border border-white/[0.07] bg-white/[0.02]
+                    shadow-[0_24px_60px_-24px_rgba(0,0,0,0.6)]
+                    hover:border-[#7A2267]/25 transition-colors duration-500
+                    ${right ? "md:col-start-2" : "md:col-start-1"}`}>
+
+                    {/* Frame */}
+                    <div className="relative aspect-[16/10] overflow-hidden">
+                      <div className="flow-img absolute inset-0 scale-[1.14] will-change-transform">
+                        <Image
+                          src={m.image}
+                          alt={m.alt}
+                          fill sizes="(max-width:768px) 88vw, 40vw"
+                          className="object-cover transition-transform duration-[900ms] ease-out
+                            group-hover:scale-[1.04]"
+                        />
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#1a1309] via-[#1a1309]/25 to-transparent" />
+                      <span className={`${lora.className} absolute bottom-4 left-6 text-[2.1rem] sm:text-[2.4rem]
+                        leading-none text-white font-400 tracking-tight`}>
+                        {m.year}
+                      </span>
                     </div>
-                    <h3 className={`${lora.className} text-[1.3rem] sm:text-[1.5rem] text-white font-400 mb-3`}>
-                      {item.title}
-                    </h3>
-                    <p className={`${josefin.className} text-[13px] font-light text-white/45 leading-[1.9] max-w-sm ${item.side === "right" ? "md:ml-auto" : ""}`}>
-                      {item.desc}
-                    </p>
+
+                    {/* Body */}
+                    <div className="p-6 sm:p-7">
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className={`${josefin.className} text-[9.5px] font-semibold tracking-[0.3em] text-[#7A2267]`}>
+                          {m.step}
+                        </span>
+                        <span className="h-px w-5 bg-[#7A2267]/30" />
+                        <h3 className={`${lora.className} text-[1.15rem] sm:text-[1.3rem] text-white font-400 leading-snug`}>
+                          {m.title}
+                        </h3>
+                      </div>
+                      <p className={`${josefin.className} text-[12.5px] font-light text-white/45 leading-[1.9]`}>
+                        {m.desc}
+                      </p>
+                    </div>
                   </div>
-                  {/* Center dot — desktop */}
-                  <div className="hidden md:flex items-center justify-center absolute left-1/2 -translate-x-1/2 mt-2">
-                    <div className="w-3 h-3 rounded-full bg-[#7A2267] border-2 border-[#7A2267]/40 shadow-[0_0_0_4px_rgba(122,34,103,0.12)]" />
-                  </div>
-                  <div />
                 </div>
-              ))}
+              );
+            })}
+
+            {/* Terminal arrowhead */}
+            <div className="absolute -bottom-3 left-[7px] md:left-1/2 -translate-x-1/2 text-[#7A2267]/40">
+              <svg viewBox="0 0 12 8" width="11" height="8" fill="none">
+                <path d="M1 1l5 5 5-5" stroke="currentColor" strokeWidth="1.4"
+                  strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </div>
+
           </div>
         </div>
       </section>

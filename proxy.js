@@ -33,14 +33,18 @@ export async function proxy(request) {
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
   };
 
-  // ── Protect /api/upload ─────────────────────────────────────────────────────
-  if (pathname === "/api/upload") {
-    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
-    if (!token) {
-      return new NextResponse(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { "Content-Type": "application/json" },
-      });
+  // ── Protect upload endpoints ────────────────────────────────────────────────
+  // /api/upload requires an authenticated admin; /api/upload-doc is public
+  // (booking guests upload their ID). Both are rate-limited by IP.
+  if (pathname === "/api/upload" || pathname === "/api/upload-doc") {
+    if (pathname === "/api/upload") {
+      const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+      if (!token) {
+        return new NextResponse(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Rate limiting by IP
@@ -98,6 +102,7 @@ export const config = {
   matcher: [
     "/admin/:path*",
     "/api/upload",
+    "/api/upload-doc",
     // Exclude static files and Next.js internals
     "/((?!_next/static|_next/image|favicon.ico|uploads/).*)",
   ],

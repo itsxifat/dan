@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { Lora, Josefin_Sans } from "next/font/google";
+import { LOGO_URL } from "@/lib/assets";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   getUserNotifications,
@@ -363,7 +364,7 @@ export default function Navbar() {
             {/* Logo */}
             <Link href="/" className="shrink-0 group">
               <Image
-                src="/logo.png"
+                src={LOGO_URL}
                 alt="Dhali's Amber Nivaas"
                 width={90}
                 height={26}
@@ -555,7 +556,7 @@ export default function Navbar() {
               <div className="shrink-0 flex items-center justify-between px-6 py-4
                 border-b border-[#f0f0f0]">
                 <Image
-                  src="/logo.png" alt="Dhali's Amber Nivaas"
+                  src={LOGO_URL} alt="Dhali's Amber Nivaas"
                   width={82} height={24}
                   className="object-contain opacity-80"
                 />

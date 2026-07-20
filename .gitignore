@@ -42,3 +42,6 @@ next-env.d.ts
 # uploads
 /public/uploads/*
 !/public/uploads/.gitkeep
+
+# one-time CDN migration state (generated)
+/scripts/cdn-migration-map.json

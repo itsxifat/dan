@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { ABOUT_LEFT_URL, ABOUT_MIDDLE_URL, ABOUT_RIGHT_URL } from "@/lib/assets";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 18 },
@@ -67,7 +68,7 @@ export default function AboutSection() {
           className="sm:hidden relative rounded-2xl overflow-hidden h-72"
         >
           <Image
-            src="/section/about/middle.png"
+            src={ABOUT_MIDDLE_URL}
             alt="Resort exterior"
             fill
             sizes="100vw"
@@ -92,7 +93,7 @@ export default function AboutSection() {
             className="group relative flex-1 h-4/5 rounded-2xl sm:rounded-3xl overflow-hidden"
           >
             <Image
-              src="/section/about/left.png"
+              src={ABOUT_LEFT_URL}
               alt="Resort accommodation"
               fill
               sizes="(max-width: 1024px) 33vw, 28vw"
@@ -113,7 +114,7 @@ export default function AboutSection() {
             className="group relative flex-[1.2] h-full rounded-2xl sm:rounded-3xl overflow-hidden"
           >
             <Image
-              src="/section/about/middle.png"
+              src={ABOUT_MIDDLE_URL}
               alt="Resort exterior"
               fill
               sizes="(max-width: 1024px) 40vw, 34vw"
@@ -135,7 +136,7 @@ export default function AboutSection() {
             className="group relative flex-1 h-4/5 rounded-2xl sm:rounded-3xl overflow-hidden"
           >
             <Image
-              src="/section/about/right.png"
+              src={ABOUT_RIGHT_URL}
               alt="Resort recreation"
               fill
               sizes="(max-width: 1024px) 33vw, 28vw"

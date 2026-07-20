@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Lora, Josefin_Sans } from "next/font/google";
+import { LOGO_URL } from "@/lib/assets";
 
 const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
 const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
@@ -56,7 +57,7 @@ export function AuthShell({ title, description, children, footer }) {
           <div className="mb-4 flex justify-center sm:mb-6">
             <Link href="/" className="inline-flex">
               <Image
-                src="/logo.png"
+                src={LOGO_URL}
                 alt="Dhali's Amber Nivaas"
                 width={78}
                 height={26}
