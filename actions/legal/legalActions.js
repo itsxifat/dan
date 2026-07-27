@@ -107,12 +107,123 @@ const DEFAULT_PRIVACY = {
   ],
 };
 
+const DEFAULT_REFUND = {
+  type: "refund",
+  title: "Refund & Cancellation Policy",
+  effectiveDate: "January 1, 2025",
+  intro:
+    "We understand that plans can change. This Refund & Cancellation Policy explains how cancellations, rescheduling, and refunds are handled for bookings made with Dhali's Amber Nivaas — whether through our website, over the phone, or in person.",
+  sections: [
+    {
+      title: "Booking Confirmation",
+      content:
+        "A booking is confirmed only upon receipt of full or partial advance payment through our secure payment gateway (credit/debit card, bKash, Nagad, or bank transfer). You will receive a confirmation email or SMS with your booking reference once payment is successful.",
+    },
+    {
+      title: "Cancellation Timeline",
+      content:
+        "Cancellations made more than 72 hours before your scheduled check-in time are eligible for a full refund of the amount paid, less any applicable payment gateway charges. Cancellations made within 72 hours of check-in are non-refundable. To cancel, please contact us with your booking reference as early as possible.",
+    },
+    {
+      title: "No-Show Policy",
+      content:
+        "If you do not arrive by the end of your scheduled check-in day and have not notified us in advance, this is treated as a no-show and the full booking amount will be forfeited. No refund will be issued for no-shows.",
+    },
+    {
+      title: "Rescheduling",
+      content:
+        "Guests may request a one-time date change free of charge if requested more than 72 hours before the original check-in date, subject to room availability for the new dates. Requests made within 72 hours of check-in will be treated under our standard cancellation policy.",
+    },
+    {
+      title: "Non-Refundable Bookings",
+      content:
+        "Certain discounted rates, promotional offers, festive/peak-season packages, and event or wedding advance payments may be marked as non-refundable at the time of booking. These will be clearly indicated before payment and are not eligible for cancellation or refund under this policy.",
+    },
+    {
+      title: "Refund Processing",
+      content:
+        "Approved refunds are processed back to the original payment method used at the time of booking. Please allow 7–10 business days for the refund to reflect in your account, depending on your bank or mobile financial service provider.",
+    },
+    {
+      title: "Resort-Initiated Cancellations",
+      content:
+        "In the rare event that we must cancel your booking due to unforeseen circumstances, force majeure, or operational issues, you will be offered a full refund or the option to reschedule at no additional cost, at your preference.",
+    },
+    {
+      title: "Failed or Duplicate Transactions",
+      content:
+        "If a payment is deducted but a booking confirmation is not received due to a payment gateway error, please contact us immediately with your transaction details. Verified failed or duplicate transactions will be refunded in full within 7–10 business days.",
+    },
+    {
+      title: "How to Request a Refund",
+      content:
+        "To request a cancellation or refund, please email us at info@ambernivaas.com or call our reservations desk with your booking reference number, guest name, and reason for the request. Our team will confirm eligibility and process approved refunds promptly.",
+    },
+  ],
+};
+
+const DEFAULT_DELIVERY = {
+  type: "delivery",
+  title: "Delivery Policy",
+  effectiveDate: "January 1, 2025",
+  intro:
+    "Dhali's Amber Nivaas offers hospitality services — room bookings, packages, and dining — rather than physical goods. This Delivery Policy explains how your booking confirmation and services are delivered once a purchase is made on our website.",
+  sections: [
+    {
+      title: "Nature of Our Services",
+      content:
+        "As a resort, we do not ship or deliver physical products. What you \"receive\" upon booking is a confirmed reservation for accommodation, packages, or services, along with a digital confirmation of that booking.",
+    },
+    {
+      title: "Booking Confirmation Delivery",
+      content:
+        "Once your payment is successfully processed through our payment gateway, a booking confirmation with your reservation details and reference number is delivered instantly to the email address and/or phone number provided at checkout.",
+    },
+    {
+      title: "Processing Time",
+      content:
+        "Online bookings paid via card, bKash, or Nagad are confirmed instantly upon successful payment. Bookings requiring manual verification (e.g. bank transfer or corporate billing) are typically confirmed within 24 hours.",
+    },
+    {
+      title: "Delivery of the Booked Service",
+      content:
+        "The actual service — your stay, package, or event — is delivered on-site at Dhali's Amber Nivaas on the dates specified in your booking. Standard check-in is at 2:00 PM and check-out at 12:00 PM (noon), as outlined in our Terms & Conditions.",
+    },
+    {
+      title: "Undelivered Confirmations",
+      content:
+        "If you do not receive a booking confirmation within 1 hour of a successful payment, please check your spam/junk folder first, then contact our support team with your transaction ID so we can resend your confirmation or investigate the issue.",
+    },
+    {
+      title: "Changes to Booking Details",
+      content:
+        "If any information on your confirmation is incorrect (e.g. name, dates, room type), please contact us as soon as possible so we can correct and redeliver an updated confirmation before your check-in date.",
+    },
+    {
+      title: "Payment Gateway",
+      content:
+        "Online payments are processed through our secure, PCI-compliant third-party payment gateway. Delivery of your booking confirmation is dependent on receiving a successful payment response from the gateway; we are not responsible for delays caused by the payment provider or your bank.",
+    },
+    {
+      title: "Contact Us",
+      content:
+        "For any questions or issues regarding the delivery of your booking confirmation, please reach out to info@ambernivaas.com or call our reservations desk, quoting your transaction ID or booking reference.",
+    },
+  ],
+};
+
+const DEFAULTS_BY_TYPE = {
+  terms: DEFAULT_TERMS,
+  privacy: DEFAULT_PRIVACY,
+  refund: DEFAULT_REFUND,
+  delivery: DEFAULT_DELIVERY,
+};
+
 export async function getLegalDocument(type) {
   await dbConnect();
   let doc = await LegalDocument.findOne({ type }).lean();
   if (!doc) {
-    const defaults = type === "terms" ? DEFAULT_TERMS : DEFAULT_PRIVACY;
-    doc = await LegalDocument.create(defaults);
+    doc = await LegalDocument.create(DEFAULTS_BY_TYPE[type] || DEFAULT_TERMS);
   }
   return JSON.parse(JSON.stringify(doc));
 }
@@ -130,7 +241,7 @@ export async function updateLegalDocument(type, data) {
   } else {
     await LegalDocument.create(payload);
   }
-  revalidatePath(`/${type === "terms" ? "terms" : "privacy"}`);
+  revalidatePath(`/${type}`);
   revalidatePath(`/admin/legal/${type}`);
   return { success: true };
 }

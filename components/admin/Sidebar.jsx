@@ -359,6 +359,32 @@ const NAV = [
         ),
       },
       {
+        label: "Refund Policy",
+        href: "/admin/legal/refund",
+        permission: "settings.write",
+        Icon: ({ active }) => (
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
+            <path d="M3 9a6 6 0 1 1 1.76 4.24" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.08" : "0"} />
+            <path d="M3 13v-3.7h3.7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ),
+      },
+      {
+        label: "Delivery Policy",
+        href: "/admin/legal/delivery",
+        permission: "settings.write",
+        Icon: ({ active }) => (
+          <svg viewBox="0 0 18 18" width="15" height="15" fill="none">
+            <path d="M9 2l6.5 3.7v6.6L9 16l-6.5-3.7V5.7L9 2z"
+              stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"
+              fill={active ? "currentColor" : "none"} fillOpacity={active ? "0.08" : "0"} />
+            <path d="M2.5 5.7L9 9.3l6.5-3.6M9 9.3v6.8" stroke="currentColor" strokeWidth="1.2"
+              strokeLinecap="round" strokeLinejoin="round" opacity={active ? "1" : "0.7"} />
+          </svg>
+        ),
+      },
+      {
         label: "Settings",
         href: "/admin/settings",
         permission: "settings.write",

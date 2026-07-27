@@ -9,7 +9,7 @@ const SectionSchema = new mongoose.Schema(
 );
 
 const LegalDocumentSchema = new mongoose.Schema({
-  type:          { type: String, enum: ["terms", "privacy"], required: true, unique: true },
+  type:          { type: String, enum: ["terms", "privacy", "refund", "delivery"], required: true, unique: true },
   title:         { type: String, default: "" },
   effectiveDate: { type: String, default: "" },
   intro:         { type: String, default: "" },

@@ -56,6 +56,8 @@ const quickLinks = [
 const legalLinks = [
   { label: "Terms & Conditions", href: "/terms" },
   { label: "Privacy Policy",     href: "/privacy" },
+  { label: "Refund Policy",      href: "/refund" },
+  { label: "Delivery Policy",    href: "/delivery" },
 ];
 
 const stayLinks = [
@@ -244,7 +246,7 @@ export default function FooterSection({ contactInfo = {} }) {
           </p>
 
           {/* Centre: legal links */}
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-5 flex-wrap justify-center">
             <Link href="/terms"
               className={`${josefin.className} text-[10.5px] text-white/25
                 hover:text-white/55 transition-colors duration-200`}>
@@ -255,6 +257,18 @@ export default function FooterSection({ contactInfo = {} }) {
               className={`${josefin.className} text-[10.5px] text-white/25
                 hover:text-white/55 transition-colors duration-200`}>
               Privacy Policy
+            </Link>
+            <span className="w-px h-3 bg-white/10" />
+            <Link href="/refund"
+              className={`${josefin.className} text-[10.5px] text-white/25
+                hover:text-white/55 transition-colors duration-200`}>
+              Refund Policy
+            </Link>
+            <span className="w-px h-3 bg-white/10" />
+            <Link href="/delivery"
+              className={`${josefin.className} text-[10.5px] text-white/25
+                hover:text-white/55 transition-colors duration-200`}>
+              Delivery Policy
             </Link>
           </div>
 
