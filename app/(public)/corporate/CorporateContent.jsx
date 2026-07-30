@@ -684,7 +684,7 @@ export default function CorporateContent({ events = [], venues = [], brands = []
         {/* Parallax image */}
         <div ref={heroImgRef} className="absolute inset-0 scale-110 will-change-transform">
           <Image
-            src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1800&q=85"
+            src="https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/af23e70b-994c-425c-999f-50e50d9b3f63.jpg"
             alt="Corporate events at Dhali's Amber Nivaas"
             fill sizes="100vw"
             className="object-cover object-center"

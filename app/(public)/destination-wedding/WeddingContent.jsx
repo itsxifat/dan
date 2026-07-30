@@ -26,7 +26,7 @@ const stagger = {
   show:   { transition: { staggerChildren: 0.12, delayChildren: 0.04 } },
 };
 
-const HERO_IMAGE = "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1920&q=85";
+const HERO_IMAGE = "https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/14ea285e-abe3-4996-acba-e7978f2e0a91.jpg";
 
 // ── Services ───────────────────────────────────────────────────────────────────
 const SERVICES = [
