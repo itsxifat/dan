@@ -17,6 +17,7 @@ const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600",
 const EASE   = [0.22, 1, 0.36, 1];
 const fadeUp = { hidden: { opacity: 0, y: 28 }, show: { opacity: 1, y: 0, transition: { duration: 0.75, ease: EASE } } };
 const stagger= { hidden: {}, show: { transition: { staggerChildren: 0.1, delayChildren: 0.05 } } };
+const HERO_BG_URL = "https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/8f7dd10c-e07e-4d78-9cbb-ed9d2dba27ef.webp";
 
 function SectionLabel({ text, dark }) {
   return (
@@ -198,11 +199,11 @@ export default function AccommodationContent({ buildings = [], cottages = [] }) 
       <section ref={heroRef}
         className="relative min-h-[88vh] md:min-h-[90vh] flex flex-col justify-end overflow-hidden">
 
-        <div ref={heroImgRef} className="absolute inset-0 scale-110">
+        <div ref={heroImgRef} className="absolute inset-0 scale-[1.035]">
           <Image
-            src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1920&q=80"
+            src={HERO_BG_URL}
             alt="Amber Nivaas accommodation"
-            fill priority sizes="100vw"
+            fill priority sizes="100vw" quality={95}
             className="object-cover object-center"
           />
         </div>
@@ -292,7 +293,7 @@ export default function AccommodationContent({ buildings = [], cottages = [] }) 
               <p className={`${josefin.className} text-[13.5px] font-light text-[#6b5e4a]
                 mt-4 max-w-xl mx-auto leading-[1.85]`}>
                 Explore our signature buildings — each offering multiple room categories, premium
-                amenities, and panoramic views of the resort's natural surroundings.
+                amenities, and panoramic views of the resort&apos;s natural surroundings.
               </p>
             </motion.div>
 
@@ -339,7 +340,7 @@ export default function AccommodationContent({ buildings = [], cottages = [] }) 
               </h2>
               <p className={`${josefin.className} text-[13.5px] font-light text-[#6b5e4a]
                 mt-4 max-w-xl mx-auto leading-[1.85]`}>
-                Standalone cottages nestled within the resort's natural greenery — your
+                Standalone cottages nestled within the resort&apos;s natural greenery — your
                 own private world, exactly as you imagine it.
               </p>
             </motion.div>
@@ -377,14 +378,9 @@ export default function AccommodationContent({ buildings = [], cottages = [] }) 
 
       {/* ══ CTA BANNER ═════════════════════════════════════════════════════════ */}
       <section ref={ctaRef}
-        className="relative overflow-hidden min-h-[420px] flex items-center justify-center py-24">
-        <Image
-          src="https://images.unsplash.com/photo-1445019980597-93fa8acb246c?auto=format&fit=crop&w=1920&q=80"
-          alt="Resort pool evening" fill sizes="100vw"
-          className="object-cover object-center"
-        />
-        <div className="absolute inset-0
-          bg-gradient-to-br from-[#1a1309]/82 via-[#1a1309]/65 to-[#7A2267]/25" />
+        className="relative overflow-hidden min-h-[320px] flex items-center justify-center py-16 bg-[#1a1309]">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a1309] via-[#211207] to-[#3a1234]" />
+        <div className="absolute inset-x-0 top-0 h-px bg-white/10" />
 
         <div className="relative z-10 max-w-3xl mx-auto px-5 sm:px-8 text-center">
           <motion.div

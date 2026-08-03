@@ -19,6 +19,7 @@ const fadeUp   = { hidden: { opacity: 0, y: 28 }, show: { opacity: 1, y: 0, tran
 const fadeLeft = { hidden: { opacity: 0, x: -36 }, show: { opacity: 1, x: 0, transition: { duration: 0.75, ease: EASE } } };
 const fadeRight= { hidden: { opacity: 0, x: 36  }, show: { opacity: 1, x: 0, transition: { duration: 0.75, ease: EASE } } };
 const stagger  = { hidden: {}, show: { transition: { staggerChildren: 0.1, delayChildren: 0.05 } } };
+const HERO_BG_URL = "https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/2c07aed9-b4ab-4484-89ba-e070065c3632.webp";
 
 function SectionLabel({ text, dark }) {
   return (
@@ -218,8 +219,8 @@ export default function FacilitiesContent() {
 
         <div ref={heroImgRef} className="absolute inset-0 scale-110">
           <Image
-            src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1920&q=80"
-            alt="Resort facilities" fill priority sizes="100vw"
+            src={HERO_BG_URL}
+            alt="Resort facilities" fill priority sizes="100vw" quality={95}
             className="object-cover object-center"
           />
         </div>
@@ -491,7 +492,7 @@ export default function FacilitiesContent() {
                   </em>
                 </h2>
                 <p className={`${josefin.className} text-[13.5px] font-light text-[#6b5e4a] leading-[1.9] mt-4`}>
-                  When you're not by the pool or out in nature, our indoor entertainment zone has
+                  When you&apos;re not by the pool or out in nature, our indoor entertainment zone has
                   something for every member of the family — from friendly gaming competitions to
                   an immersive cinematic escape and a well-equipped fitness space.
                 </p>
@@ -577,7 +578,7 @@ export default function FacilitiesContent() {
             </h2>
             <p className={`${josefin.className} text-[13.5px] font-light text-[#6b5e4a] mt-4 max-w-xl mx-auto leading-[1.85]`}>
               We believe every family member deserves an exceptional experience.
-              Our children's facilities are safe, supervised, stimulating, and endlessly fun.
+              Our children&apos;s facilities are safe, supervised, stimulating, and endlessly fun.
             </p>
           </motion.div>
 
@@ -607,7 +608,7 @@ export default function FacilitiesContent() {
                 </div>
                 <p className={`${josefin.className} text-[12px] font-light text-white/65 leading-relaxed mb-4`}>
                   A sprawling outdoor play space designed for young explorers — safe, supervised,
-                  and set amidst the resort's natural greenery.
+                  and set amidst the resort&apos;s natural greenery.
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {["Climbing Frames & Slides", "Open Lawn & Running Space", "Nature Play Elements"].map((f) => (
@@ -638,7 +639,7 @@ export default function FacilitiesContent() {
                     {icons.kids}
                   </div>
                   <h3 className={`${lora.className} text-[1.2rem] text-white leading-snug`}>
-                    Kids' Indoor Games Zone
+                    Kids&apos; Indoor Games Zone
                   </h3>
                 </div>
                 <p className={`${josefin.className} text-[12px] font-light text-white/65 leading-relaxed mb-4`}>
