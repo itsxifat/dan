@@ -65,113 +65,40 @@ const icons = {
 };
 
 // ─── Data ──────────────────────────────────────────────────────────────────────
-const POOL_FEATURES = [
-  { icon: icons.pool,    title: "Complimentary for All Guests",  desc: "Unlimited access to the iconic infinity pool included with every stay" },
-  { icon: icons.lounge,  title: "Poolside Loungers",             desc: "Plush sun beds with fresh towel service throughout the day" },
-  { icon: icons.safety,  title: "Lifeguard on Duty",             desc: "Certified lifeguard present during all operating hours" },
-  { icon: icons.kids,    title: "Kids' Splash Zone",             desc: "Shallow wading area designed to be safe and fun for young children" },
+// Gallery mosaic — images only, no captions. On desktop each row is given a
+// fixed height instead of an aspect ratio: tiles in a row have different widths,
+// so a shared ratio would resolve to mismatched heights and leave ragged gaps.
+const GALLERY = [
+  { src: "https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/04513f79-b485-4ea2-ae33-585a060146ff.jpg",
+    span: "col-span-2 lg:col-span-7",  box: "aspect-[4/3] lg:aspect-auto lg:h-[430px]",  sizes: "(max-width:1024px) 100vw, 58vw" },
+  { src: "https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/f5262688-c246-4696-a5f5-0b171d8ad0ad.webp",
+    span: "col-span-1 lg:col-span-5",  box: "aspect-[4/3] lg:aspect-auto lg:h-[430px]",  sizes: "(max-width:1024px) 50vw, 42vw" },
+  { src: "https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/2619f896-9fd9-4c28-9119-608bac7073b2.webp",
+    span: "col-span-1 lg:col-span-4",  box: "aspect-[4/3] lg:aspect-auto lg:h-[300px]",  sizes: "(max-width:1024px) 50vw, 33vw" },
+  { src: "https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/a7de85ec-3393-4cf5-9f98-8685e80e19a2.webp",
+    span: "col-span-1 lg:col-span-4",  box: "aspect-[4/3] lg:aspect-auto lg:h-[300px]",  sizes: "(max-width:1024px) 50vw, 33vw" },
+  { src: "https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/0db311fc-b5d1-4431-8b6a-13ebde1d3574.webp",
+    span: "col-span-1 lg:col-span-4",  box: "aspect-[4/3] lg:aspect-auto lg:h-[300px]",  sizes: "(max-width:1024px) 50vw, 33vw" },
+  { src: "https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/989f6d8c-5722-4697-a7de-36ae1a65a50f.webp",
+    span: "col-span-2 lg:col-span-12", box: "aspect-[16/9] lg:aspect-auto lg:h-[380px]", sizes: "100vw" },
 ];
 
-const ACTIVITIES = [
-  { icon: icons.paddle,  title: "Paddle Boating",         desc: "Glide peacefully across our scenic lake surrounded by lush greenery — a perfect family outing.", image: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=600&q=80" },
-  { icon: icons.nature,  title: "Guided Nature Walks",    desc: "Explore the resort's trails with expert guides revealing local flora and fauna.", image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=600&q=80" },
-  { icon: icons.bird,    title: "Bird Watching Tours",    desc: "Dawn expeditions to spot rare and migratory bird species in their natural habitat.", image: "https://images.unsplash.com/photo-1559827260-dc66d52bef19?auto=format&fit=crop&w=600&q=80" },
-  { icon: icons.bonfire, title: "Bonfire Evenings",       desc: "Gather under a canopy of stars around a crackling bonfire with soft music.", image: "https://images.unsplash.com/photo-1474540412665-1cdae210ae6b?auto=format&fit=crop&w=600&q=80" },
-  { icon: icons.photo,   title: "Photography Excursions", desc: "Capture the magic of Amber Nivaas with guided sunrise and sunset photography walks.", image: "https://images.unsplash.com/photo-1501854140801-50d01698950b?auto=format&fit=crop&w=600&q=80" },
-  { icon: icons.sunrise, title: "Sunrise Viewing Deck",   desc: "Watch the sun rise over the misty horizon from our elevated private viewing terrace.", image: "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=600&q=80" },
+// The two real venues — same names, taglines and photography as the home page.
+const DINING_VENUES = [
+  {
+    name: "Amber Restaurant",
+    tagline: "Fine Dining",
+    href: "/dining/amber-restaurant",
+    image: "https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/99e5b6dd-8eee-432d-a675-bbd2354add81.jpeg",
+  },
+  {
+    name: "Amber Café",
+    tagline: "Casual & Cosy",
+    href: "/dining/amber-cafe",
+    image: "https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/b564a582-5db2-4451-b417-e141864b7271.jpeg",
+  },
 ];
 
-const DINING = [
-  { icon: icons.restaurant,   title: "The Amber Restaurant",      desc: "Fine dining with panoramic garden views and local flavours" },
-  { icon: icons.breakfast,    title: "Complimentary Breakfast",   desc: "Fresh-made daily spread for all guests" },
-  { icon: icons.roomservice,  title: "24-Hour Room Service",      desc: "Dine in the comfort of your room, any time" },
-  { icon: icons.bbq,          title: "Outdoor BBQ Terrace",       desc: "Evening barbecue under the open sky — a family favourite" },
-  { icon: icons.dining,       title: "Private Dining Experience", desc: "Bespoke setups for special occasions and celebrations" },
-];
-
-const SERVICES = [
-  { icon: icons.wifi,       title: "Free High-Speed WiFi",      desc: "Seamless connectivity across the entire resort" },
-  { icon: icons.concierge,  title: "24/7 Front Desk",           desc: "Always here to assist with any request" },
-  { icon: icons.parking,    title: "Secure Parking",            desc: "Complimentary guarded parking for all guests" },
-  { icon: icons.transfer,   title: "Airport Transfer",          desc: "Private pick-up and drop-off service available" },
-  { icon: icons.laundry,    title: "Laundry Service",           desc: "Same-day laundry and dry-cleaning on request" },
-  { icon: icons.medical,    title: "Medical Assistance",        desc: "24-hour on-call medical support and first aid" },
-  { icon: icons.event,      title: "Event & Celebration Setup", desc: "Bespoke arrangements for birthdays and anniversaries" },
-  { icon: icons.concierge,  title: "Dedicated Concierge",       desc: "Personalised local recommendations and bookings" },
-];
-
-// ─── Reusable feature card (light bg) ─────────────────────────────────────────
-function FeatureCard({ item }) {
-  return (
-    <motion.div variants={fadeUp}
-      className="flex items-start gap-4 p-5 rounded-2xl border border-[#ede5d8] bg-[#faf8f5]
-        hover:border-[#7A2267]/50 hover:shadow-md hover:shadow-black/5
-        transition-all duration-300 group"
-    >
-      <div className="shrink-0 w-10 h-10 rounded-xl flex items-center justify-center
-        bg-white text-[#7A2267] border border-[#ede5d8]
-        group-hover:border-[#7A2267]/40 group-hover:bg-[#7A2267] group-hover:text-white
-        transition-all duration-300">
-        {item.icon}
-      </div>
-      <div className="min-w-0">
-        <p className={`${josefin.className} text-[13px] font-semibold text-[#1a1309] leading-snug`}>
-          {item.title}
-        </p>
-        <p className={`${josefin.className} text-[11.5px] font-light text-[#7a6a52] mt-1 leading-relaxed`}>
-          {item.desc}
-        </p>
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Activity card (photo + overlay) ──────────────────────────────────────────
-function ActivityCard({ activity }) {
-  return (
-    <motion.div variants={fadeUp} className="group relative rounded-2xl overflow-hidden">
-      <div className="relative aspect-[4/3]">
-        <Image src={activity.image} alt={activity.title} fill
-          sizes="(max-width:640px) 90vw, (max-width:1024px) 45vw, 30vw"
-          className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1a1309]/80 via-[#1a1309]/20 to-transparent" />
-      </div>
-      <div className="absolute bottom-0 inset-x-0 p-5">
-        <div className="flex items-center gap-2.5 mb-2">
-          <div className="text-[#7A2267] w-5 h-5 shrink-0">{activity.icon}</div>
-          <h3 className={`${lora.className} text-[1rem] text-white leading-snug`}>
-            {activity.title}
-          </h3>
-        </div>
-        <p className={`${josefin.className} text-[11.5px] font-light text-white/60 leading-relaxed
-          translate-y-2 opacity-0 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300`}>
-          {activity.desc}
-        </p>
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Service card ──────────────────────────────────────────────────────────────
-function ServiceCard({ s }) {
-  return (
-    <motion.div variants={fadeUp}
-      className="flex flex-col items-center text-center gap-3 p-6 rounded-2xl
-        bg-white border border-[#ede5d8]
-        hover:border-[#7A2267]/50 hover:shadow-lg hover:shadow-black/5
-        transition-all duration-300 group"
-    >
-      <div className="w-12 h-12 rounded-xl bg-[#7A2267]/[0.08] flex items-center justify-center
-        text-[#7A2267] group-hover:bg-[#7A2267] group-hover:text-white transition-all duration-300">
-        {s.icon}
-      </div>
-      <div>
-        <p className={`${josefin.className} text-[13px] font-semibold text-[#1a1309]`}>{s.title}</p>
-        <p className={`${josefin.className} text-[11.5px] font-light text-[#7a6a52] mt-1 leading-relaxed`}>{s.desc}</p>
-      </div>
-    </motion.div>
-  );
-}
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
 export default function FacilitiesContent() {
@@ -182,7 +109,6 @@ export default function FacilitiesContent() {
   const activitiesRef = useRef(null);
   const kidsRef       = useRef(null);
   const diningRef     = useRef(null);
-  const servicesRef   = useRef(null);
   const ctaRef        = useRef(null);
 
   const poolInView       = useInView(poolRef,       { once: true, margin: "-60px" });
@@ -190,7 +116,6 @@ export default function FacilitiesContent() {
   const activitiesInView = useInView(activitiesRef, { once: true, margin: "-60px" });
   const kidsInView       = useInView(kidsRef,       { once: true, margin: "-60px" });
   const diningInView     = useInView(diningRef,     { once: true, margin: "-60px" });
-  const servicesInView   = useInView(servicesRef,   { once: true, margin: "-60px" });
   const ctaInView        = useInView(ctaRef,        { once: true, margin: "-60px" });
 
   useGSAP(() => {
@@ -215,7 +140,7 @@ export default function FacilitiesContent() {
     <main className="overflow-x-hidden">
 
       {/* ══ HERO ══════════════════════════════════════════════════════════════ */}
-      <section ref={heroRef} className="relative min-h-[88vh] md:min-h-[90vh] flex flex-col justify-end overflow-hidden">
+      <section ref={heroRef} className="relative min-h-[88vh] md:min-h-[90vh] flex flex-col justify-center overflow-hidden">
 
         <div ref={heroImgRef} className="absolute inset-0 scale-110">
           <Image
@@ -227,7 +152,7 @@ export default function FacilitiesContent() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#1a1309]/30 via-[#1a1309]/40 to-[#1a1309]/88 z-[1]" />
         <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-[#1a1309]/40 to-transparent z-[2]" />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 pb-16 md:pb-20 lg:pb-24 pt-32">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-16 md:py-20">
 
           <motion.div variants={stagger} initial="hidden" animate="show" className="max-w-3xl text-center mx-auto">
 
@@ -314,11 +239,11 @@ export default function FacilitiesContent() {
             <SectionLabel text="Pool & Aquatics" />
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-16 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-16 items-center">
 
-            {/* Left: heading + text + feature cards */}
+            {/* Left: heading + text */}
             <motion.div variants={stagger} initial="hidden" animate={poolInView ? "show" : "hidden"}
-              className="flex flex-col gap-6 lg:pt-4">
+              className="flex flex-col gap-6">
               <motion.div variants={fadeUp}>
                 <h2 className={`${lora.className} text-[2rem] sm:text-[2.4rem] lg:text-[2.8rem]
                   font-500 text-[#1a1309] leading-[1.18]`}>
@@ -326,74 +251,33 @@ export default function FacilitiesContent() {
                   <em className={`${lora.className} italic text-[#7A2267]`}>Pure Serenity</em>
                 </h2>
                 <p className={`${josefin.className} text-[13.5px] font-light text-[#6b5e4a] leading-[1.9] mt-4`}>
-                  Two stunning pools await you — our iconic infinity pool open to all guests, and a
+                  Two stunning pools await you — our iconic pool open to all guests, and a
                   dedicated ladies-only pool ensuring privacy and comfort for every member of the family.
                   Both are fully complimentary with your stay.
                 </p>
               </motion.div>
-
-              <motion.div variants={stagger} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {POOL_FEATURES.map((item) => (
-                  <FeatureCard key={item.title} item={item} />
-                ))}
-              </motion.div>
             </motion.div>
 
-            {/* Right: dual image composition */}
-            <div className="flex flex-col gap-4">
-
-              {/* Main pool — large */}
-              <motion.div variants={fadeRight} initial="hidden" animate={poolInView ? "show" : "hidden"}
-                className="relative rounded-[2rem] overflow-hidden
-                  shadow-[0_24px_60px_-12px_rgba(26,19,9,0.18)] aspect-[4/3]">
-                <Image
-                  src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=900&q=80"
-                  alt="Iconic infinity swimming pool" fill
-                  sizes="(max-width:1024px) 90vw, 48vw" className="object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#1a1309]/55 to-transparent" />
-                <div className="absolute bottom-5 left-5 right-5">
-                  <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-xl px-4 py-3">
-                    <p className={`${josefin.className} text-[9px] uppercase tracking-[0.22em] text-[#7A2267] font-semibold`}>
-                      Iconic Infinity Pool
-                    </p>
-                    <p className={`${josefin.className} text-[11.5px] text-white/75 mt-0.5`}>
-                      Complimentary · Open to all guests
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Ladies pool — wide banner */}
-              <motion.div
-                initial={{ opacity:0, y:20 }} animate={poolInView ? {opacity:1,y:0} : {}}
-                transition={{ duration:0.7, delay:0.3 }}
-                className="relative rounded-[1.5rem] overflow-hidden
-                  shadow-[0_16px_40px_-8px_rgba(26,19,9,0.15)] aspect-[16/7]">
-                <Image
-                  src="https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=900&q=80"
-                  alt="Ladies exclusive swimming pool" fill
-                  sizes="(max-width:1024px) 90vw, 48vw" className="object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-r from-[#1a1309]/70 via-[#1a1309]/35 to-transparent" />
-                <div className="absolute left-5 top-1/2 -translate-y-1/2">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <div className="w-6 h-6 rounded-full bg-[#7A2267]/20 border border-[#7A2267]/40
-                      flex items-center justify-center text-[#7A2267]">
-                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none">
-                        <circle cx="12" cy="5" r="3" stroke="currentColor" strokeWidth="1.5"/>
-                        <path d="M8 21v-5l-1-5h10l-1 5v5M9 16h6"
-                          stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                    <p className={`${josefin.className} text-[9px] uppercase tracking-[0.22em] text-[#7A2267] font-semibold`}>
-                      Ladies Private Pool
-                    </p>
-                  </div>
-                  <p className={`${josefin.className} text-[11.5px] text-white/70`}>
-                    Complimentary · Exclusively for women
+            {/* Right: pool image */}
+            <motion.div variants={fadeRight} initial="hidden" animate={poolInView ? "show" : "hidden"}
+              className="relative rounded-[2rem] overflow-hidden
+                shadow-[0_24px_60px_-12px_rgba(26,19,9,0.18)] aspect-[4/3]">
+              <Image
+                src="https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/af2c7a6f-e5d4-4510-bc3d-af2620cbf381.jpeg"
+                alt="Iconic swimming pool" fill
+                sizes="(max-width:1024px) 90vw, 48vw" className="object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#1a1309]/55 to-transparent" />
+              <div className="absolute bottom-5 left-5 right-5">
+                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-xl px-4 py-3">
+                  <p className={`${josefin.className} text-[9px] uppercase tracking-[0.22em] text-[#7A2267] font-semibold`}>
+                    Iconic Pool
+                  </p>
+                  <p className={`${josefin.className} text-[11.5px] text-white/75 mt-0.5`}>
+                    Complimentary · Open to all guests
                   </p>
                 </div>
-              </motion.div>
-            </div>
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -418,7 +302,7 @@ export default function FacilitiesContent() {
               <motion.div variants={fadeLeft}
                 className="row-span-2 relative rounded-2xl overflow-hidden group cursor-pointer">
                 <Image
-                  src="https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=900&q=80"
+                  src="https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/99a66443-5a5b-4dbf-bf5f-c3d9881fdc8c.jpeg"
                   alt="Indoor Gaming Zone" fill
                   sizes="(max-width:640px) 90vw, 28vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
@@ -443,7 +327,7 @@ export default function FacilitiesContent() {
               <motion.div variants={fadeRight}
                 className="relative rounded-2xl overflow-hidden group cursor-pointer">
                 <Image
-                  src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=900&q=80"
+                  src="https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/22a998ec-a915-4482-9b6a-dbc67850bd96.jpeg"
                   alt="9D Movie Theater" fill
                   sizes="(max-width:640px) 45vw, 24vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -463,7 +347,7 @@ export default function FacilitiesContent() {
               <motion.div variants={fadeRight}
                 className="relative rounded-2xl overflow-hidden group cursor-pointer">
                 <Image
-                  src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=900&q=80"
+                  src="https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/0d54039d-97cf-4b8d-a7a0-3a404314f929.jpeg"
                   alt="Recreational Fitness Center" fill
                   sizes="(max-width:640px) 45vw, 24vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -525,7 +409,7 @@ export default function FacilitiesContent() {
         </div>
       </section>
 
-      {/* ══ 03 OUTDOOR ACTIVITIES ═════════════════════════════════════════════ */}
+      {/* ══ 03 GALLERY ════════════════════════════════════════════════════════ */}
       <section ref={activitiesRef} className="relative bg-[#1a1309] overflow-hidden py-20 md:py-28">
         <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[400px]
           rounded-full bg-[#7A2267]/[0.09] blur-[120px]" />
@@ -533,26 +417,29 @@ export default function FacilitiesContent() {
         <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
           <motion.div initial={{ opacity:0,y:-10 }} animate={activitiesInView ? {opacity:1,y:0} : {}}
             transition={{ duration:0.6 }} className="mb-5">
-            <SectionLabel text="Outdoor Activities" dark />
+            <SectionLabel text="Gallery" dark />
           </motion.div>
 
           <motion.div initial={{ opacity:0,y:20 }} animate={activitiesInView ? {opacity:1,y:0} : {}}
             transition={{ duration:0.7, delay:0.1 }} className="text-center mb-14">
             <h2 className={`${lora.className} text-[2rem] sm:text-[2.6rem] lg:text-[3rem]
               font-500 text-white leading-[1.15]`}>
-              Explore, Discover,{" "}
-              <em className={`${lora.className} italic text-[#7A2267]`}>Connect With Nature</em>
+              Scenes from{" "}
+              <em className={`${lora.className} italic text-[#7A2267]`}>Amber Nivaas</em>
             </h2>
-            <p className={`${josefin.className} text-[13.5px] font-light text-white/45 mt-4 max-w-xl mx-auto leading-[1.85]`}>
-              Paddle across our serene lake, trek nature trails, or simply breathe in the silence.
-              Every outdoor experience at Amber Nivaas brings you closer to the natural world.
-            </p>
           </motion.div>
 
           <motion.div variants={stagger} initial="hidden" animate={activitiesInView ? "show" : "hidden"}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {ACTIVITIES.map((a) => (
-              <ActivityCard key={a.title} activity={a} />
+            className="grid grid-cols-2 lg:grid-cols-12 gap-3 sm:gap-4">
+            {GALLERY.map((shot, i) => (
+              <motion.div key={shot.src} variants={fadeUp}
+                className={`${shot.span} relative rounded-2xl overflow-hidden
+                  ring-1 ring-white/5 ${shot.box}`}>
+                <Image
+                  src={shot.src} alt={`Dhali's Amber Nivaas — view ${i + 1}`} fill
+                  sizes={shot.sizes}
+                  className="object-cover hover:scale-[1.04] transition-transform duration-700 ease-out" />
+              </motion.div>
             ))}
           </motion.div>
         </div>
@@ -577,8 +464,7 @@ export default function FacilitiesContent() {
               <em className={`${lora.className} italic text-[#7A2267]`}>Young Adventurers</em>
             </h2>
             <p className={`${josefin.className} text-[13.5px] font-light text-[#6b5e4a] mt-4 max-w-xl mx-auto leading-[1.85]`}>
-              We believe every family member deserves an exceptional experience.
-              Our children&apos;s facilities are safe, supervised, stimulating, and endlessly fun.
+              Two dedicated play areas for children — one outdoors, one indoors.
             </p>
           </motion.div>
 
@@ -591,32 +477,20 @@ export default function FacilitiesContent() {
                 shadow-[0_12px_40px_-8px_rgba(26,19,9,0.12)] cursor-pointer">
               <div className="relative aspect-[16/9] overflow-hidden">
                 <Image
-                  src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=900&q=80"
-                  alt="Outdoor Adventure Park" fill sizes="(max-width:768px) 90vw, 45vw"
+                  src="https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/8004d392-3153-47b2-9955-1812e6cdd517.jpeg"
+                  alt="Kids' outdoor play zone" fill sizes="(max-width:768px) 90vw, 45vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1a1309]/82 via-[#1a1309]/20 to-transparent" />
               </div>
               <div className="absolute bottom-0 inset-x-0 p-6">
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center
-                    bg-[#7A2267]/20 border border-[#7A2267]/40 text-[#7A2267]">
+                    bg-[#7A2267]/20 border border-[#7A2267]/40 text-[#c084b8]">
                     {icons.park}
                   </div>
                   <h3 className={`${lora.className} text-[1.2rem] text-white leading-snug`}>
-                    Outdoor Adventure Park
+                    Kids&apos; Outdoor Play Zone
                   </h3>
-                </div>
-                <p className={`${josefin.className} text-[12px] font-light text-white/65 leading-relaxed mb-4`}>
-                  A sprawling outdoor play space designed for young explorers — safe, supervised,
-                  and set amidst the resort&apos;s natural greenery.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {["Climbing Frames & Slides", "Open Lawn & Running Space", "Nature Play Elements"].map((f) => (
-                    <span key={f} className={`${josefin.className} text-[9px] uppercase tracking-wider
-                      px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white/60 backdrop-blur-sm`}>
-                      {f}
-                    </span>
-                  ))}
                 </div>
               </div>
             </motion.div>
@@ -627,32 +501,20 @@ export default function FacilitiesContent() {
                 shadow-[0_12px_40px_-8px_rgba(26,19,9,0.12)] cursor-pointer">
               <div className="relative aspect-[16/9] overflow-hidden">
                 <Image
-                  src="https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?auto=format&fit=crop&w=900&q=80"
-                  alt="Kids Indoor Games Zone" fill sizes="(max-width:768px) 90vw, 45vw"
+                  src="https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/b8878884-c97c-41d6-a269-19f0a3d3944b.jpeg"
+                  alt="Kids' indoor play zone" fill sizes="(max-width:768px) 90vw, 45vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1a1309]/82 via-[#1a1309]/20 to-transparent" />
               </div>
               <div className="absolute bottom-0 inset-x-0 p-6">
-                <div className="flex items-center gap-3 mb-3">
+                <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center
-                    bg-[#7A2267]/20 border border-[#7A2267]/40 text-[#7A2267]">
+                    bg-[#7A2267]/20 border border-[#7A2267]/40 text-[#c084b8]">
                     {icons.kids}
                   </div>
                   <h3 className={`${lora.className} text-[1.2rem] text-white leading-snug`}>
-                    Kids&apos; Indoor Games Zone
+                    Kids&apos; Indoor Play Zone
                   </h3>
-                </div>
-                <p className={`${josefin.className} text-[12px] font-light text-white/65 leading-relaxed mb-4`}>
-                  A dedicated indoor play area where children can be entertained and engaged
-                  rain or shine, with supervised activities for all ages.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {["Board Games & Puzzles", "Supervised Play Sessions", "Age-Appropriate Activities"].map((f) => (
-                    <span key={f} className={`${josefin.className} text-[9px] uppercase tracking-wider
-                      px-3 py-1 rounded-full bg-white/10 border border-white/20 text-white/60 backdrop-blur-sm`}>
-                      {f}
-                    </span>
-                  ))}
                 </div>
               </div>
             </motion.div>
@@ -670,114 +532,62 @@ export default function FacilitiesContent() {
             <SectionLabel text="Dining & Cuisine" />
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-16 items-center">
-
-            {/* Image (right on desktop) */}
-            <motion.div variants={fadeRight} initial="hidden" animate={diningInView ? "show" : "hidden"}
-              className="relative order-1 lg:order-2">
-              <div className="absolute -inset-2 rounded-[2.5rem] border border-[#7A2267]/15 hidden md:block" />
-              <div className="relative rounded-[2rem] overflow-hidden shadow-[0_24px_60px_-12px_rgba(26,19,9,0.2)] aspect-[4/3]">
-                <Image
-                  src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=900&q=80"
-                  alt="Elegant resort dining" fill
-                  sizes="(max-width:1024px) 90vw, 48vw" className="object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#1a1309]/30 to-transparent" />
-                <div className="absolute top-5 left-5 backdrop-blur-md bg-[#1a1309]/50
-                  border border-white/15 rounded-xl px-4 py-2">
-                  <p className={`${josefin.className} text-[9px] uppercase tracking-[0.22em] text-[#7A2267] font-semibold`}>
-                    Dining & Cuisine
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Content (left on desktop) */}
-            <motion.div variants={stagger} initial="hidden" animate={diningInView ? "show" : "hidden"}
-              className="flex flex-col gap-6 order-2 lg:order-1">
-              <motion.div variants={fadeUp}>
-                <h2 className={`${lora.className} text-[2rem] sm:text-[2.4rem] lg:text-[2.8rem]
-                  font-500 text-[#1a1309] leading-[1.18]`}>
-                  A Feast for{" "}
-                  <em className={`${lora.className} italic text-[#7A2267] block`}>Every Sense</em>
-                </h2>
-                <p className={`${josefin.className} text-[13.5px] font-light text-[#6b5e4a] leading-[1.9] mt-4`}>
-                  From hearty complimentary breakfasts to intimate private dinners and evening BBQ
-                  gatherings — our culinary team crafts every meal with seasonal ingredients,
-                  local flavours, and genuine care.
-                </p>
-              </motion.div>
-
-              <motion.div variants={stagger} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {DINING.map((item) => (
-                  <FeatureCard key={item.title} item={item} />
-                ))}
-              </motion.div>
-
-              {/* Venue links */}
-              <motion.div variants={stagger} className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                {[
-                  { name:"Amber Restaurant", tagline:"Fine Dining", href:"/dining/amber-restaurant", color:"#7A2267" },
-                  { name:"Amber Café",        tagline:"Casual & Cosy", href:"/dining/amber-cafe",        color:"#7A2267" },
-                ].map((venue) => (
-                  <motion.div key={venue.name} variants={fadeUp}>
-                    <Link href={venue.href}
-                      className="flex items-center justify-between gap-3 px-5 py-4 rounded-2xl
-                        border border-[#7A2267]/20 bg-[#f9f6f2] hover:bg-white
-                        hover:border-[#7A2267]/40 hover:shadow-md hover:shadow-black/5
-                        transition-all duration-300 group">
-                      <div>
-                        <p className={`${josefin.className} text-[9px] uppercase tracking-[0.2em] font-semibold mb-1`}
-                          style={{ color: venue.color }}>{venue.tagline}</p>
-                        <p className={`${lora.className} text-[1.1rem] text-[#1a1309]`}>{venue.name}</p>
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        <span className={`${josefin.className} text-[10px] font-semibold uppercase tracking-wide`}
-                          style={{ color: venue.color }}>View Menu</span>
-                        <svg viewBox="0 0 14 10" width="10" height="10" fill="none"
-                          className="group-hover:translate-x-1 transition-transform duration-200"
-                          style={{ color: venue.color }}>
-                          <path d="M1 5h12M8 1l5 4-5 4" stroke="currentColor" strokeWidth="1.6"
-                            strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </motion.div>
-
-          </div>
-        </div>
-      </section>
-
-      {/* ══ 06 GUEST SERVICES ═════════════════════════════════════════════════ */}
-      <section ref={servicesRef} className="relative bg-[#f9f6f2] overflow-hidden py-20 md:py-28">
-        <div className="pointer-events-none absolute top-0 right-0 w-[400px] h-[400px]
-          rounded-full bg-[#7A2267]/[0.07] blur-[80px]" />
-
-        <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12">
-          <motion.div initial={{ opacity:0,y:-10 }} animate={servicesInView ? {opacity:1,y:0} : {}}
-            transition={{ duration:0.6 }} className="mb-5">
-            <SectionLabel text="Guest Services" />
+          {/* Intro */}
+          <motion.div variants={stagger} initial="hidden" animate={diningInView ? "show" : "hidden"}
+            className="max-w-2xl mb-12">
+            <motion.h2 variants={fadeUp}
+              className={`${lora.className} text-[2rem] sm:text-[2.4rem] lg:text-[2.8rem]
+                font-500 text-[#1a1309] leading-[1.18]`}>
+              Dine at{" "}
+              <em className={`${lora.className} italic text-[#7A2267]`}>Amber Nivaas</em>
+            </motion.h2>
+            <motion.p variants={fadeUp}
+              className={`${josefin.className} text-[13.5px] font-light text-[#6b5e4a] leading-[1.9] mt-4`}>
+              Two venues on the property — the Amber Restaurant for sit-down meals,
+              and the Amber Café for coffee and light bites.
+            </motion.p>
           </motion.div>
 
-          <motion.div initial={{ opacity:0,y:20 }} animate={servicesInView ? {opacity:1,y:0} : {}}
-            transition={{ duration:0.7, delay:0.1 }} className="text-center mb-14">
-            <h2 className={`${lora.className} text-[2rem] sm:text-[2.6rem] lg:text-[3rem]
-              font-500 text-[#1a1309] leading-[1.15]`}>
-              Thoughtful Service,{" "}
-              <em className={`${lora.className} italic text-[#7A2267]`}>Every Moment</em>
-            </h2>
-            <p className={`${josefin.className} text-[13.5px] font-light text-[#6b5e4a] mt-4 max-w-xl mx-auto leading-[1.85]`}>
-              Our dedicated team is committed to ensuring your stay is seamless from arrival to farewell.
-              No request is too small, no detail too minor.
-            </p>
-          </motion.div>
+          {/* Venue cards */}
+          <motion.div variants={stagger} initial="hidden" animate={diningInView ? "show" : "hidden"}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
+            {DINING_VENUES.map((venue) => (
+              <motion.div key={venue.name} variants={fadeUp}>
+                <Link href={venue.href}
+                  className="group block relative rounded-[2rem] overflow-hidden aspect-[4/3]
+                    shadow-[0_24px_60px_-12px_rgba(26,19,9,0.18)]
+                    focus:outline-none focus-visible:ring-2 focus-visible:ring-[#7A2267] focus-visible:ring-offset-2">
+                  <Image
+                    src={venue.image} alt={venue.name} fill
+                    sizes="(max-width:768px) 90vw, 46vw"
+                    className="object-cover transition-transform duration-700 group-hover:scale-[1.04]" />
+                  <div className="absolute inset-0 bg-gradient-to-t
+                    from-[#1a1309]/85 via-[#1a1309]/25 to-transparent" />
 
-          <motion.div variants={stagger} initial="hidden" animate={servicesInView ? "show" : "hidden"}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {SERVICES.map((s) => (
-              <ServiceCard key={s.title} s={s} />
+                  <div className="absolute top-5 left-5 backdrop-blur-md bg-[#1a1309]/50
+                    border border-white/15 rounded-xl px-4 py-2">
+                    <p className={`${josefin.className} text-[9px] uppercase tracking-[0.22em] text-[#c084b8] font-semibold`}>
+                      {venue.tagline}
+                    </p>
+                  </div>
+
+                  <div className="absolute inset-x-5 bottom-5 flex items-end justify-between gap-4">
+                    <h3 className={`${lora.className} text-[1.5rem] sm:text-[1.75rem] text-white leading-[1.15]`}>
+                      {venue.name}
+                    </h3>
+                    <div className="flex items-center gap-1.5 shrink-0 pb-1">
+                      <span className={`${josefin.className} text-[10px] font-semibold uppercase tracking-[0.16em] text-white/80`}>
+                        View Menu
+                      </span>
+                      <svg viewBox="0 0 14 10" width="10" height="10" fill="none"
+                        className="text-white/80 group-hover:translate-x-1 transition-transform duration-200">
+                        <path d="M1 5h12M8 1l5 4-5 4" stroke="currentColor" strokeWidth="1.6"
+                          strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
             ))}
           </motion.div>
         </div>

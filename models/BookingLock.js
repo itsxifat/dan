@@ -1,6 +1,10 @@
 /**
- * Temporary 1-minute room lock during payment.
- * MongoDB TTL index auto-removes documents after `expiresAt`.
+ * Temporary room hold held while a guest is checking out.
+ *
+ * Normally deleted the moment the guest leaves checkout (see
+ * /api/booking/unlock). The MongoDB TTL index on `expiresAt` is only the
+ * backstop for a browser that never got to tell us — duration lives in
+ * lib/bookingLock.js (LOCK_DURATION_MS).
  */
 import mongoose from "mongoose";
 

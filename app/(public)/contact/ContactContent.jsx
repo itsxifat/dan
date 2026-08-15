@@ -9,7 +9,6 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Lora, Josefin_Sans } from "next/font/google";
 import { submitContactForm } from "@/actions/contact/contactActions";
-import { ABOUT_MIDDLE_URL } from "@/lib/assets";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -17,6 +16,8 @@ const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style:
 const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 const EASE = [0.22, 1, 0.36, 1];
+
+const HERO_IMAGE = "https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/96c621b7-e77e-473b-925c-7d6561698e6a.jpeg";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 26 },
@@ -184,7 +185,7 @@ export default function ContactContent({ info = {}, mapsApiKey = "" }) {
       <section ref={heroRef} className="relative h-screen min-h-[600px] overflow-hidden">
         <div ref={heroImgRef} className="absolute inset-0 scale-110 will-change-transform">
           <Image
-            src={ABOUT_MIDDLE_URL}
+            src={HERO_IMAGE}
             alt="Dhali's Amber Nivaas — Contact"
             fill sizes="100vw"
             className="object-cover"

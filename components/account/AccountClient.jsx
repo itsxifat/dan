@@ -202,6 +202,33 @@ function BookingCard({ booking }) {
           )}
         </div>
 
+        {/* Documents to bring at check-in — upcoming stays only */}
+        {booking.docNotice && (
+          <details className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+            <summary className={`${josefin.className} flex items-center gap-2 cursor-pointer list-none`}>
+              <svg viewBox="0 0 20 20" width="14" height="14" fill="none" className="shrink-0">
+                <path d="M8.6 2.8L1.4 15a1.6 1.6 0 0 0 1.4 2.4h14.4A1.6 1.6 0 0 0 18.6 15L11.4 2.8a1.6 1.6 0 0 0-2.8 0z" stroke="#D97706" strokeWidth="1.3" />
+                <path d="M10 7.5v4M10 14h.01" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+              <span className="flex-1 min-w-0">
+                <span className="block text-[11.5px] font-bold text-amber-800">Documents to bring at check-in</span>
+                <span className="block text-[10.5px] text-amber-700 mt-0.5">{booking.docNotice.headline}</span>
+              </span>
+              <span className="text-[10px] font-semibold text-amber-700 shrink-0">Details</span>
+            </summary>
+            <ul className="mt-2.5 space-y-1">
+              {booking.docNotice.lines.map((l, i) => (
+                <li key={i} className={`${josefin.className} text-[10.5px] text-amber-800 leading-relaxed`}>• {l}</li>
+              ))}
+            </ul>
+            {booking.docNotice.certRooms.length > 0 && (
+              <p className={`${josefin.className} text-[10.5px] font-semibold text-amber-800 mt-2`}>
+                Applies to room{booking.docNotice.certRooms.length > 1 ? "s" : ""} {booking.docNotice.certRooms.join(", ")}.
+              </p>
+            )}
+          </details>
+        )}
+
         {/* Invoice link */}
         <Link
           href={`/account/invoice/${booking._id}`}

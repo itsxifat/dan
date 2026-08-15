@@ -5,6 +5,7 @@ import dbConnect from "@/lib/db";
 import Property from "@/models/Property";
 import { getCategoryBySlug } from "@/actions/accommodation/categoryActions";
 import CategoryRoomsGrid from "./CategoryRoomsGrid";
+import { StockLine, StockBadge } from "@/components/accommodation/StockStatus";
 
 const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
 const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
@@ -71,11 +72,12 @@ export default async function CategoryPage({ params }) {
 
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
-              <div className="flex items-center gap-4 mb-4">
+              <div className="flex flex-wrap items-center gap-4 mb-4">
                 <div className="h-px w-10 bg-[#7A2267]/60" />
                 <p className={`${josefin.className} text-[10px] uppercase tracking-[0.3em] font-semibold text-[#7A2267]`}>
                   {property.name}
                 </p>
+                <StockBadge available={availableRooms.length} showWhenInStock />
               </div>
               <h1 className={`${lora.className} text-[2.2rem] sm:text-[2.8rem] lg:text-[3.4rem]
                 text-white leading-[1.1] tracking-[-0.01em]`}>
@@ -128,6 +130,14 @@ export default async function CategoryPage({ params }) {
                     <p className={`${josefin.className} text-[13px] font-medium text-[#1a1309]`}>{value}</p>
                   </div>
                 ))}
+              </div>
+
+              {/* Stock status */}
+              <div className="pt-4 border-t border-[#f0ebe0]">
+                <p className={`${josefin.className} text-[9px] uppercase tracking-[0.22em] text-[#9b8e78] font-semibold mb-2`}>
+                  Availability
+                </p>
+                <StockLine available={availableRooms.length} total={allRooms.length} />
               </div>
             </div>
 

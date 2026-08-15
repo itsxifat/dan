@@ -1,7 +1,10 @@
 /**
  * POST /api/booking/lock
- * Lock rooms for 60 seconds during payment.
- * Returns { success, lockedUntil } or { error }
+ * Hold the chosen rooms so no one else can check out with them.
+ * The hold is released as soon as the guest leaves checkout — see
+ * /api/booking/unlock. LOCK_DURATION_MS is only the outer limit.
+ *
+ * Returns { success, lockedUntil, lockDurationMs } or { error }
  */
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
@@ -10,9 +13,7 @@ import dbConnect from "@/lib/db";
 import BookingLock from "@/models/BookingLock";
 import Booking from "@/models/Booking";
 import PaymentAttempt from "@/models/PaymentAttempt";
-
-const LOCK_DURATION_MS = 30 * 60 * 1000; // 30 minutes (covers full SSLCommerz payment window)
-const ABUSE_THRESHOLD  = 5;         // locks without paying
+import { LOCK_DURATION_MS } from "@/lib/bookingLock";
 
 export async function POST(req) {
   try {
@@ -43,11 +44,13 @@ export async function POST(req) {
     const expiresAt    = new Date(now.getTime() + LOCK_DURATION_MS);
 
     // Clean up this user's own orphaned pending bookings for these rooms/dates
-    // so a failed payment attempt doesn't block them from retrying.
+    // so a failed payment attempt doesn't block them from retrying. Never touch
+    // a booking that has already taken money.
     if (userId) {
       await Booking.deleteMany({
         bookedBy: userId,
         status: "pending",
+        paymentStatus: "unpaid",
         checkIn:  { $lt: checkOutDate },
         checkOut: { $gt: checkInDate },
         $or: [
@@ -57,16 +60,33 @@ export async function POST(req) {
       });
     }
 
+    // Sweep abandoned payment-in-progress bookings from ANY user. A "pending"
+    // booking is only real while its hold is alive; past that the guest never
+    // came back, and leaving the row behind makes the room permanently
+    // unlockable even though availability still advertises it as free.
+    await Booking.deleteMany({
+      status: "pending",
+      paymentStatus: "unpaid",
+      createdAt: { $lt: new Date(now.getTime() - LOCK_DURATION_MS) },
+      $or: [
+        { room: { $in: rooms } },
+        { "roomBookings.room": { $in: rooms } },
+      ],
+    });
+
     const conflicts = [];
 
     for (const roomId of rooms) {
-      // Check existing confirmed bookings
+      // Confirmed bookings block the room. "pending" is deliberately excluded —
+      // it means a payment is in progress, and the hold below is what guards
+      // that window. Availability queries use the same rule, so a room can
+      // never look free here and unavailable there.
       const booked = await Booking.exists({
         $or: [
           { room: roomId },
           { "roomBookings.room": roomId },
         ],
-        status: { $nin: ["cancelled", "no_show"] },
+        status: { $nin: ["cancelled", "no_show", "pending"] },
         checkIn:  { $lt: checkOutDate },
         checkOut: { $gt: checkInDate },
       });
@@ -119,7 +139,11 @@ export async function POST(req) {
 
     await BookingLock.insertMany(lockDocs);
 
-    return NextResponse.json({ success: true, lockedUntil: expiresAt.toISOString() });
+    return NextResponse.json({
+      success: true,
+      lockedUntil: expiresAt.toISOString(),
+      lockDurationMs: LOCK_DURATION_MS,
+    });
   } catch (err) {
     console.error("Lock error:", err);
     return NextResponse.json({ error: "Failed to lock rooms. Please try again." }, { status: 500 });

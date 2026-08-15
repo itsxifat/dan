@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Booking from "@/models/Booking";
+import { releaseLocksForBooking } from "@/lib/releaseBookingLocks";
 
 export async function POST(req) {
   try {
@@ -10,13 +11,18 @@ export async function POST(req) {
 
     if (tran_id) {
       await dbConnect();
-      // Delete the pending booking — user cancelled so it was never confirmed
+      // Drop the booking — the guest cancelled before paying anything.
+      // Only ever an untouched pending booking: a "partial" status means real
+      // money was taken and that record must survive.
       const booking = await Booking.findOneAndDelete({
         transactionId: tran_id,
-        paymentStatus: { $ne: "paid" },
+        status:        "pending",
+        paymentStatus: "unpaid",
       });
 
       if (booking) {
+        // Hand the rooms straight back rather than holding them until the TTL.
+        await releaseLocksForBooking(booking).catch(() => {});
         return NextResponse.redirect(
           new URL(`/booking/cancel?ref=${booking.bookingNumber}`, process.env.NEXT_PUBLIC_BASE_URL)
         );

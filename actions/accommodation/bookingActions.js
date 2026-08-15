@@ -16,6 +16,13 @@ import {
   sendCheckInEmail,
   sendCheckOutEmail,
 } from "@/lib/email";
+import {
+  DOCS_UPLOAD_NOW,
+  DOCS_AT_CHECKIN,
+  evaluateRoom,
+  validateGuestDocs,
+  summariseFromBooking,
+} from "@/lib/guestDocs";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -46,30 +53,34 @@ function resolveDayPrice(room, category) {
 }
 
 /**
- * Generate the next booking number atomically.
- * Finds the highest existing DAN-XXXX number and increments it.
- * Retries up to `maxRetries` times on a duplicate-key collision (race condition).
+ * Generate the next booking number.
+ *
+ * The maximum is computed NUMERICALLY. Sorting the string field instead would
+ * rank "DAN-9999" above "DAN-10000" forever, so past 9,999 bookings every
+ * attempt would regenerate an already-taken number and booking creation would
+ * fail permanently.
+ *
+ * Each attempt advances past the collision rather than re-deriving the same
+ * candidate, so a concurrent insert costs one retry instead of all of them.
  */
 async function generateBookingNumber(maxRetries = 8) {
+  const [highest] = await Booking.aggregate([
+    { $match: { bookingNumber: /^DAN-\d+$/ } },
+    { $project: { num: { $toInt: { $substrBytes: ["$bookingNumber", 4, 12] } } } },
+    { $sort: { num: -1 } },
+    { $limit: 1 },
+  ]);
+
+  let nextNum = (highest?.num ?? 0) + 1;
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    // Find the document with the lexicographically largest booking number
-    const last = await Booking.findOne({}, "bookingNumber")
-      .sort({ bookingNumber: -1 })
-      .lean();
-
-    let nextNum = 1;
-    if (last?.bookingNumber) {
-      const match = last.bookingNumber.match(/(\d+)$/);
-      if (match) nextNum = parseInt(match[1], 10) + 1;
-    }
-
     const candidate = `DAN-${String(nextNum).padStart(4, "0")}`;
 
     // Verify the candidate is not already taken (handles gaps/deletions)
     const taken = await Booking.exists({ bookingNumber: candidate });
     if (!taken) return candidate;
 
-    // Collision detected — loop and re-query for the new max
+    nextNum += 1;
   }
   throw new Error("Could not generate a unique booking number. Please try again.");
 }
@@ -249,6 +260,10 @@ export async function createPendingBooking(bookingData) {
     primaryGuest,
     nidUrl,
     nidMethod,
+    nidNumber,
+    // Guest identification consent
+    guestDocsMethod,
+    guestDocsConsent,
     specialRequests,
     paymentMethod,
     advancePercent,
@@ -263,17 +278,58 @@ export async function createPendingBooking(bookingData) {
     termsAccepted,
   } = bookingData;
 
+  // The guest must tick the consent box before an order can be placed; the UI
+  // gates the button, this stops anything that bypasses it.
+  if (termsAccepted !== true) {
+    throw new Error("You must accept the Terms & Conditions, Privacy Policy and Return & Refund Policy to place a booking.");
+  }
+
   const taxPercent   = settings.taxPercent ?? 0;
   const maxFreeChildAge = settings.maxFreeChildAge ?? 5;
+  const docOpts = {
+    maxFreeChildAge,
+    requireCoupleDoc: settings.requireCoupleDoc ?? true,
+  };
+
+  const docsMethod = guestDocsMethod === DOCS_UPLOAD_NOW ? DOCS_UPLOAD_NOW : DOCS_AT_CHECKIN;
 
   // ── Resolve pricing and guests ──────────────────────────────────────────────
   let basePrice = 0;
   const resolvedRoomBookings = [];
   const allGuestsList = [];
 
+  // A night stay must name its rooms — otherwise the guest roster (and with it
+  // every identification rule below) would have nothing to validate.
+  if (bookingMode !== "day_long" && bookingType === "room" && !(roomBookings?.length > 0)) {
+    throw new Error("Please select at least one room to continue.");
+  }
+
   if (bookingType === "room" && roomBookings?.length > 0) {
+    // Load every room once — used both for the identification checks below and
+    // for price resolution further down.
+    const roomDocs = await Room.find({ _id: { $in: roomBookings.map((rb) => rb.roomId) } }).lean();
+    const roomById = new Map(roomDocs.map((r) => [r._id.toString(), r]));
+
+    // Every guest's identification is mandatory now, so the roster is validated
+    // before anything is priced or written. The wizard gates this too — this
+    // stops anything that bypasses the UI.
+    const docErrors = validateGuestDocs(
+      {
+        rooms: roomBookings.map((rb) => ({
+          roomNumber:        roomById.get(String(rb.roomId))?.roomNumber ?? "",
+          guests:            rb.guests || [],
+          ownChildDeclared:  rb.ownChildDeclared === true,
+          coupleDocumentUrl: rb.coupleDocumentUrl || "",
+        })),
+        guestDocsMethod: docsMethod,
+        docsConsent: guestDocsConsent === true,
+      },
+      docOpts
+    );
+    if (docErrors.length > 0) throw new Error(docErrors[0]);
+
     for (const rb of roomBookings) {
-      const room     = await Room.findById(rb.roomId).lean();
+      const room     = roomById.get(String(rb.roomId));
       const category = await RoomCategory.findById(rb.categoryId).lean();
       if (!room || !category) throw new Error("Invalid room or category.");
 
@@ -282,18 +338,29 @@ export async function createPendingBooking(bookingData) {
       const price      = bookingMode === "day_long" ? dayPrice : nightPrice;
       basePrice += price;
 
-      const classifiedGuests = (rb.guests || []).map((g) => ({
-        ...g,
-        type: g.age <= maxFreeChildAge ? "child" : "adult",
-      }));
+      const classifiedGuests = (rb.guests || []).map((g) => {
+        const isChild = Number(g.age) <= maxFreeChildAge;
+        return {
+          name:   g.name,
+          age:    g.age,
+          gender: g.gender,
+          type:   isChild ? "child" : "adult",
+          // Children never carry identification.
+          nidNumber: isChild ? "" : (g.nidNumber || ""),
+          nidUrl:    isChild ? "" : (g.nidUrl    || ""),
+        };
+      });
 
-      // Detect couple room
-      const hasOppositeGender = (() => {
-        const adults = classifiedGuests.filter((g) => g.type === "adult");
-        const hasMale   = adults.some((g) => g.gender === "male");
-        const hasFemale = adults.some((g) => g.gender === "female");
-        return hasMale && hasFemale;
-      })();
+      // Re-derive the couple/marriage-certificate verdict from the guest list —
+      // never trust a client-supplied flag.
+      const ev = evaluateRoom(
+        {
+          guests:            classifiedGuests,
+          ownChildDeclared:  rb.ownChildDeclared === true,
+          coupleDocumentUrl: rb.coupleDocumentUrl || "",
+        },
+        docOpts
+      );
 
       resolvedRoomBookings.push({
         room:              rb.roomId,
@@ -301,9 +368,11 @@ export async function createPendingBooking(bookingData) {
         pricePerNight:     nightPrice,
         pricePerDay:       dayPrice,
         guests:            classifiedGuests,
-        isCoupleRoom:      hasOppositeGender && (settings.requireCoupleDoc ?? true),
+        isCoupleRoom:      ev.isMixedGender && docOpts.requireCoupleDoc,
+        ownChildDeclared:  ev.exemptByOwnChild,
+        requiresMarriageCert: ev.requiresMarriageCert,
         coupleDocumentUrl: rb.coupleDocumentUrl || "",
-        coupleDocMethod:   rb.coupleDocMethod   || "",
+        coupleDocMethod:   rb.coupleDocumentUrl ? "upload" : "at_desk",
       });
 
       allGuestsList.push(...classifiedGuests);
@@ -406,6 +475,10 @@ export async function createPendingBooking(bookingData) {
     totalGuests: allGuestsList.length,
     nidUrl:       nidUrl    || "",
     nidMethod:    nidMethod || "upload",
+    nidNumber:    nidNumber || "",
+    guestDocsMethod:    docsMethod,
+    guestDocsConsent:   guestDocsConsent === true,
+    guestDocsConsentAt: guestDocsConsent === true ? new Date() : null,
     specialRequests: specialRequests || "",
     basePrice,
     subtotal,
@@ -463,6 +536,7 @@ export async function confirmPayAtDesk(bookingId) {
       .map((rb) => rb.room?.roomNumber ? `#${rb.room.roomNumber}` : null)
       .filter(Boolean);
     const totalSaved = (b.dayLongDiscount ?? 0) + (b.offerDiscount ?? 0) + (b.couponDiscount ?? 0);
+    const settingsDoc = await Settings.findOne().lean() || {};
 
     sendBookingConfirmationEmail({
       to:              b.primaryGuest.email,
@@ -486,6 +560,7 @@ export async function confirmPayAtDesk(bookingId) {
       remainingAmount: b.totalAmount          ?? 0,
       isPartial:       false,
       totalSaved,
+      docSummary:      summariseFromBooking(b, settingsDoc),
       baseUrl:         process.env.NEXT_PUBLIC_BASE_URL,
     }).catch((err) => console.error("Pay-at-desk confirmation email failed:", err));
   }
@@ -626,6 +701,7 @@ export async function updateBookingStatus(bookingId, status) {
           .filter(Boolean);
 
         if (status === "checked_in") {
+          const settingsDoc = await Settings.findOne().lean() || {};
           await sendCheckInEmail({
             to:          bPop.primaryGuest.email,
             guestName:   bPop.primaryGuest.name   || "Guest",
@@ -638,6 +714,7 @@ export async function updateBookingStatus(bookingId, status) {
             bookingMode: bPop.bookingMode,
             rooms,
             totalAmount: bPop.totalAmount         ?? 0,
+            docSummary:  summariseFromBooking(bPop, settingsDoc),
             baseUrl:     process.env.NEXT_PUBLIC_BASE_URL,
           });
         } else {
@@ -737,6 +814,7 @@ export async function recordCheckInPayment(bookingId, { paidAmount, paymentMetho
     const rooms = (bPop?.roomBookings || [])
       .map((rb) => rb.room?.roomNumber ? `#${rb.room.roomNumber}` : null)
       .filter(Boolean);
+    const settingsDoc = await Settings.findOne().lean() || {};
 
     sendCheckInEmail({
       to:          booking.primaryGuest.email,
@@ -750,6 +828,7 @@ export async function recordCheckInPayment(bookingId, { paidAmount, paymentMetho
       bookingMode: booking.bookingMode,
       rooms,
       totalAmount: booking.totalAmount        ?? 0,
+      docSummary:  summariseFromBooking(bPop || {}, settingsDoc),
       baseUrl:     process.env.NEXT_PUBLIC_BASE_URL,
     }).catch((err) => console.error("Check-in email failed:", err));
   }
@@ -757,7 +836,9 @@ export async function recordCheckInPayment(bookingId, { paidAmount, paymentMetho
   revalidatePath(`/admin/bookings/${bookingId}`);
   revalidatePath("/admin/bookings");
   revalidatePath("/admin/rooms");
-  return { success: true, paymentStatus: newPaymentStatus, remainingAmount: newRemaining };
+  // Check-in only proceeds once the balance is cleared (enforced above), so the
+  // booking is settled in full by this point.
+  return { success: true, paymentStatus: "paid", remainingAmount: 0 };
 }
 
 export async function getUnviewedBookingCount() {

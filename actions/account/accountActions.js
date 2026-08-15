@@ -2,8 +2,10 @@
 
 import Booking from "@/models/Booking";
 import User from "@/models/User";
+import Settings from "@/models/Settings";
 import dbConnect from "@/lib/db";
 import { isValidPhoneNumber, normalizePhoneNumber } from "@/lib/phone";
+import { summariseFromBooking, docNoticeLines, docNoticeHeadline } from "@/lib/guestDocs";
 import "@/models/Property";
 import "@/models/RoomCategory";
 import "@/models/Room";
@@ -34,6 +36,22 @@ export async function getAccountData(userId) {
     .populate("roomBookings.category", "name")
     .sort({ createdAt: -1 })
     .lean();
+
+  // Identification reminder for stays that haven't happened yet — same rules and
+  // wording as the booking wizard, the confirmation email and the invoice.
+  const settings = await Settings.findOne().lean() || {};
+  const UPCOMING = ["pending", "confirmed"];
+  for (const booking of bookings) {
+    if (!UPCOMING.includes(booking.status) || !(booking.roomBookings?.length > 0)) continue;
+    const summary = summariseFromBooking(booking, settings);
+    const lines   = docNoticeLines(summary);
+    if (lines.length === 0) continue;
+    booking.docNotice = {
+      headline:  docNoticeHeadline(summary),
+      lines,
+      certRooms: summary.marriageCertRooms,
+    };
+  }
 
   const allBookings = await Booking.find({ bookedBy: userId })
     .select("totalAmount paidAmount bookingMode status")

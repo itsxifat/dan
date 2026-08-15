@@ -1,6 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { Lora, Josefin_Sans } from "next/font/google";
+
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 const features = [
   {
@@ -102,7 +106,7 @@ function FeatureCard({ feature, index }) {
       <div className="absolute top-0 left-0 h-8 w-px bg-[#7A2267] origin-top
         scale-y-0 group-hover:scale-y-100 transition-transform duration-380 ease-out delay-40" />
 
-      <p className="font-josefin text-[9px] tracking-[0.35em] text-[#7A2267]/30 font-light mb-3 sm:mb-4">
+      <p className={`${josefin.className} text-[9px] tracking-[0.35em] text-[#7A2267]/30 font-light mb-3 sm:mb-4`}>
         {feature.num}
       </p>
 
@@ -110,15 +114,15 @@ function FeatureCard({ feature, index }) {
         {feature.icon}
       </div>
 
-      <h3 className="font-josefin text-[10px] sm:text-[11px] lg:text-[11.5px] font-semibold
+      <h3 className={`${josefin.className} text-[10px] sm:text-[11px] lg:text-[11.5px] font-semibold
         text-white group-hover:text-white/90 tracking-[0.14em] uppercase mb-2 sm:mb-3
-        transition-colors duration-300">
+        transition-colors duration-300`}>
         {feature.title}
       </h3>
 
-      <p className="font-josefin text-[11px] sm:text-[12px] lg:text-[12.5px]
+      <p className={`${josefin.className} text-[11px] sm:text-[12px] lg:text-[12.5px]
         font-light text-white/35 group-hover:text-white/55 leading-[1.75] sm:leading-[1.85]
-        line-clamp-3 sm:line-clamp-none transition-colors duration-500">
+        line-clamp-3 sm:line-clamp-none transition-colors duration-500`}>
         {feature.desc}
       </p>
     </motion.div>
@@ -148,14 +152,14 @@ export default function ExperienceSection() {
           transition={{ duration: 0.85, ease: [0.22, 1, 0.36, 1] }}
           className="text-center mb-12 md:mb-16 lg:mb-20"
         >
-          <h2 className="font-lora text-[2rem] sm:text-[2.7rem] lg:text-[3.2rem]
-            font-normal text-white leading-[1.18] tracking-[-0.01em]">
+          <h2 className={`${lora.className} text-[2rem] sm:text-[2.7rem] lg:text-[3.2rem]
+            font-normal text-white leading-[1.18] tracking-[-0.01em]`}>
             What Makes Us{" "}
             <em className="italic text-[#c084b8]">Unlike Any Other</em>
           </h2>
 
-          <p className="font-josefin mt-4 text-[12.5px] sm:text-[13px] font-light text-white/35
-            max-w-xs sm:max-w-sm mx-auto leading-relaxed tracking-wide">
+          <p className={`${josefin.className} mt-4 text-[12.5px] sm:text-[13px] font-light text-white/35
+            max-w-xs sm:max-w-sm mx-auto leading-relaxed tracking-wide`}>
             Every detail, curated for those who expect nothing less than excellence.
           </p>
         </motion.div>

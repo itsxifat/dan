@@ -1,21 +1,14 @@
 import Link from "next/link";
-import dbConnect from "@/lib/db";
-import Booking from "@/models/Booking";
 
 export const metadata = { title: "Booking Cancelled — Dhali's Amber Nivaas" };
 export const dynamic = "force-dynamic";
 
 export default async function BookingCancelPage({ searchParams }) {
   const params = await searchParams;
-  const ref    = params?.ref;
-
-  let booking = null;
-  if (ref) {
-    await dbConnect();
-    booking = await Booking.findOne({ bookingNumber: ref })
-      .populate("property", "name")
-      .lean();
-  }
+  // The reference comes from the URL, not the database: /api/ssl/cancel deletes
+  // the unpaid booking before redirecting here, so looking it up would always
+  // come back empty and the reference would never be shown.
+  const ref = typeof params?.ref === "string" ? params.ref : "";
 
   return (
     <main className="min-h-screen bg-[#fcfcfc] flex items-center justify-center py-16 px-4">
@@ -33,15 +26,17 @@ export default async function BookingCancelPage({ searchParams }) {
         <div>
           <h1 className="text-[26px] font-bold text-neutral-800 mb-2">Payment Cancelled</h1>
           <p className="text-[14px] text-neutral-500">
-            You cancelled the payment. Your booking is still pending — you can retry or start a new booking.
+            You cancelled the payment, so the booking was not created and no charge was made.
+            The rooms have been released — you can start a new booking any time.
           </p>
         </div>
 
-        {booking && (
+        {ref && (
           <div className="bg-white border border-neutral-100 rounded-2xl p-5 text-left">
-            <p className="text-[11px] uppercase tracking-wider text-neutral-400 font-semibold mb-2">Reference</p>
-            <p className="text-[18px] font-bold text-neutral-700 font-mono">{booking.bookingNumber}</p>
-            <p className="text-[12.5px] text-neutral-500 mt-1">{booking.property?.name}</p>
+            <p className="text-[11px] uppercase tracking-wider text-neutral-400 font-semibold mb-2">
+              Cancelled Reference
+            </p>
+            <p className="text-[18px] font-bold text-neutral-700 font-mono">{ref}</p>
           </div>
         )}
 

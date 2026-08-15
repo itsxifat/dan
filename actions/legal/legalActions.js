@@ -7,6 +7,30 @@ import dbConnect from "@/lib/db";
 import LegalDocument from "@/models/LegalDocument";
 import { hasPermission } from "@/lib/permissions";
 
+// ─── Guest documentation policy ───────────────────────────────────────────────
+//
+// These two sections describe the rules the booking flow actually enforces (see
+// lib/guestDocs.js). They are part of DEFAULT_TERMS for a fresh database AND are
+// back-filled into an already-published Terms document on read, so the policy
+// can never be missing from the page guests are asked to accept.
+
+const GUEST_DOCUMENTATION_SECTION = {
+  title: "Guest Identification & Documentation",
+  content:
+    "Every guest staying at Dhali's Amber Nivaas must be registered by full name, age and gender at the time of booking. Each adult guest must provide their National ID (NID) or passport — either uploaded during booking or presented as an original document at check-in. Children do not require a NID or any other document.\n\n" +
+    "Where a booking is made without uploading documents, the booking holder consents on behalf of the entire party that every adult will carry their original NID or passport to check-in. Guests who cannot produce the required identification may be refused accommodation, and the booking may be treated as a no-show under our Refund & Cancellation Policy.\n\n" +
+    "Identification documents are collected solely to satisfy guest-registration requirements and are handled in accordance with our Privacy Policy.",
+};
+
+const MARRIAGE_CERTIFICATE_SECTION = {
+  title: "Couples Sharing a Room",
+  content:
+    "Where an adult male guest and an adult female guest are booked into the same room, a marriage certificate is required. It may be uploaded during booking or the original may be presented at check-in.\n\n" +
+    "This requirement does not apply if a child is staying in the same room and the guests declare that the child is their own. In that case no marriage certificate is needed, but the child must be present at check-in for the declaration to hold.\n\n" +
+    "Rooms occupied only by guests of the same gender, or by a single guest, do not require a marriage certificate — the standard NID requirement for every adult still applies.\n\n" +
+    "Guests who cannot produce the required documentation at check-in may be refused accommodation without refund.",
+};
+
 const DEFAULT_TERMS = {
   type: "terms",
   title: "Terms & Conditions",
@@ -39,6 +63,8 @@ const DEFAULT_TERMS = {
       content:
         "Standard check-in time is 2:00 PM and check-out is 12:00 PM (noon). Early check-in and late check-out are subject to availability and may incur additional charges. Valid government-issued photo ID is required for all guests at check-in.",
     },
+    GUEST_DOCUMENTATION_SECTION,
+    MARRIAGE_CERTIFICATE_SECTION,
     {
       title: "Code of Conduct",
       content:
@@ -219,11 +245,34 @@ const DEFAULTS_BY_TYPE = {
   delivery: DEFAULT_DELIVERY,
 };
 
+/**
+ * Sections the Terms document must always contain. If an admin has edited the
+ * Terms (or the document predates this policy) the missing section is appended
+ * once and persisted — matched by title so a reworded body is left alone.
+ */
+const REQUIRED_TERMS_SECTIONS = [GUEST_DOCUMENTATION_SECTION, MARRIAGE_CERTIFICATE_SECTION];
+
+async function backfillTermsSections(doc) {
+  const existing = doc.sections || [];
+  const titles = new Set(existing.map((s) => (s.title || "").trim().toLowerCase()));
+  const missing = REQUIRED_TERMS_SECTIONS.filter(
+    (s) => !titles.has(s.title.trim().toLowerCase())
+  );
+  if (missing.length === 0) return doc;
+
+  const sections = [...existing, ...missing];
+  await LegalDocument.findByIdAndUpdate(doc._id, { sections });
+  return { ...doc, sections };
+}
+
 export async function getLegalDocument(type) {
   await dbConnect();
   let doc = await LegalDocument.findOne({ type }).lean();
   if (!doc) {
     doc = await LegalDocument.create(DEFAULTS_BY_TYPE[type] || DEFAULT_TERMS);
+    doc = doc.toObject ? doc.toObject() : doc;
+  } else if (type === "terms") {
+    doc = await backfillTermsSections(doc);
   }
   return JSON.parse(JSON.stringify(doc));
 }

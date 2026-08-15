@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { Lora, Josefin_Sans } from "next/font/google";
+
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80";
@@ -68,8 +72,8 @@ function PropertyCard({ property, index }) {
         {/* Cottage badge */}
         {isCottage && (
           <div className="absolute top-4 left-4">
-            <span className="font-josefin text-[9px] uppercase tracking-[0.2em] font-semibold
-              px-3 py-1.5 rounded-full backdrop-blur-md bg-white/12 text-white border border-white/20">
+            <span className={`${josefin.className} text-[9px] uppercase tracking-[0.2em] font-semibold
+              px-3 py-1.5 rounded-full backdrop-blur-md bg-white/12 text-white border border-white/20`}>
               Cottage
             </span>
           </div>
@@ -77,7 +81,7 @@ function PropertyCard({ property, index }) {
 
         {/* Bottom content */}
         <div className="absolute bottom-0 inset-x-0 p-5 sm:p-6 flex flex-col gap-2">
-          <h3 className="font-lora text-[1.25rem] sm:text-[1.35rem] font-medium text-white leading-snug">
+          <h3 className={`${lora.className} text-[1.25rem] sm:text-[1.35rem] font-medium text-white leading-snug`}>
             {property.name}
           </h3>
 
@@ -94,12 +98,12 @@ function PropertyCard({ property, index }) {
             group-hover:opacity-100 group-hover:translate-y-0
           ">
             {property.tagline && (
-              <p className="font-lora text-[12.5px] italic text-white/65 leading-snug">
+              <p className={`${lora.className} text-[12.5px] italic text-white/65 leading-snug`}>
                 {property.tagline}
               </p>
             )}
-            <span className="font-josefin inline-flex items-center gap-2 text-[10px]
-              uppercase tracking-[0.22em] font-semibold text-[#c084b8]">
+            <span className={`${josefin.className} inline-flex items-center gap-2 text-[10px]
+              uppercase tracking-[0.22em] font-semibold text-[#c084b8]`}>
               Explore
               <svg viewBox="0 0 16 10" width="10" height="10" fill="none">
                 <path d="M1 5h14M10 1l5 4-5 4" stroke="currentColor" strokeWidth="1.7"
@@ -135,11 +139,11 @@ export default function RoomsSection({ properties }) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="font-lora text-center text-[2rem] sm:text-[2.6rem] lg:text-[3rem]
-              font-medium text-[#1a1309] leading-[1.15] mb-4"
+            className={`${lora.className} text-center text-[2rem] sm:text-[2.6rem] lg:text-[3rem]
+              font-medium text-[#1a1309] leading-[1.15] mb-4`}
           >
             Choose Your{" "}
-            <em className="font-lora not-italic text-[#7A2267]">Perfect Escape</em>
+            <em className={`${lora.className} not-italic text-[#7A2267]`}>Perfect Escape</em>
           </motion.h2>
 
           <motion.p
@@ -147,8 +151,8 @@ export default function RoomsSection({ properties }) {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
             transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-            className="font-josefin text-center text-[13.5px] font-light text-[#7a6a52]
-              max-w-xl mx-auto mb-12 leading-[1.85]"
+            className={`${josefin.className} text-center text-[13.5px] font-light text-[#7a6a52]
+              max-w-xl mx-auto mb-12 leading-[1.85]`}
           >
             From private cottages nestled in greenery to suite-style rooms with sweeping views —
             each stay is crafted for comfort, elegance, and lasting memories.
@@ -200,10 +204,10 @@ export default function RoomsSection({ properties }) {
           >
             <Link
               href="/accommodation"
-              className="font-josefin inline-flex items-center gap-3
+              className={`${josefin.className} inline-flex items-center gap-3
                 px-8 py-3.5 rounded-full
                 border border-[#1a1309]/20 text-[#1a1309] text-[12px] font-semibold uppercase tracking-[0.18em]
-                hover:bg-[#1a1309] hover:text-white hover:border-[#1a1309] transition-all duration-300 group"
+                hover:bg-[#1a1309] hover:text-white hover:border-[#1a1309] transition-all duration-300 group`}
             >
               View All Accommodation
               <svg viewBox="0 0 16 10" width="13" height="13" fill="none"

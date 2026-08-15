@@ -3,6 +3,10 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { ABOUT_LEFT_URL, ABOUT_MIDDLE_URL, ABOUT_RIGHT_URL } from "@/lib/assets";
+import { Lora, Josefin_Sans } from "next/font/google";
+
+const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
+const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
 
 const fadeUp = {
   hidden: { opacity: 0, y: 18 },
@@ -23,8 +27,8 @@ const features = [
 function FeatureItem({ title, desc }) {
   return (
     <motion.div variants={fadeUp} className="space-y-1.5">
-      <p className="font-josefin text-[12.5px] font-semibold text-[#1a1309] leading-snug">{title}</p>
-      <p className="font-josefin text-[11.5px] font-light text-[#7a6a52] leading-relaxed hidden sm:block">{desc}</p>
+      <p className={`${josefin.className} text-[12.5px] font-semibold text-[#1a1309] leading-snug`}>{title}</p>
+      <p className={`${josefin.className} text-[11.5px] font-light text-[#7a6a52] leading-relaxed hidden sm:block`}>{desc}</p>
     </motion.div>
   );
 }
@@ -43,14 +47,14 @@ export default function AboutSection() {
           className="flex flex-col items-center gap-4"
         >
           <motion.h2 variants={fadeUp}
-            className="font-lora text-[2.4rem] sm:text-[3rem] lg:text-[3.6rem]
-              font-normal text-[#1a1309] leading-[1.1] tracking-[-0.02em] max-w-2xl">
+            className={`${lora.className} text-[2.4rem] sm:text-[3rem] lg:text-[3.6rem]
+              font-normal text-[#1a1309] leading-[1.1] tracking-[-0.02em] max-w-2xl`}>
             Where Nature Becomes{" "}
-            <em className="font-lora italic text-[#7A2267] font-medium">Your Retreat</em>
+            <em className={`${lora.className} italic text-[#7A2267] font-medium`}>Your Retreat</em>
           </motion.h2>
 
           <motion.p variants={fadeUp}
-            className="font-josefin text-[13px] font-light text-[#9b8e78] max-w-sm leading-relaxed">
+            className={`${josefin.className} text-[13px] font-light text-[#9b8e78] max-w-sm leading-relaxed`}>
             A halal-friendly haven where every detail is an act of care.
           </motion.p>
         </motion.div>
@@ -77,7 +81,7 @@ export default function AboutSection() {
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#1a1309]/60 via-transparent to-transparent" />
           <div className="absolute bottom-5 inset-x-0 text-center">
-            <p className="font-lora text-[1rem] italic text-white/80">&ldquo;A haven of serenity&rdquo;</p>
+            <p className={`${lora.className} text-[1rem] italic text-white/80`}>&ldquo;A haven of serenity&rdquo;</p>
           </div>
         </motion.div>
 
@@ -101,7 +105,7 @@ export default function AboutSection() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#1a1309]/55 to-transparent" />
             <div className="absolute bottom-4 left-4">
-              <p className="font-josefin text-[9px] uppercase tracking-widest text-white/70">Accommodation</p>
+              <p className={`${josefin.className} text-[9px] uppercase tracking-widest text-white/70`}>Accommodation</p>
             </div>
           </motion.div>
 
@@ -123,7 +127,7 @@ export default function AboutSection() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#1a1309]/40 via-transparent to-transparent" />
             <div className="absolute bottom-5 inset-x-0 text-center">
-              <p className="font-lora text-[1.05rem] italic text-white/80">&ldquo;A haven of serenity&rdquo;</p>
+              <p className={`${lora.className} text-[1.05rem] italic text-white/80`}>&ldquo;A haven of serenity&rdquo;</p>
             </div>
           </motion.div>
 
@@ -144,7 +148,7 @@ export default function AboutSection() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#1a1309]/55 to-transparent" />
             <div className="absolute bottom-4 left-4">
-              <p className="font-josefin text-[9px] uppercase tracking-widest text-white/70">Recreation</p>
+              <p className={`${josefin.className} text-[9px] uppercase tracking-widest text-white/70`}>Recreation</p>
             </div>
           </motion.div>
 
@@ -164,25 +168,25 @@ export default function AboutSection() {
             className="space-y-6"
           >
             <motion.blockquote variants={fadeUp}
-              className="font-lora text-[1.4rem] sm:text-[1.6rem] lg:text-[1.75rem]
-                italic text-[#1a1309] leading-[1.45] font-normal">
+              className={`${lora.className} text-[1.4rem] sm:text-[1.6rem] lg:text-[1.75rem]
+                italic text-[#1a1309] leading-[1.45] font-normal`}>
               &ldquo;Where nature&apos;s stillness meets heartfelt service.&rdquo;
             </motion.blockquote>
 
             <motion.div variants={fadeUp} className="h-px bg-gradient-to-r from-[#7A2267]/30 to-transparent" />
 
             <motion.p variants={fadeUp}
-              className="font-josefin text-[13px] font-light text-[#6b5e4a] leading-[1.9]">
+              className={`${josefin.className} text-[13px] font-light text-[#6b5e4a] leading-[1.9]`}>
               Nestled in serene landscapes, Dhali&apos;s Amber Nivaas is a proudly halal-certified resort —
               where every meal and every experience reflects our commitment to inclusivity and care.
             </motion.p>
 
             <motion.div variants={fadeUp} className="pt-1">
               <a href="/accommodation"
-                className="font-josefin group inline-flex items-center gap-2
+                className={`${josefin.className} group inline-flex items-center gap-2
                   text-[11px] font-semibold uppercase tracking-[0.22em] text-[#7A2267]
                   border-b border-[#7A2267]/40 pb-0.5
-                  hover:border-[#7A2267] hover:gap-3 transition-all duration-300">
+                  hover:border-[#7A2267] hover:gap-3 transition-all duration-300`}>
                 Explore Rooms
                 <svg viewBox="0 0 16 10" width="11" height="11" fill="none"
                   className="group-hover:translate-x-1 transition-transform duration-300">

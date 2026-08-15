@@ -61,6 +61,14 @@ const legalLinks = [
   { label: "Delivery Policy",    href: "/delivery" },
 ];
 
+// ── Statutory business details (payment-gateway compliance) ───────────────────
+// Sourced from the trade license (Madhyapara Union Parishad, Sirajdikhan,
+// Munshiganj — Ward No. 6) and the NBR VAT registration certificate.
+const TRADE_LICENSE_NO   = "001";
+const TRADE_LICENSE_AUTH = "Madhyapara Union Parishad, Sirajdikhan, Munshiganj";
+const BIN_NO             = "002083526-0207";
+const REGISTERED_ADDRESS = "Baher Kuchi, Ichapura, Sirajdikhan, Munshiganj-1530, Bangladesh";
+
 const stayLinks = [
   { label: "Our Rooms",          href: "/accommodation" },
   { label: "Night Packages",     href: "/packages/night" },
@@ -250,6 +258,46 @@ export default function FooterSection({ contactInfo = {}, backgroundImage = "" }
 
       </div>
 
+      {/* ── Payment methods + statutory details ───────────────────────────── */}
+      <div className="relative z-10 border-t border-white/10">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-8 md:py-9
+          flex flex-col items-center gap-7">
+
+          {/* Accepted payment methods (SSLCommerz) */}
+          <div className="w-full max-w-4xl">
+            <p className={`${josefin.className} text-[9px] uppercase tracking-[0.28em]
+              font-semibold text-white/35 text-center mb-4`}>
+              Accepted Payment Methods
+            </p>
+            <div className="rounded-xl bg-white/95 px-3 py-2.5 sm:px-5 sm:py-3.5
+              overflow-x-auto">
+              <Image
+                src="/payment-methods-sslcommerz.webp"
+                alt="Pay with Visa, Mastercard, American Express, UnionPay, bKash, Nagad, Rocket, Upay and other cards, mobile wallets and internet banking — verified by SSLCommerz"
+                width={2000}
+                height={224}
+                sizes="(max-width: 896px) 100vw, 896px"
+                className="w-full min-w-130 h-auto"
+              />
+            </div>
+          </div>
+
+          {/* Registered address + licence identifiers */}
+          <div className="flex flex-col items-center gap-1.5 text-center">
+            <p className={`${josefin.className} text-[11px] font-light text-white/35 leading-[1.8]`}>
+              <span className="text-white/50">Registered Address:</span> {REGISTERED_ADDRESS}
+            </p>
+            <p className={`${josefin.className} text-[11px] font-light text-white/35 leading-[1.8]`}>
+              Trade License No.{" "}
+              <span className="text-white/55 tracking-[0.06em]">{TRADE_LICENSE_NO}</span>
+              <span className="text-white/25"> ({TRADE_LICENSE_AUTH})</span>
+              <span className="mx-2 text-white/15">|</span>
+              BIN <span className="text-white/55 tracking-[0.06em]">{BIN_NO}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* ── Bottom bar ────────────────────────────────────────────────────── */}
       <div className="relative z-10 border-t border-white/10">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-5
@@ -259,33 +307,6 @@ export default function FooterSection({ contactInfo = {}, backgroundImage = "" }
           <p className={`${josefin.className} text-[11px] text-white/30`}>
             &copy; {new Date().getFullYear()} Dhali&apos;s Amber Nivaas. All rights reserved.
           </p>
-
-          {/* Centre: legal links */}
-          <div className="flex items-center gap-5 flex-wrap justify-center">
-            <Link href="/terms"
-              className={`${josefin.className} text-[10.5px] text-white/25
-                hover:text-white/55 transition-colors duration-200`}>
-              Terms &amp; Conditions
-            </Link>
-            <span className="w-px h-3 bg-white/10" />
-            <Link href="/privacy"
-              className={`${josefin.className} text-[10.5px] text-white/25
-                hover:text-white/55 transition-colors duration-200`}>
-              Privacy Policy
-            </Link>
-            <span className="w-px h-3 bg-white/10" />
-            <Link href="/refund"
-              className={`${josefin.className} text-[10.5px] text-white/25
-                hover:text-white/55 transition-colors duration-200`}>
-              Refund Policy
-            </Link>
-            <span className="w-px h-3 bg-white/10" />
-            <Link href="/delivery"
-              className={`${josefin.className} text-[10.5px] text-white/25
-                hover:text-white/55 transition-colors duration-200`}>
-              Delivery Policy
-            </Link>
-          </div>
 
           {/* Right: developer credit */}
           <p className={`${josefin.className} text-[10.5px] text-white/25`}>

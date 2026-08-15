@@ -3,6 +3,8 @@ import { authOptions } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import dbConnect from "@/lib/db";
 import Booking from "@/models/Booking";
+import Settings from "@/models/Settings";
+import { summariseFromBooking, docNoticeLines, docNoticeHeadline, DOC_COPY } from "@/lib/guestDocs";
 import PrintButton from "./PrintButton";
 
 export const dynamic = "force-dynamic";
@@ -82,13 +84,16 @@ export default async function InvoicePage({ params }) {
   if (!session?.user?.id) redirect("/login?redirect=/account");
 
   await dbConnect();
-  const booking = await Booking.findById(bookingId)
-    .populate("property", "name location")
-    .populate("category", "name")
-    .populate("room", "roomNumber floor")
-    .populate("roomBookings.room", "roomNumber floor")
-    .populate("roomBookings.category", "name")
-    .lean();
+  const [booking, settings] = await Promise.all([
+    Booking.findById(bookingId)
+      .populate("property", "name location")
+      .populate("category", "name")
+      .populate("room", "roomNumber floor")
+      .populate("roomBookings.room", "roomNumber floor")
+      .populate("roomBookings.category", "name")
+      .lean(),
+    Settings.findOne().lean(),
+  ]);
 
   if (!booking) notFound();
 
@@ -117,6 +122,12 @@ export default async function InvoicePage({ params }) {
   const remaining   = b.remainingAmount ?? Math.max(0, totalAmount - paidAmount);
   const totalSaved  = dayDisc + offerDisc + couponDisc;
   const hasDiscount = totalSaved > 0;
+
+  // Identification requirements — same rules and wording as the booking wizard
+  // and the confirmation email. Marriage-certificate lines appear only when this
+  // booking's rooms actually trigger the couple rule.
+  const docSummary = summariseFromBooking(b, settings || {});
+  const docLines   = b.roomBookings?.length > 0 ? docNoticeLines(docSummary) : [];
 
   const paymentStatusConfig = {
     paid:     { label: "Paid in Full",       bg: "#ECFDF5", color: "#065F46", border: "#A7F3D0" },
@@ -842,6 +853,43 @@ export default async function InvoicePage({ params }) {
                       </span>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* ── Documents required at check-in ── */}
+              {docLines.length > 0 && (
+                <div
+                  style={{
+                    marginBottom: "24px",
+                    background: "#FFFBEB",
+                    border: "1px solid #FDE68A",
+                    borderLeft: "3px solid #D97706",
+                    borderRadius: "8px",
+                    padding: "14px 16px",
+                  }}
+                >
+                  <p style={{ fontSize: "12.5px", fontWeight: "700", color: "#92400E", margin: "0 0 3px 0" }}>
+                    {DOC_COPY.heading}
+                  </p>
+                  <p style={{ fontSize: "11px", fontWeight: "600", color: "#B45309", margin: "0 0 10px 0" }}>
+                    {docNoticeHeadline(docSummary)}
+                  </p>
+                  <ul style={{ margin: 0, paddingLeft: "16px" }}>
+                    {docLines.map((l, i) => (
+                      <li
+                        key={i}
+                        style={{ fontSize: "11px", color: "#92400E", lineHeight: "1.65", marginBottom: "4px" }}
+                      >
+                        {l}
+                      </li>
+                    ))}
+                  </ul>
+                  {docSummary.marriageCertRooms.length > 0 && (
+                    <p style={{ fontSize: "11px", fontWeight: "600", color: "#92400E", margin: "8px 0 0 0" }}>
+                      Applies to room{docSummary.marriageCertRooms.length > 1 ? "s" : ""}{" "}
+                      {docSummary.marriageCertRooms.join(", ")}.
+                    </p>
+                  )}
                 </div>
               )}
 

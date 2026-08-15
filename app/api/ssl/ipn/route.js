@@ -1,6 +1,13 @@
-// IPN — Instant Payment Notification (server-to-server, no redirect)
+// IPN — Instant Payment Notification (server-to-server, no redirect).
+//
+// This is the only notification we get when a guest closes the tab after paying,
+// so it must do everything the success redirect does: confirm the booking, send
+// the confirmation email, count the coupon and release the room hold. Both paths
+// share settleBookingPayment(), which guarantees that happens exactly once.
 import dbConnect from "@/lib/db";
 import Booking from "@/models/Booking";
+import { settleBookingPayment } from "@/lib/settleBookingPayment";
+import { releaseLocksForBooking } from "@/lib/releaseBookingLocks";
 
 async function validateTransaction(val_id) {
   const isLive = process.env.SSLCOMMERZ_IS_LIVE === "true";
@@ -30,28 +37,24 @@ export async function POST(req) {
       const validation = await validateTransaction(val_id);
 
       if (validation.status === "VALID" || validation.status === "VALIDATED") {
-        const paid = parseFloat(amount || "0");
-        const booking = await Booking.findOne({ transactionId: tran_id });
-        if (booking && booking.paymentStatus !== "paid") {
-          const isPartial = booking.advancePercent < 100;
-          await Booking.findByIdAndUpdate(booking._id, {
-            paymentStatus:   isPartial ? "partial" : "paid",
-            status:          "confirmed",
-            valId:           val_id,
-            bankTxnId:       bank_tran_id,
-            cardType:        card_type,
-            paidAmount:      paid,
-            remainingAmount: isPartial ? Math.max(0, booking.totalAmount - paid) : 0,
-            updatedAt:       new Date(),
-          });
-        }
+        await settleBookingPayment({
+          tranId:    tran_id,
+          valId:     val_id,
+          bankTxnId: bank_tran_id,
+          cardType:  card_type,
+          amount,
+        });
       }
     } else if (status === "FAILED") {
-      // Delete the pending booking — it was never confirmed
-      await Booking.findOneAndDelete({
+      // Drop the booking — it was never confirmed. Only ever an untouched
+      // pending booking: a "partial" status means real money was taken.
+      const booking = await Booking.findOneAndDelete({
         transactionId: tran_id,
-        paymentStatus: { $ne: "paid" },
+        status:        "pending",
+        paymentStatus: "unpaid",
       });
+      // Hand the rooms straight back rather than holding them until the TTL.
+      if (booking) await releaseLocksForBooking(booking).catch(() => {});
     }
 
     // SSLCommerz requires HTTP 200 response

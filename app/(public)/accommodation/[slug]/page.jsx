@@ -5,6 +5,7 @@ import { getPropertyBySlug } from "@/actions/accommodation/propertyActions";
 import { getAmenities } from "@/actions/accommodation/amenityActions";
 import { ICON_MAP } from "@/lib/iconLibrary";
 import PropertyGallery from "./PropertyGallery";
+import { StockLine } from "@/components/accommodation/StockStatus";
 
 const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
 const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
@@ -60,6 +61,8 @@ function CategoryCard({ category, propertySlug }) {
   const minPrice = prices.length > 0 ? Math.min(...prices) : null;
   const maxPrice = prices.length > 0 ? Math.max(...prices) : null;
   const bedTypes = [...new Set(variants.map((v) => v.bedType).filter(Boolean))];
+  const available = category.roomStats?.available ?? 0;
+  const totalRooms = category.roomStats?.total ?? 0;
 
   return (
     <Link
@@ -68,9 +71,17 @@ function CategoryCard({ category, propertySlug }) {
         hover:border-[#7A2267]/40 hover:shadow-lg transition-all duration-300"
     >
       {category.coverImage && (
-        <div className="w-24 h-24 rounded-xl overflow-hidden shrink-0 bg-[#f0ebe0]">
+        <div className="relative w-24 h-24 rounded-xl overflow-hidden shrink-0 bg-[#f0ebe0]">
           <img src={category.coverImage} alt={category.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          {available === 0 && (
+            <span className="absolute inset-0 flex items-center justify-center bg-[#1a1309]/65">
+              <span className={`${josefin.className} text-[7.5px] uppercase tracking-[0.14em]
+                font-semibold text-red-100 text-center px-1 leading-tight`}>
+                Out of Stock
+              </span>
+            </span>
+          )}
         </div>
       )}
       <div className="flex-1 min-w-0">
@@ -108,11 +119,10 @@ function CategoryCard({ category, propertySlug }) {
           {bedTypes.length > 0 && <span>{bedTypes.join(", ")} bed</span>}
           {category.size && <span>· {category.size}</span>}
           {category.maxAdults && <span>· Up to {category.maxAdults} adults</span>}
-          {category.roomStats && category.roomStats.available > 0 && (
-            <span className="font-semibold text-emerald-600">
-              · {category.roomStats.available} of {category.roomStats.total} available
-            </span>
-          )}
+        </div>
+
+        <div className="mt-2">
+          <StockLine available={available} total={totalRooms} />
         </div>
       </div>
     </Link>

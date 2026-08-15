@@ -29,6 +29,56 @@ function ScrollIcon() {
   );
 }
 
+// Delivery windows quoted to the payment gateway — kept in code (not the CMS)
+// so they are always present on the page.
+const DELIVERY_WINDOWS = [
+  { zone: "Inside Dhaka",  window: "Within 5 days",  note: "Dhaka metropolitan area" },
+  { zone: "Outside Dhaka", window: "Within 10 days", note: "All other districts of Bangladesh" },
+];
+
+function DeliveryTimeline() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.7, ease: EASE }}
+      className="mb-12 rounded-2xl border border-[#7A2267]/15 bg-[#7A2267]/[0.04] p-6 sm:p-7"
+    >
+      <div className="flex items-center gap-2.5 mb-2 text-[#7A2267]">
+        <DeliveryIcon />
+        <h2 className={`${josefin.className} text-[10px] uppercase tracking-[0.24em] font-semibold`}>
+          Delivery Time
+        </h2>
+      </div>
+
+      <p className={`${josefin.className} text-[12.5px] font-light text-[#5a4e42] leading-[1.9] mb-6`}>
+        Booking confirmations, e-vouchers and invoices are delivered by email and SMS
+        immediately after a successful payment. Where a physical document or item has to be
+        couriered, it is despatched within the timeframes below, counted from the date of
+        confirmed payment.
+      </p>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {DELIVERY_WINDOWS.map(({ zone, window: win, note }) => (
+          <div key={zone} className="rounded-xl bg-white border border-[#ede5d8] px-5 py-4">
+            <p className={`${josefin.className} text-[9px] uppercase tracking-[0.22em]
+              font-semibold text-[#9d8d7a] mb-2`}>
+              {zone}
+            </p>
+            <p className={`${lora.className} text-[1.3rem] font-500 text-[#1a1309] leading-none mb-2`}>
+              {win}
+            </p>
+            <p className={`${josefin.className} text-[11px] font-light text-[#7a6a52]`}>
+              {note}
+            </p>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
 function SectionItem({ section, index, isActive, onClick }) {
   return (
     <button
@@ -197,6 +247,7 @@ export default function DeliveryContent({ doc = {}, contactInfo = {} }) {
                     </div>
                     <p className={`${josefin.className} text-[10.5px] font-light text-[#7a6a52] leading-[1.7]`}>
                       Booking confirmations are delivered by email/SMS right after payment.
+                      Couriered items: within 5 days inside Dhaka, 10 days outside Dhaka.
                     </p>
                   </div>
                 </div>
@@ -205,6 +256,9 @@ export default function DeliveryContent({ doc = {}, contactInfo = {} }) {
 
             {/* ── Main Content ────────────────────────────────────────────── */}
             <div className="flex-1 min-w-0 max-w-3xl">
+
+              {/* Delivery time (fixed — required on every render) */}
+              <DeliveryTimeline />
 
               {/* Intro */}
               {intro && (

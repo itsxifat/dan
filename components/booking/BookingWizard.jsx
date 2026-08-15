@@ -15,6 +15,23 @@ import { getAvailableRoomsForBooking } from "@/actions/accommodation/bookingActi
 import { createPendingBooking } from "@/actions/accommodation/bookingActions";
 import { getActiveDayLongPackages } from "@/actions/accommodation/dayLongPackageActions";
 import { validateCoupon, getActiveOffers } from "@/actions/discount/discountActions";
+import {
+  LOCK_WARNING_MS,
+  formatCountdown,
+  getLockSessionId,
+  releaseLock,
+} from "@/lib/bookingLock";
+import {
+  DOCS_UPLOAD_NOW,
+  DOCS_AT_CHECKIN,
+  DOC_COPY,
+  isChildGuest,
+  evaluateRoom,
+  validateGuestDocs,
+  summariseBookingDocs,
+  docNoticeLines,
+  docNoticeHeadline,
+} from "@/lib/guestDocs";
 
 const lora    = Lora({ subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
 const josefin = Josefin_Sans({ subsets: ["latin"], weight: ["300", "400", "600", "700"] });
@@ -38,14 +55,9 @@ function fmtDate(iso) {
   return new Date(iso + "T00:00:00").toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 function isSameDay(a, b) { return a === b; }
-// True when a guest should be classified as a child.
-// Age is authoritative when present; falls back to _intent when age is blank.
-function guestIsChild(g, maxFCA) {
-  if (g.age !== "" && g.age !== null && g.age !== undefined && !isNaN(Number(g.age))) {
-    return Number(g.age) <= maxFCA;
-  }
-  return g._intent === "child";
-}
+// Child classification comes from lib/guestDocs so the capacity counters here
+// agree with the document rules the server enforces.
+const guestIsChild = (g, maxFCA) => isChildGuest(g, maxFCA);
 
 const EASE = [0.16, 1, 0.3, 1];
 
@@ -558,8 +570,9 @@ export default function BookingWizard({ settings, preselect }) {
     return 1;
   });
 
-  // Guest info per room: Map<roomId, { guests: [], groupType, coupleDocumentUrl, coupleDocMethod }>
-  // groupType: null = not asked yet, "couple" = married/couple, "family" = relatives/family
+  // Guest info per room: Map<roomId, { guests: [], ownChildDeclared, coupleDocumentUrl, coupleDocMethod }>
+  // ownChildDeclared: the guests confirmed the child in the room is their own,
+  // which waives the marriage certificate for a mixed-gender room.
   const [guestInfoMap, setGuestInfoMap] = useState(new Map());
 
   // Primary guest
@@ -568,7 +581,13 @@ export default function BookingWizard({ settings, preselect }) {
   });
   const [nidUrl,    setNidUrl]    = useState("");
   const [nidMethod, setNidMethod] = useState("upload");
+  const [nidNumber, setNidNumber] = useState("");
   const [specialReqs, setSpecialReqs] = useState("");
+
+  // Identification handover: upload every adult's NID now, or present the
+  // originals at the reception desk. Either way an explicit consent is required.
+  const [guestDocsMethod,  setGuestDocsMethod]  = useState(DOCS_AT_CHECKIN);
+  const [guestDocsConsent, setGuestDocsConsent] = useState(false);
 
   // Payment
   const [paymentType, setPaymentType] = useState("full");  // "full" | "partial"
@@ -591,6 +610,18 @@ export default function BookingWizard({ settings, preselect }) {
   // Error
   const [error, setError] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
+
+  // ── Room hold ────────────────────────────────────────────────────────────────
+  // Rooms are held from the moment checkout opens so two guests can never pay
+  // for the same room. The hold is released the instant the guest leaves — the
+  // countdown is only the outer limit, not a wait we impose on anyone else.
+  const [hold, setHold]           = useState(null); // { rooms: string[], expiresAt: number }
+  const [holdRemaining, setHoldRemaining] = useState(0);
+  // holdRef mirrors `hold` so the unload handlers can read it without being
+  // re-bound; it is updated at every site that changes the hold.
+  const holdRef            = useRef(null);
+  const lockSessionRef     = useRef("");
+  const paymentRedirectRef = useRef(false);  // true while handing off to SSLCommerz
 
   const cartRooms = useMemo(() => Array.from(cart.values()), [cart]);
   const totalPrice = useMemo(() => {
@@ -643,6 +674,12 @@ export default function BookingWizard({ settings, preselect }) {
     () => cartRooms.reduce((sum, r) => sum + Math.max(1, r.maxAdults || 0), 0),
     [cartRooms]
   );
+  // Children now need a listed row of their own, so the rooms must actually
+  // have space for them — caught here rather than at the guest-details step.
+  const cartChildCapacity = useMemo(
+    () => cartRooms.reduce((sum, r) => sum + Math.max(0, r.maxChildren || 0), 0),
+    [cartRooms]
+  );
   // minRoomsNeeded: estimated minimum based on available rooms' capacities
   const minRoomsNeeded = useMemo(() => {
     if (!selectedCat) return null;
@@ -651,6 +688,44 @@ export default function BookingWizard({ settings, preselect }) {
     const maxAdultsPerRoom = rep.maxAdults && rep.maxAdults > 0 ? rep.maxAdults : 1;
     return Math.max(1, Math.ceil(adults / maxAdultsPerRoom));
   }, [rooms, cartRooms, adults, selectedCat]);
+
+  // ── Guest identification requirements ────────────────────────────────────────
+  // Everything below is derived by lib/guestDocs so the wizard, the server,
+  // the confirmation email and the invoice never disagree about who has to
+  // bring what.
+  const docOpts = useMemo(() => ({
+    maxFreeChildAge:  settings?.maxFreeChildAge  ?? 5,
+    requireCoupleDoc: settings?.requireCoupleDoc ?? true,
+  }), [settings?.maxFreeChildAge, settings?.requireCoupleDoc]);
+
+  const docRooms = useMemo(() => cartRooms.map((room) => {
+    const info = guestInfoMap.get(room._id) || {};
+    return {
+      roomNumber:        room.roomNumber,
+      guests:            info.guests || [],
+      ownChildDeclared:  info.ownChildDeclared === true,
+      coupleDocumentUrl: info.coupleDocumentUrl || "",
+    };
+  }), [cartRooms, guestInfoMap]);
+
+  const docSummary = useMemo(
+    () => summariseBookingDocs({ rooms: docRooms, guestDocsMethod }, docOpts),
+    [docRooms, guestDocsMethod, docOpts]
+  );
+
+  const docErrors = useMemo(
+    () => validateGuestDocs(
+      {
+        rooms: docRooms,
+        guestDocsMethod,
+        docsConsent: guestDocsConsent,
+        expectedAdults:   adults,
+        expectedChildren: children,
+      },
+      docOpts
+    ),
+    [docRooms, guestDocsMethod, guestDocsConsent, adults, children, docOpts]
+  );
 
   // ── Load data ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -727,6 +802,142 @@ export default function BookingWizard({ settings, preselect }) {
     }
   }, [checkIn, checkOut]);
 
+  // Everyone's details are mandatory, so lay out an empty row per person as soon
+  // as the guest reaches step 4 — spread across the booked rooms by capacity.
+  // Rooms the guest has already started filling in are left untouched.
+  useEffect(() => {
+    if (step !== 4 || cartRooms.length === 0) return;
+
+    setGuestInfoMap((prev) => {
+      if (cartRooms.some((r) => (prev.get(r._id)?.guests?.length ?? 0) > 0)) return prev;
+
+      let adultsLeft   = adults;
+      let childrenLeft = children;
+      const next = new Map(prev);
+
+      for (const room of cartRooms) {
+        const capAdults   = room.maxAdults   > 0 ? room.maxAdults   : 1;
+        const capChildren = room.maxChildren > 0 ? room.maxChildren : 0;
+        const takeAdults   = Math.min(adultsLeft,   capAdults);
+        const takeChildren = Math.min(childrenLeft, capChildren);
+        adultsLeft   -= takeAdults;
+        childrenLeft -= takeChildren;
+
+        const seeded = [
+          ...Array.from({ length: takeAdults },   () => ({ name: "", age: "", gender: "male",  nidNumber: "", nidUrl: "", _intent: "adult" })),
+          ...Array.from({ length: takeChildren }, () => ({ name: "", age: "", gender: "male",  nidNumber: "", nidUrl: "", _intent: "child" })),
+        ];
+        if (seeded.length === 0) continue;
+
+        next.set(room._id, {
+          ...(prev.get(room._id) || { ownChildDeclared: false, coupleDocumentUrl: "", coupleDocMethod: "at_desk" }),
+          guests: seeded,
+        });
+      }
+      return next;
+    });
+  }, [step, cartRooms, adults, children]);
+
+  // ── Room hold lifecycle ──────────────────────────────────────────────────────
+
+  /** Hand the rooms back right away. Safe to call when nothing is held. */
+  const dropHold = useCallback((beacon = false) => {
+    const current = holdRef.current;
+    if (!current) return;
+    releaseLock({ sessionId: lockSessionRef.current, rooms: current.rooms, beacon });
+    holdRef.current = null;
+    setHold(null);
+    setHoldRemaining(0);
+  }, []);
+
+  // Take the hold when checkout opens; give it straight back on the way out.
+  // The cleanup also covers navigating away from the wizard entirely.
+  useEffect(() => {
+    if (step !== 5 || cartRooms.length === 0 || !session?.user) return;
+
+    let cancelled = false;
+    const rooms = cartRooms.map((r) => r._id);
+    const checkOutCalc = bookingMode === "day_long" && checkIn ? addDays(checkIn, 1) : checkOut;
+    if (!lockSessionRef.current) lockSessionRef.current = getLockSessionId();
+
+    (async () => {
+      try {
+        const res = await fetch("/api/booking/lock", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            rooms, checkIn, checkOut: checkOutCalc, bookingMode,
+            sessionId: lockSessionRef.current,
+          }),
+        });
+        const data = await res.json();
+        if (cancelled) {
+          // Checkout was left before the hold landed — release it immediately
+          // rather than letting it sit until the TTL.
+          if (res.ok) releaseLock({ sessionId: lockSessionRef.current, rooms });
+          return;
+        }
+        if (!res.ok) {
+          setError(data.error || "Those rooms are no longer available. Please pick again.");
+          setStep(3);
+          return;
+        }
+        const next = { rooms, expiresAt: new Date(data.lockedUntil).getTime() };
+        holdRef.current = next;
+        setHold(next);
+        setHoldRemaining(Math.max(0, next.expiresAt - Date.now()));
+      } catch {
+        if (!cancelled) setError("Could not reserve your rooms. Please try again.");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      // Never release while the gateway hand-off is in flight — the guest is
+      // about to pay for exactly these rooms.
+      if (!paymentRedirectRef.current) dropHold();
+    };
+  }, [step, cartRooms, checkIn, checkOut, bookingMode, session?.user, dropHold]);
+
+  // Tick the countdown; expiry releases the rooms and sends the guest back.
+  useEffect(() => {
+    if (!hold) return;
+    const tick = () => {
+      const left = hold.expiresAt - Date.now();
+      setHoldRemaining(Math.max(0, left));
+      if (left <= 0) {
+        dropHold();
+        setError("Your reservation hold expired and the rooms were released. Please choose your rooms again.");
+        setStep(3);
+      }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [hold, dropHold]);
+
+  // Closing the tab or a hard navigation — sendBeacon is the only transport the
+  // browser guarantees here. Skipped while handing off to the payment gateway,
+  // which is also an unload but must keep the hold.
+  useEffect(() => {
+    const release = () => {
+      if (paymentRedirectRef.current) return;
+      dropHold(true);
+    };
+    // Coming back from the gateway (including out of the bfcache) means the
+    // hand-off is over — clear the flag so leaving again does release the rooms.
+    const restored = () => { paymentRedirectRef.current = false; };
+
+    window.addEventListener("pagehide", release);
+    window.addEventListener("beforeunload", release);
+    window.addEventListener("pageshow", restored);
+    return () => {
+      window.removeEventListener("pagehide", release);
+      window.removeEventListener("beforeunload", release);
+      window.removeEventListener("pageshow", restored);
+    };
+  }, [dropHold]);
+
   // ── Cart helpers ─────────────────────────────────────────────────────────────
   function toggleRoom(room) {
     setCart((prev) => {
@@ -743,7 +954,12 @@ export default function BookingWizard({ settings, preselect }) {
 
   // ── Guest info helpers ───────────────────────────────────────────────────────
   function getGuestInfo(roomId) {
-    return guestInfoMap.get(roomId) || { guests: [], groupType: null, coupleDocumentUrl: "", coupleDocMethod: "at_desk" };
+    return guestInfoMap.get(roomId) || {
+      guests: [],
+      ownChildDeclared: false,
+      coupleDocumentUrl: "",
+      coupleDocMethod: "at_desk",
+    };
   }
 
   function updateGuestInfo(roomId, update) {
@@ -797,7 +1013,7 @@ export default function BookingWizard({ settings, preselect }) {
     if (type === "adult" && room?.maxAdults   > 0  && curAdults   >= room.maxAdults)   return;
     if (type === "child" && room?.maxChildren >= 0  && curChildren >= room.maxChildren) return;
     updateGuestInfo(roomId, {
-      guests: [...info.guests, { name: "", age: "", gender: "male", _intent: type }],
+      guests: [...info.guests, { name: "", age: "", gender: "male", nidNumber: "", nidUrl: "", _intent: type }],
     });
   }
 
@@ -821,6 +1037,10 @@ export default function BookingWizard({ settings, preselect }) {
     });
   }
 
+  /**
+   * Copy the contact details into this room's guest list. Reuses the first blank
+   * adult row (the seeded ones) rather than pushing past the room's capacity.
+   */
   function fillFromPrimaryGuest(roomId) {
     if (!primaryGuest.name) return;
     const info = getGuestInfo(roomId);
@@ -828,14 +1048,32 @@ export default function BookingWizard({ settings, preselect }) {
       (g) => g.name && g.name.toLowerCase().trim() === primaryGuest.name.toLowerCase().trim()
     );
     if (alreadyIn) return;
-    const room   = cartRooms.find((r) => r._id === roomId);
+
     const maxFCA = settings?.maxFreeChildAge ?? 5;
+    const primaryRow = {
+      name:      primaryGuest.name,
+      age:       primaryGuest.age || "",
+      gender:    primaryGuest.gender || "male",
+      nidNumber: "",
+      nidUrl:    nidUrl || "",
+      _intent:   "adult",
+    };
+
+    const blankAdultIdx = info.guests.findIndex(
+      (g) => !String(g.name || "").trim() && !guestIsChild(g, maxFCA)
+    );
+    if (blankAdultIdx !== -1) {
+      const guests = [...info.guests];
+      guests[blankAdultIdx] = { ...guests[blankAdultIdx], ...primaryRow };
+      updateGuestInfo(roomId, { guests });
+      return;
+    }
+
+    const room = cartRooms.find((r) => r._id === roomId);
     const curAdults = info.guests.filter((g) => !guestIsChild(g, maxFCA)).length;
     const primaryIsAdult = !primaryGuest.age || Number(primaryGuest.age) > maxFCA;
     if (primaryIsAdult && room?.maxAdults > 0 && curAdults >= room.maxAdults) return;
-    updateGuestInfo(roomId, {
-      guests: [...info.guests, { name: primaryGuest.name, age: primaryGuest.age || "", gender: primaryGuest.gender || "male" }],
-    });
+    updateGuestInfo(roomId, { guests: [...info.guests, primaryRow] });
   }
 
   async function uploadDoc(file, onSuccess) {
@@ -860,6 +1098,9 @@ export default function BookingWizard({ settings, preselect }) {
         if (cart.size > 0 && cartCapacity < adults) {
           return `Your selected room${cart.size > 1 ? "s" : ""} can accommodate ${cartCapacity} adult${cartCapacity !== 1 ? "s" : ""}, but you have ${adults}. Please add more rooms.`;
         }
+        if (cart.size > 0 && children > 0 && cartChildCapacity < children) {
+          return `Your selected room${cart.size > 1 ? "s" : ""} can accommodate ${cartChildCapacity} child${cartChildCapacity !== 1 ? "ren" : ""}, but you have ${children}. Please add more rooms or choose a category that allows children.`;
+        }
       }
       // For day long: entry is required; rooms (and property) are fully optional
       if (bookingMode === "day_long") {
@@ -873,26 +1114,21 @@ export default function BookingWizard({ settings, preselect }) {
       if (!primaryGuest.phone.trim()) return "Please enter a phone number.";
       if (!primaryGuest.age || isNaN(Number(primaryGuest.age))) return "Please enter the primary guest's age.";
 
-      // NID check — handled separately via uploadWarn prompt, not a hard block here
-      // Marriage cert check — also via uploadWarn prompt
+      // Everyone's details and identification are mandatory — the same rules the
+      // server re-checks on submit, so the guest sees them here first.
+      if (cartRooms.length > 0 && docErrors.length > 0) return docErrors[0];
     }
     return null;
   }
 
-  // Returns null if OK, or { type: "cert", roomId? } if couple cert upload was skipped
+  // Returns null if nothing is outstanding, otherwise the summary that must be
+  // acknowledged before the guest can move on to payment.
   function checkUploadWarnings() {
-    // NID is always optional — no warning needed for it
-    const maxFCA = settings?.maxFreeChildAge ?? 5;
-    for (const room of cartRooms) {
-      const info = getGuestInfo(room._id);
-      // Only count guests with a confirmed entered age — no age = don't assume adult
-      const adultList = info.guests.filter((g) => g.age !== "" && g.age !== null && g.age !== undefined && !isNaN(Number(g.age)) && Number(g.age) > maxFCA);
-      const hasOpposite = adultList.some((g) => g.gender === "male") && adultList.some((g) => g.gender === "female");
-      if (hasOpposite && settings?.requireCoupleDoc && info.groupType === "couple" && info.coupleDocMethod === "upload" && !info.coupleDocumentUrl) {
-        return { type: "cert", roomId: room._id, roomNumber: room.roomNumber };
-      }
+    if (cartRooms.length === 0) return null;
+    if (!docSummary.marriageCertPending && !docSummary.docsDeferred && docSummary.adultsMissingNid === 0) {
+      return null;
     }
-    return null;
+    return { type: "docs" };
   }
 
   function goNext() {
@@ -969,8 +1205,9 @@ export default function BookingWizard({ settings, preselect }) {
         categoryId: room.category,
         // Strip internal _intent field before sending to server
         guests:   info.guests.map(({ _intent, ...g }) => g),
+        ownChildDeclared:  info.ownChildDeclared === true,
         coupleDocumentUrl: info.coupleDocumentUrl || "",
-        coupleDocMethod:   info.coupleDocMethod   || "at_desk",
+        coupleDocMethod:   info.coupleDocumentUrl ? "upload" : "at_desk",
       };
     });
 
@@ -980,24 +1217,33 @@ export default function BookingWizard({ settings, preselect }) {
 
     startTransition(async () => {
       try {
-        // Lock rooms first (skip if no rooms in cart — allowed for day long)
-        const sessionId = Math.random().toString(36).slice(2);
+        // Refresh the hold taken when checkout opened, reusing this browser's
+        // hold identity so we extend our own reservation instead of colliding
+        // with it. Skipped when there are no rooms (allowed for day long).
         if (cartRooms.length > 0) {
+          if (!lockSessionRef.current) lockSessionRef.current = getLockSessionId();
+          const rooms = cartRooms.map((r) => r._id);
           const lockRes = await fetch("/api/booking/lock", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              rooms: cartRooms.map((r) => r._id),
+              rooms,
               checkIn,
               checkOut: checkOutCalc,
               bookingMode,
-              sessionId,
+              sessionId: lockSessionRef.current,
             }),
           });
+          const ld = await lockRes.json().catch(() => ({}));
           if (!lockRes.ok) {
-            const ld = await lockRes.json();
             setError(ld.error || "Could not lock rooms. Please try again.");
             return;
+          }
+          if (ld.lockedUntil) {
+            const next = { rooms, expiresAt: new Date(ld.lockedUntil).getTime() };
+            holdRef.current = next;
+            setHold(next);
+            setHoldRemaining(Math.max(0, next.expiresAt - Date.now()));
           }
         }
 
@@ -1015,6 +1261,9 @@ export default function BookingWizard({ settings, preselect }) {
           primaryGuest: { ...primaryGuest, age: Number(primaryGuest.age) },
           nidUrl,
           nidMethod,
+          nidNumber,
+          guestDocsMethod,
+          guestDocsConsent,
           specialRequests: specialReqs,
           paymentMethod,
           advancePercent: advancePct,
@@ -1046,6 +1295,9 @@ export default function BookingWizard({ settings, preselect }) {
         });
         const payData = await payRes.json();
         if (payData.url) {
+          // Leaving for the gateway is an unload too — flag it so the hold
+          // survives the hand-off instead of being released underneath us.
+          paymentRedirectRef.current = true;
           window.location.href = payData.url;
         } else {
           setError(payData.error || "Payment initiation failed. Please try again.");
@@ -1940,7 +2192,7 @@ export default function BookingWizard({ settings, preselect }) {
                         <path d="M2.5 11c0-1.657 1.343-3 3-3M9 5h5M9 8h3" stroke="#9B8BAB" strokeWidth="1.1" strokeLinecap="round"/>
                       </svg>
                       <div>
-                        <p className="text-[12px] font-semibold text-[#1a1410]">NID / Passport</p>
+                        <p className="text-[12px] font-semibold text-[#1a1410]">Your NID / Passport <span className="font-normal text-[#9B8BAB]">(booking holder)</span></p>
                         <p className="text-[10.5px] text-[#9B8BAB] mt-0.5">
                           {nidUrl ? "Document uploaded" : "Show original at check-in"}
                         </p>
@@ -1960,6 +2212,10 @@ export default function BookingWizard({ settings, preselect }) {
                       </button>
                     )}
                   </div>
+
+                  <input placeholder="NID / Passport number (optional)" value={nidNumber}
+                    onChange={(e) => setNidNumber(e.target.value)}
+                    className="mt-2.5 w-full border border-[#EDE5F0] rounded-xl px-3 py-2 text-[12px] bg-white text-[#1a1a1a] placeholder:text-[#C4B3CE] outline-none focus:border-[#7A2267]/40 transition-all" />
 
                   {/* Upload field — shown only when user clicks "Upload online" or after upload */}
                   {(nidMethod === "upload" || nidUrl) && (
@@ -1987,28 +2243,66 @@ export default function BookingWizard({ settings, preselect }) {
                   )}
                 </div>
 
-                {/* Additional Guests per room — collapsible, optional */}
+                {/* Guest details & identification — mandatory for every person staying */}
                 {cartRooms.length > 0 && (
                   <div className="mb-5">
                     <p className="text-[10px] uppercase tracking-[0.15em] text-[#9B8BAB] font-semibold mb-3">
-                      Additional Guests
-                      <span className="ml-2 normal-case text-[#C4B3CE] font-normal tracking-normal text-[11px]">(optional)</span>
+                      Guest Details &amp; Identification
+                      <span className="ml-2 normal-case text-[#7A2267] font-semibold tracking-normal text-[11px]">(required for everyone)</span>
                     </p>
+
+                    {/* Policy notice — the same rules the confirmation email repeats */}
+                    <div className="mb-3 rounded-xl border border-[#E8D5F0] bg-[#FAF7FC] px-4 py-3.5">
+                      <div className="flex items-start gap-2.5">
+                        <svg viewBox="0 0 18 14" width="16" height="13" fill="none" className="shrink-0 mt-0.5">
+                          <rect x="1" y="1" width="16" height="12" rx="2" stroke="#7A2267" strokeWidth="1.2"/>
+                          <circle cx="5.5" cy="5.5" r="1.8" stroke="#7A2267" strokeWidth="1.1"/>
+                          <path d="M2.5 11c0-1.657 1.343-3 3-3M9 5h5M9 8h3" stroke="#7A2267" strokeWidth="1.1" strokeLinecap="round"/>
+                        </svg>
+                        <div className="flex-1">
+                          <p className="text-[12px] font-semibold text-[#1a1410] mb-1.5">Everyone staying must be listed</p>
+                          <ul className="space-y-1 text-[11px] text-[#5C4A6E] leading-relaxed">
+                            <li>• Full name, age and gender are required for <strong>every</strong> person — adults and children.</li>
+                            <li>• Every adult must present a <strong>NID or passport</strong>. Children need no documents at all.</li>
+                            <li>• A room with both adult male and female guests needs a <strong>marriage certificate</strong> — unless a child of yours is staying with you.</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* When will the documents be handed over? */}
+                    <div className="mb-3 rounded-xl border border-[#EDE5F0] px-4 py-3.5">
+                      <p className="text-[11.5px] font-semibold text-[#1a1410] mb-0.5">When will you provide the documents?</p>
+                      <p className="text-[10.5px] text-[#9B8BAB] mb-2.5">You can attach them now, or bring the originals to the resort — either way, they are required.</p>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        {[
+                          [DOCS_UPLOAD_NOW, "Upload now", "Attach each adult's NID during booking"],
+                          [DOCS_AT_CHECKIN, "Provide at check-in", "Bring the originals to the reception desk"],
+                        ].map(([v, label, hint]) => (
+                          <button key={v} type="button"
+                            onClick={() => { setGuestDocsMethod(v); setGuestDocsConsent(false); setUploadWarn(null); }}
+                            className={`flex-1 text-left px-3.5 py-2.5 rounded-xl border-2 transition-all
+                              ${guestDocsMethod === v
+                                ? "bg-[#7A2267] border-[#7A2267] text-white"
+                                : "bg-white border-[#EDE5F0] text-[#5C4A6E] hover:border-[#7A2267]/40"}`}>
+                            <span className="block text-[11.5px] font-semibold">{label}</span>
+                            <span className={`block text-[10px] mt-0.5 ${guestDocsMethod === v ? "text-white/70" : "text-[#C4B3CE]"}`}>{hint}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     <div className="space-y-3">
                       {cartRooms.map((room) => {
                         const info   = getGuestInfo(room._id);
                         const maxFCA = settings?.maxFreeChildAge ?? 5;
-                        const curAdults   = info.guests.filter((g) => !guestIsChild(g, maxFCA)).length;
-                        const curChildren = info.guests.filter((g) =>  guestIsChild(g, maxFCA)).length;
-                        const atAdultLimit   = room.maxAdults   > 0 && curAdults   >= room.maxAdults;
-                        const atChildLimit   = room.maxChildren >= 0 && curChildren >= room.maxChildren;
-                        const hasOpposite = (() => {
-                          const adultList = info.guests.filter((g) =>
-                            g.age !== "" && g.age !== null && g.age !== undefined &&
-                            !isNaN(Number(g.age)) && Number(g.age) > maxFCA
-                          );
-                          return adultList.some((g) => g.gender === "male") && adultList.some((g) => g.gender === "female");
-                        })();
+                        const ev = evaluateRoom({
+                          guests:            info.guests,
+                          ownChildDeclared:  info.ownChildDeclared,
+                          coupleDocumentUrl: info.coupleDocumentUrl,
+                        }, docOpts);
+                        const atAdultLimit = room.maxAdults   > 0 && ev.adultCount   >= room.maxAdults;
+                        const atChildLimit = room.maxChildren >= 0 && ev.childCount  >= room.maxChildren;
 
                         return (
                           <div key={room._id} className="border border-[#EDE5F0] rounded-xl overflow-hidden">
@@ -2018,20 +2312,28 @@ export default function BookingWizard({ settings, preselect }) {
                                 <p className="text-[11.5px] font-semibold text-[#1a1410]">Room {room.roomNumber}</p>
                                 <p className="text-[10px] text-[#C4B3CE]">Up to {room.maxAdults} adults{room.maxChildren > 0 ? `, ${room.maxChildren} children` : ""}</p>
                               </div>
-                              <span className="text-[10px] text-[#9B8BAB]">{info.guests.length} guest{info.guests.length !== 1 ? "s" : ""} added</span>
+                              <div className="flex items-center gap-2">
+                                {primaryGuest.name && (
+                                  <button type="button" onClick={() => fillFromPrimaryGuest(room._id)}
+                                    className="text-[10px] font-semibold text-[#7A2267] underline underline-offset-2 hover:no-underline">
+                                    Use my details
+                                  </button>
+                                )}
+                                <span className="text-[10px] text-[#9B8BAB]">{info.guests.length} listed</span>
+                              </div>
                             </div>
 
                             <div className="p-4">
                               {/* Guest rows */}
                               {info.guests.length > 0 && (
-                                <div className="space-y-2 mb-3">
+                                <div className="space-y-2.5 mb-3">
                                   {info.guests.map((g, gi) => {
                                     const isChild = guestIsChild(g, maxFCA);
                                     const warnMsg = childReclassifyMsg[`${room._id}-${gi}`];
                                     return (
-                                      <div key={gi}>
+                                      <div key={gi} className="rounded-xl border border-[#F0E8F4] px-3 py-2.5">
                                         <div className="flex flex-wrap gap-2 items-center">
-                                          <input placeholder="Name" value={g.name || ""}
+                                          <input placeholder="Full name (as on NID)" value={g.name || ""}
                                             onChange={(e) => updateGuest(room._id, gi, "name", e.target.value)}
                                             className="flex-1 min-w-[100px] border border-[#EDE5F0] rounded-xl px-3 py-2 text-[12.5px] outline-none focus:border-[#7A2267]/40 text-[#1a1a1a] placeholder:text-[#C4B3CE] transition-all" />
                                           <div className="relative w-[72px] shrink-0">
@@ -2051,8 +2353,34 @@ export default function BookingWizard({ settings, preselect }) {
                                           <button type="button" onClick={() => removeGuest(room._id, gi)}
                                             className="shrink-0 w-7 h-7 rounded-full bg-[#F0E8F4] flex items-center justify-center text-[#C4B3CE] hover:bg-red-100 hover:text-red-400 transition-colors text-lg leading-none">×</button>
                                         </div>
+
+                                        {/* Identification — adults only; children never need documents */}
+                                        {isChild ? (
+                                          <p className="mt-2 text-[10.5px] text-emerald-700">No NID or documents needed for children.</p>
+                                        ) : (
+                                          <div className="mt-2 flex flex-wrap gap-2 items-center">
+                                            <input placeholder={guestDocsMethod === DOCS_UPLOAD_NOW ? "NID / Passport number *" : "NID / Passport number (optional)"}
+                                              value={g.nidNumber || ""}
+                                              onChange={(e) => updateGuest(room._id, gi, "nidNumber", e.target.value)}
+                                              className="flex-1 min-w-[140px] border border-[#EDE5F0] rounded-xl px-3 py-1.5 text-[11.5px] outline-none focus:border-[#7A2267]/40 text-[#1a1a1a] placeholder:text-[#C4B3CE] transition-all" />
+                                            {g.nidUrl ? (
+                                              <span className="flex items-center gap-1.5 text-[10.5px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-2.5 py-1.5">
+                                                Document added
+                                                <button type="button" onClick={() => updateGuest(room._id, gi, "nidUrl", "")}
+                                                  className="text-emerald-600 hover:text-red-500">×</button>
+                                              </span>
+                                            ) : (
+                                              <label className="shrink-0 text-[10.5px] font-semibold text-[#7A2267] cursor-pointer underline underline-offset-2 hover:no-underline">
+                                                Upload NID
+                                                <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden"
+                                                  onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(f, (url) => updateGuest(room._id, gi, "nidUrl", url)); }} />
+                                              </label>
+                                            )}
+                                          </div>
+                                        )}
+
                                         {warnMsg && (
-                                          <p className="text-[10.5px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mt-1">{warnMsg}</p>
+                                          <p className="text-[10.5px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mt-2">{warnMsg}</p>
                                         )}
                                       </div>
                                     );
@@ -2074,50 +2402,68 @@ export default function BookingWizard({ settings, preselect }) {
                                 )}
                               </div>
 
-                              {/* Couple documentation (only when detected) */}
-                              {hasOpposite && settings?.requireCoupleDoc && (
+                              {/* Marriage certificate rule — adult male + adult female in one room */}
+                              {ev.isMixedGender && docOpts.requireCoupleDoc && (
                                 <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-                                  <p className="text-[11.5px] font-semibold text-amber-800 mb-2">Male &amp; female guests in same room</p>
-                                  <p className="text-[11px] text-amber-700 mb-3">Please select your relationship type.</p>
-                                  <div className="flex gap-2 mb-2">
-                                    {[["couple", "Married Couple"], ["family", "Family / Relatives"]].map(([v, label]) => (
-                                      <button key={v} type="button"
-                                        onClick={() => updateGuestInfo(room._id, { groupType: v, coupleDocumentUrl: "", coupleDocMethod: "at_desk" })}
-                                        className={`flex-1 py-2 rounded-xl border-2 text-[11px] font-semibold transition-all
-                                          ${info.groupType === v ? "bg-amber-600 border-amber-600 text-white" : "bg-white border-amber-200 text-amber-700 hover:border-amber-400"}`}>
-                                        {label}
-                                      </button>
-                                    ))}
+                                  <div className="flex items-start gap-2 mb-2">
+                                    <span className="text-amber-600 mt-0.5"><WarningIcon /></span>
+                                    <div>
+                                      <p className="text-[11.5px] font-semibold text-amber-800">Adult male &amp; female sharing this room</p>
+                                      <p className="text-[11px] text-amber-700 mt-0.5">
+                                        A marriage certificate is required — upload it now, or bring the original to check-in.
+                                      </p>
+                                    </div>
                                   </div>
-                                  {info.groupType === "couple" && (
-                                    <div className="flex items-center gap-2 bg-white border border-amber-200 rounded-xl px-3 py-2.5">
-                                      <svg viewBox="0 0 12 12" width="12" height="12" fill="none">
-                                        <path d="M5.13 1.87L1.05 9a1 1 0 0 0 .87 1.5h8.16A1 1 0 0 0 10.95 9L6.87 1.87a1 1 0 0 0-1.74 0z" stroke="#d97706" strokeWidth="1.1"/>
-                                        <path d="M6 4.5v2M6 7.5v.25" stroke="#d97706" strokeWidth="1.2" strokeLinecap="round"/>
+
+                                  {/* The only exemption: your own child is staying with you */}
+                                  {ev.hasChild ? (
+                                    <label className="flex items-start gap-2.5 bg-white border border-amber-200 rounded-xl px-3 py-2.5 cursor-pointer mb-2">
+                                      <input type="checkbox" checked={ev.ownChildDeclared}
+                                        onChange={(e) => updateGuestInfo(room._id, { ownChildDeclared: e.target.checked })}
+                                        className="mt-0.5 w-4 h-4 accent-[#7A2267] cursor-pointer shrink-0" />
+                                      <span className="text-[11px] text-[#5C4A6E] leading-relaxed">
+                                        We confirm the child staying in this room is <strong>our own child</strong>. We understand the child must be with us at check-in, and that no marriage certificate is then required.
+                                      </span>
+                                    </label>
+                                  ) : (
+                                    <p className="text-[10.5px] text-amber-700 bg-white border border-amber-200 rounded-xl px-3 py-2 mb-2">
+                                      Travelling with your own child? Add them to this room and no marriage certificate will be required.
+                                    </p>
+                                  )}
+
+                                  {ev.exemptByOwnChild ? (
+                                    <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5">
+                                      <svg viewBox="0 0 12 12" width="12" height="12" fill="none" className="shrink-0">
+                                        <circle cx="6" cy="6" r="5.5" fill="#10b981"/>
+                                        <path d="M3.5 6L5 7.5 8.5 4" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                                       </svg>
-                                      <p className="text-[11px] text-amber-700 flex-1">Please bring your marriage certificate to check-in.</p>
-                                      <label className="text-[10px] font-semibold text-[#7A2267] cursor-pointer underline underline-offset-2">
+                                      <p className="text-[11px] text-emerald-700 flex-1">
+                                        No marriage certificate needed. Please make sure your child is with you at check-in.
+                                      </p>
+                                    </div>
+                                  ) : ev.marriageCertUploaded ? (
+                                    <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+                                      <svg viewBox="0 0 12 12" width="12" height="12" fill="none" className="shrink-0">
+                                        <circle cx="6" cy="6" r="5.5" fill="#10b981"/>
+                                        <path d="M3.5 6L5 7.5 8.5 4" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                                      </svg>
+                                      <span className="text-[11px] text-emerald-700 flex-1 font-medium">Marriage certificate uploaded</span>
+                                      <button type="button" onClick={() => updateGuestInfo(room._id, { coupleDocumentUrl: "" })}
+                                        className="text-[10px] text-emerald-600 hover:text-red-500 font-semibold">Remove</button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2 bg-white border border-amber-200 rounded-xl px-3 py-2.5">
+                                      <p className="text-[11px] text-amber-700 flex-1">
+                                        {guestDocsMethod === DOCS_UPLOAD_NOW
+                                          ? "Upload the marriage certificate to continue."
+                                          : "Please bring the original marriage certificate to check-in."}
+                                      </p>
+                                      <label className="shrink-0 text-[10px] font-semibold text-[#7A2267] cursor-pointer underline underline-offset-2 hover:no-underline">
                                         Upload
                                         <input type="file" accept=".jpg,.jpeg,.png,.webp" className="hidden"
                                           onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadDoc(f, (url) => updateGuestInfo(room._id, { coupleDocumentUrl: url, coupleDocMethod: "upload" })); }} />
                                       </label>
                                     </div>
-                                  )}
-                                  {info.groupType === "couple" && info.coupleDocumentUrl && (
-                                    <div className="mt-2 flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
-                                      <svg viewBox="0 0 12 12" width="12" height="12" fill="none">
-                                        <circle cx="6" cy="6" r="5.5" fill="#10b981"/>
-                                        <path d="M3.5 6L5 7.5 8.5 4" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                                      </svg>
-                                      <span className="text-[11px] text-emerald-700 flex-1 font-medium">Certificate uploaded</span>
-                                      <button type="button" onClick={() => updateGuestInfo(room._id, { coupleDocumentUrl: "" })}
-                                        className="text-[10px] text-emerald-600 hover:text-red-500 font-semibold">Remove</button>
-                                    </div>
-                                  )}
-                                  {info.groupType === "family" && (
-                                    <p className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
-                                      No marriage certificate needed for family groups.
-                                    </p>
                                   )}
                                 </div>
                               )}
@@ -2126,6 +2472,38 @@ export default function BookingWizard({ settings, preselect }) {
                         );
                       })}
                     </div>
+
+                    {/* Consent — mandatory, wording follows the chosen handover method */}
+                    <label className="mt-3 flex items-start gap-2.5 rounded-xl border-2 border-[#EDE5F0] px-4 py-3 cursor-pointer hover:border-[#7A2267]/30 transition-colors">
+                      <input type="checkbox" checked={guestDocsConsent}
+                        onChange={(e) => setGuestDocsConsent(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 accent-[#7A2267] cursor-pointer shrink-0" />
+                      <span className="text-[11.5px] text-[#5C4A6E] leading-relaxed">
+                        {guestDocsMethod === DOCS_UPLOAD_NOW
+                          ? "I confirm the uploaded documents belong to the guests listed above, and that every adult will carry their original NID to check-in."
+                          : "I understand every adult guest must bring their original NID to check-in"}
+                        {guestDocsMethod !== DOCS_UPLOAD_NOW && docSummary.marriageCertRooms.length > 0 && (
+                          <strong>, along with the marriage certificate for room{docSummary.marriageCertRooms.length > 1 ? "s" : ""} {docSummary.marriageCertRooms.join(", ")}</strong>
+                        )}
+                        {guestDocsMethod !== DOCS_UPLOAD_NOW && "."}{" "}
+                        <span className="text-[#9B8BAB]">Guests who cannot produce these documents may be refused accommodation.</span>
+                      </span>
+                    </label>
+
+                    {/* Live checklist of what is still missing */}
+                    {docErrors.length > 0 && (
+                      <div className="mt-2.5 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+                        <p className="text-[11px] font-semibold text-amber-800 mb-1.5">Still needed before you can continue</p>
+                        <ul className="space-y-1">
+                          {docErrors.slice(0, 4).map((e, i) => (
+                            <li key={i} className="text-[10.5px] text-amber-700 leading-relaxed">• {e}</li>
+                          ))}
+                          {docErrors.length > 4 && (
+                            <li className="text-[10.5px] text-amber-600">…and {docErrors.length - 4} more.</li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -2149,47 +2527,35 @@ export default function BookingWizard({ settings, preselect }) {
               </div>
             )}
 
-            {/* Upload-missed warning panel (couple certificate only) */}
-            {uploadWarn && uploadWarn.type === "cert" && (
+            {/* Final acknowledgement — what must physically be carried to check-in */}
+            {uploadWarn && uploadWarn.type === "docs" && (
               <div className="rounded-2xl overflow-hidden border border-amber-200 mb-4">
                 <div className="flex items-center gap-2.5 px-4 py-3 bg-amber-50 border-b border-amber-200">
-                  <WarningIcon />
-                  <p className="text-[12px] font-bold text-amber-800">
-                    Room {uploadWarn.roomNumber}: Marriage certificate not uploaded
-                  </p>
+                  <span className="text-amber-600"><WarningIcon /></span>
+                  <p className="text-[12px] font-bold text-amber-800">{DOC_COPY.heading}</p>
                 </div>
                 <div className="p-4 bg-[#FFFBF5]">
-                  <p className="text-[12px] text-amber-700 mb-3">
-                    You chose to upload the marriage certificate but haven't added the file yet. Would you like to bring it at check-in instead, or go back and upload it now?
-                  </p>
+                  <p className="text-[11.5px] font-semibold text-amber-800 mb-2">{docNoticeHeadline(docSummary)}</p>
+                  <ul className="space-y-1.5 mb-3">
+                    {docNoticeLines(docSummary).map((l, i) => (
+                      <li key={i} className="text-[11.5px] text-amber-700 leading-relaxed">• {l}</li>
+                    ))}
+                  </ul>
+                  {docSummary.marriageCertRooms.length > 0 && (
+                    <p className="text-[11px] text-amber-800 font-semibold mb-3">
+                      Marriage certificate applies to room{docSummary.marriageCertRooms.length > 1 ? "s" : ""} {docSummary.marriageCertRooms.join(", ")}.
+                    </p>
+                  )}
                   <div className="flex flex-col sm:flex-row gap-2">
                     <button type="button"
-                      onClick={() => {
-                        updateGuestInfo(uploadWarn.roomId, { coupleDocMethod: "at_desk" });
-                        setUploadWarn(null);
-                        // Check if any other rooms also need cert
-                        const maxFCA = settings?.maxFreeChildAge ?? 5;
-                        let nextWarn = null;
-                        for (const room of cartRooms) {
-                          if (room._id === uploadWarn.roomId) continue;
-                          const info = getGuestInfo(room._id);
-                          const adultList = info.guests.filter((g) => g.age !== "" && !isNaN(Number(g.age)) && Number(g.age) > maxFCA);
-                          const hasOpp = adultList.some((g) => g.gender === "male") && adultList.some((g) => g.gender === "female");
-                          if (hasOpp && settings?.requireCoupleDoc && info.groupType === "couple" && info.coupleDocMethod === "upload" && !info.coupleDocumentUrl) {
-                            nextWarn = { type: "cert", roomId: room._id, roomNumber: room.roomNumber };
-                            break;
-                          }
-                        }
-                        if (!nextWarn) setStep((s) => s + 1);
-                        else setUploadWarn(nextWarn);
-                      }}
+                      onClick={() => { setUploadWarn(null); setStep((s) => s + 1); }}
                       className="flex-1 py-2.5 rounded-xl bg-amber-600 text-white text-[12px] font-semibold hover:bg-amber-700 transition-colors">
-                      I'll bring certificate at desk
+                      I understand — we will bring these
                     </button>
                     <button type="button"
-                      onClick={() => setUploadWarn(null)}
+                      onClick={() => { setGuestDocsMethod(DOCS_UPLOAD_NOW); setGuestDocsConsent(false); setUploadWarn(null); }}
                       className="flex-1 py-2.5 rounded-xl border-2 border-amber-200 text-amber-700 text-[12px] font-semibold hover:border-amber-400 transition-colors bg-white">
-                      Go back and upload
+                      Go back and upload now
                     </button>
                   </div>
                 </div>
@@ -2237,9 +2603,35 @@ export default function BookingWizard({ settings, preselect }) {
 
             {session?.user && (
               <>
+                {/* Room hold countdown — the maximum time we keep these rooms
+                    for you. Leaving this page hands them back immediately. */}
+                {hold && cartRooms.length > 0 && (
+                  <div className={`rounded-2xl border px-4 py-3 mb-4 flex items-center gap-3 transition-colors
+                    ${holdRemaining <= LOCK_WARNING_MS
+                      ? "bg-amber-50 border-amber-200"
+                      : "bg-[#FAF7FC] border-[#E8D5F0]"}`}>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" className="shrink-0"
+                      stroke={holdRemaining <= LOCK_WARNING_MS ? "#D97706" : "#7A2267"} strokeWidth="1.6">
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M12 7v5l3 2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[12px] font-semibold ${holdRemaining <= LOCK_WARNING_MS ? "text-amber-800" : "text-[#1a1410]"}`}>
+                        Room{cartRooms.length > 1 ? "s" : ""} reserved for you —{" "}
+                        <span className="font-mono tabular-nums">{formatCountdown(holdRemaining)}</span> left
+                      </p>
+                      <p className={`text-[10.5px] mt-0.5 ${holdRemaining <= LOCK_WARNING_MS ? "text-amber-700" : "text-[#9B8BAB]"}`}>
+                        {holdRemaining <= LOCK_WARNING_MS
+                          ? "Please complete your payment soon — the rooms are released when this runs out."
+                          : "This is the maximum time we hold them. Leaving this page releases them right away."}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Booking summary */}
                 <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
-    
+
                   <div className="p-6">
                     <h2 className={`text-[18px] font-semibold text-[#1a1410] mb-4 ${lora.className}`}>Booking Summary</h2>
 
@@ -2394,6 +2786,32 @@ export default function BookingWizard({ settings, preselect }) {
                   </div>
                 </div>
 
+                {/* What must be carried to check-in — repeated verbatim in the
+                    confirmation email and on the invoice */}
+                {cartRooms.length > 0 && docNoticeLines(docSummary).length > 0 && (
+                  <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
+                    <div className="flex items-center gap-2.5 px-6 py-3.5 bg-amber-50 border-b border-amber-200">
+                      <span className="text-amber-600"><WarningIcon /></span>
+                      <div>
+                        <p className="text-[12.5px] font-bold text-amber-800">{DOC_COPY.heading}</p>
+                        <p className="text-[10.5px] text-amber-700 mt-0.5">{docNoticeHeadline(docSummary)}</p>
+                      </div>
+                    </div>
+                    <div className="p-6 pt-4">
+                      <ul className="space-y-1.5">
+                        {docNoticeLines(docSummary).map((l, i) => (
+                          <li key={i} className="text-[11.5px] text-[#5C4A6E] leading-relaxed">• {l}</li>
+                        ))}
+                      </ul>
+                      {docSummary.marriageCertRooms.length > 0 && (
+                        <p className="mt-2.5 text-[11px] font-semibold text-amber-800">
+                          Marriage certificate applies to room{docSummary.marriageCertRooms.length > 1 ? "s" : ""} {docSummary.marriageCertRooms.join(", ")}.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Payment options */}
                 <div className="bg-white rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.07)] overflow-hidden mb-4">
                   <div className="p-6">
@@ -2456,12 +2874,19 @@ export default function BookingWizard({ settings, preselect }) {
                             font-medium transition-colors duration-150">
                           Terms &amp; Conditions
                         </Link>
-                        {" "}and{" "}
+                        ,{" "}
                         <Link href="/privacy" target="_blank" rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
                           className="text-[#7A2267] underline underline-offset-2 hover:text-[#8e2878]
                             font-medium transition-colors duration-150">
                           Privacy Policy
+                        </Link>
+                        {" "}and{" "}
+                        <Link href="/refund" target="_blank" rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-[#7A2267] underline underline-offset-2 hover:text-[#8e2878]
+                            font-medium transition-colors duration-150">
+                          Return &amp; Refund Policy
                         </Link>
                         {" "}of Dhali&apos;s Amber Nivaas.
                       </span>

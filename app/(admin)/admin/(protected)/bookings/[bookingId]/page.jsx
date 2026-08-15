@@ -213,60 +213,107 @@ export default async function BookingDetailPage({ params }) {
         </div>
 
         {/* NID document */}
-        <div className="mt-4 pt-4 border-t border-white/5">
-          <p className="text-[9.5px] uppercase tracking-wider text-white/25 font-semibold mb-2">NID / Passport</p>
-          {booking.nidUrl ? (
-            <DocViewer url={booking.nidUrl} label="View NID" />
-          ) : (
-            <p className="text-[12px] text-amber-400">Guest will show NID at desk</p>
-          )}
-        </div>
-
-        {booking.isCoupleBooking && (
-          <div className="mt-4 pt-4 border-t border-white/5">
-            <p className="text-[11px] uppercase tracking-wider text-amber-400/60 font-semibold mb-2">Couple Booking</p>
-            {booking.coupleDocumentUrl && (
-              <div className="mt-2">
-                <p className="text-[9.5px] uppercase tracking-wider text-white/25 font-semibold mb-1">Marriage Certificate</p>
-                <DocViewer url={booking.coupleDocumentUrl} label="View Certificate" />
-              </div>
+        <div className="mt-4 pt-4 border-t border-white/5 grid grid-cols-1 sm:grid-cols-2 gap-5">
+          <div>
+            <p className="text-[9.5px] uppercase tracking-wider text-white/25 font-semibold mb-2">NID / Passport</p>
+            {booking.nidUrl ? (
+              <DocViewer url={booking.nidUrl} label="View NID" />
+            ) : (
+              <p className="text-[12px] text-amber-400">Will present original at desk</p>
+            )}
+            {booking.nidNumber && (
+              <p className="text-[11.5px] text-white/50 font-mono mt-2">{booking.nidNumber}</p>
             )}
           </div>
-        )}
+          <div>
+            <p className="text-[9.5px] uppercase tracking-wider text-white/25 font-semibold mb-2">Document Handover</p>
+            <p className="text-[12px] text-white/70">
+              {booking.guestDocsMethod === "upload_now" ? "Uploaded during booking" : "Originals at check-in"}
+            </p>
+            <p className={`text-[11px] mt-1 ${booking.guestDocsConsent ? "text-emerald-400" : "text-amber-400"}`}>
+              {booking.guestDocsConsent ? "Guest consent recorded" : "No consent recorded"}
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Additional Guests */}
-      {booking.guests?.length > 0 && (
-        <div className="bg-white/2 border border-white/6 rounded-2xl p-6 space-y-4">
+      {/* Per-room guests & documents — verify these at the desk */}
+      {booking.roomBookings?.length > 0 && (
+        <div className="bg-white/2 border border-white/6 rounded-2xl p-6 space-y-5">
           <h3 className="text-[11px] uppercase tracking-[0.18em] text-white/30 font-semibold">
-            Additional Guests ({booking.guests.length})
+            Guests &amp; Documents ({booking.totalGuests ?? booking.allGuests?.length ?? 0})
           </h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-[12px]">
-              <thead>
-                <tr className="border-b border-white/5">
-                  {["Name", "Age", "Gender", "Type"].map((h) => (
-                    <th key={h} className="pb-2 text-left text-[9.5px] uppercase tracking-wider text-white/25 font-semibold pr-6">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {booking.guests.map((g, i) => (
-                  <tr key={i} className="border-b border-white/3">
-                    <td className="py-2 pr-6 text-white/60">{g.name || "–"}</td>
-                    <td className="py-2 pr-6 text-white/40">{g.age}</td>
-                    <td className="py-2 pr-6 text-white/40 capitalize">{g.gender}</td>
-                    <td className="py-2 pr-6">
-                      <span className={`text-[10px] uppercase tracking-wide font-medium
-                        ${g.type === "child" ? "text-amber-400/70" : "text-white/40"}`}>
-                        {g.type}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+
+          {booking.roomBookings.map((rb, ri) => (
+            <div key={ri} className="rounded-xl border border-white/6 overflow-hidden">
+              <div className="flex items-center justify-between gap-3 flex-wrap px-4 py-2.5 bg-white/2">
+                <p className="text-[12px] text-white/70 font-semibold">
+                  Room {rb.room?.roomNumber ? `#${rb.room.roomNumber}` : "–"}
+                  {rb.category?.name && <span className="text-white/25 font-normal ml-2">{rb.category.name}</span>}
+                </p>
+                {rb.requiresMarriageCert ? (
+                  <span className={`text-[9.5px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full border
+                    ${rb.coupleDocumentUrl
+                      ? "bg-emerald-400/10 text-emerald-400 border-emerald-400/25"
+                      : "bg-amber-400/10 text-amber-400 border-amber-400/25"}`}>
+                    {rb.coupleDocumentUrl ? "Certificate on file" : "Certificate due at desk"}
+                  </span>
+                ) : rb.ownChildDeclared ? (
+                  <span className="text-[9.5px] uppercase tracking-wider font-semibold px-2.5 py-1 rounded-full border bg-blue-400/10 text-blue-400 border-blue-400/25">
+                    Own child declared — verify child present
+                  </span>
+                ) : null}
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-[12px]">
+                  <thead>
+                    <tr className="border-b border-white/5">
+                      {["Name", "Age", "Gender", "Type", "NID"].map((h) => (
+                        <th key={h} className="px-4 py-2 text-left text-[9.5px] uppercase tracking-wider text-white/25 font-semibold">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(rb.guests || []).map((g, i) => (
+                      <tr key={i} className="border-b border-white/3">
+                        <td className="px-4 py-2 text-white/60">{g.name || "–"}</td>
+                        <td className="px-4 py-2 text-white/40">{g.age}</td>
+                        <td className="px-4 py-2 text-white/40 capitalize">{g.gender}</td>
+                        <td className="px-4 py-2">
+                          <span className={`text-[10px] uppercase tracking-wide font-medium
+                            ${g.type === "child" ? "text-amber-400/70" : "text-white/40"}`}>
+                            {g.type}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2">
+                          {g.type === "child" ? (
+                            <span className="text-[10.5px] text-white/25">Not required</span>
+                          ) : g.nidUrl ? (
+                            <a href={g.nidUrl} target="_blank" rel="noopener noreferrer"
+                              className="text-[11px] text-[#c05aae] hover:text-[#d870c0] underline underline-offset-2">
+                              View{g.nidNumber ? ` · ${g.nidNumber}` : ""} ↗
+                            </a>
+                          ) : g.nidNumber ? (
+                            <span className="text-[11px] text-white/50 font-mono">{g.nidNumber}</span>
+                          ) : (
+                            <span className="text-[10.5px] text-amber-400">Verify at desk</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {rb.coupleDocumentUrl && (
+                <div className="px-4 py-3 border-t border-white/5">
+                  <p className="text-[9.5px] uppercase tracking-wider text-white/25 font-semibold mb-1">Marriage Certificate</p>
+                  <DocViewer url={rb.coupleDocumentUrl} label="View Certificate" />
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

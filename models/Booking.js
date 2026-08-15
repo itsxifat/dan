@@ -7,6 +7,11 @@ const GuestSchema = new mongoose.Schema({
   age:    { type: Number, required: true, min: 0, max: 120 },
   gender: { type: String, enum: ["male", "female", "other"], required: true },
   type:   { type: String, enum: ["adult", "child"], required: true },
+
+  // Identification — required for adults, never collected for children.
+  // May be blank when the guest opted to present originals at check-in.
+  nidNumber: { type: String, default: "", trim: true, maxlength: 40 },
+  nidUrl:    { type: String, default: "", maxlength: 2048 },
 }, { _id: false });
 
 const RoomBookingSchema = new mongoose.Schema({
@@ -15,7 +20,16 @@ const RoomBookingSchema = new mongoose.Schema({
   pricePerNight:     { type: Number, required: true, min: 0 },
   pricePerDay:       { type: Number, default: 0,    min: 0 },
   guests:            { type: [GuestSchema], default: [] },
+
+  // Adult male + adult female sharing this room
   isCoupleRoom:      { type: Boolean, default: false },
+  // Guests declared the child in this room is their own, which waives the
+  // marriage certificate. The child must be present at check-in.
+  ownChildDeclared:  { type: Boolean, default: false },
+  // Server-derived verdict, stored so desk staff and re-sent emails agree with
+  // what the guest was told at booking time.
+  requiresMarriageCert: { type: Boolean, default: false },
+
   coupleDocumentUrl: { type: String, default: "", maxlength: 2048 },
   coupleDocMethod:   { type: String, default: "", maxlength: 50 },
 }, { _id: false });
@@ -61,6 +75,20 @@ const BookingSchema = new mongoose.Schema({
 
   nidUrl:    { type: String, default: "", maxlength: 2048 },
   nidMethod: { type: String, default: "upload", maxlength: 20 },
+  nidNumber: { type: String, default: "", trim: true, maxlength: 40 },
+
+  // How the party chose to hand over identification for EVERY adult guest.
+  // "upload_now"  — documents attached during booking
+  // "at_checkin"  — originals presented at the reception desk
+  guestDocsMethod: {
+    type: String,
+    enum: ["upload_now", "at_checkin"],
+    default: "at_checkin",
+  },
+  // Explicit acknowledgement that all adults will carry their NID, and the
+  // marriage certificate where the couple rule applies.
+  guestDocsConsent:   { type: Boolean, default: false },
+  guestDocsConsentAt: { type: Date, default: null },
 
   specialRequests: { type: String, default: "", maxlength: 2000 },
 

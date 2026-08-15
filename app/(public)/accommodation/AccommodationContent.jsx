@@ -8,6 +8,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Lora, Josefin_Sans } from "next/font/google";
+import { StockLine, StockBadge } from "@/components/accommodation/StockStatus";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -69,7 +70,7 @@ function PropertyCard({ property }) {
               Featured
             </div>
           )}
-          <div className="absolute top-3 right-3">
+          <div className="absolute top-3 right-3 flex flex-col items-end gap-1.5">
             <span className={`${josefin.className} text-[8.5px] uppercase tracking-[0.18em] font-semibold
               px-2.5 py-1 rounded-full backdrop-blur-sm border
               ${property.type === "cottage"
@@ -78,6 +79,9 @@ function PropertyCard({ property }) {
               }`}>
               {property.type}
             </span>
+            {property.type === "building" && (
+              <StockBadge available={property.roomStats?.available ?? 0} />
+            )}
           </div>
         </div>
 
@@ -132,15 +136,20 @@ function PropertyCard({ property }) {
 
           <div className="pt-3 border-t border-[#f0ebe0] flex items-center justify-between">
             {property.type === "building" ? (
-              <span className={`${josefin.className} text-[11.5px] text-[#6b5e4a]`}>
-                {property.roomStats?.available ?? 0} rooms available
-              </span>
+              <StockLine
+                available={property.roomStats?.available ?? 0}
+                total={property.roomStats?.total ?? 0}
+              />
             ) : (
-              <span className={`${josefin.className} text-[12px] font-semibold text-[#1a1309]`}>
-                {property.pricePerNight > 0
-                  ? `৳${property.pricePerNight.toLocaleString()}/night`
-                  : "Contact for pricing"}
-              </span>
+              <div className="flex flex-col gap-1">
+                <span className={`${josefin.className} text-[12px] font-semibold text-[#1a1309]`}>
+                  {property.pricePerNight > 0
+                    ? `৳${property.pricePerNight.toLocaleString()}/night`
+                    : "Contact for pricing"}
+                </span>
+                {/* A cottage is booked whole, so it has no room-level count */}
+                <StockLine available={1} total={0} />
+              </div>
             )}
             <div className={`${josefin.className} flex items-center gap-1 text-[#7A2267]
               group-hover:gap-2 transition-all duration-200`}>
@@ -197,7 +206,7 @@ export default function AccommodationContent({ buildings = [], cottages = [] }) 
 
       {/* ══ HERO ═══════════════════════════════════════════════════════════════ */}
       <section ref={heroRef}
-        className="relative min-h-[88vh] md:min-h-[90vh] flex flex-col justify-end overflow-hidden">
+        className="relative min-h-[88vh] md:min-h-[90vh] flex flex-col justify-center overflow-hidden">
 
         <div ref={heroImgRef} className="absolute inset-0 scale-[1.035]">
           <Image
@@ -212,8 +221,8 @@ export default function AccommodationContent({ buildings = [], cottages = [] }) 
         <div className="absolute inset-x-0 top-0 h-40
           bg-gradient-to-b from-[#1a1309]/45 to-transparent z-[2]" />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12
-          pb-16 md:pb-20 lg:pb-24 pt-32">
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 lg:px-12
+          py-16 md:py-20">
 
           <motion.div variants={stagger} initial="hidden" animate="show" className="max-w-3xl text-center mx-auto">
 
@@ -238,11 +247,10 @@ export default function AccommodationContent({ buildings = [], cottages = [] }) 
           variants={stagger} initial="hidden" whileInView="show"
           viewport={{ once: true, margin: "-60px" }}
           className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-10
-            grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-0 border-b border-white/10"
+            grid grid-cols-3 gap-6 md:gap-0 border-b border-white/10"
         >
           {[
             { value: buildings.length > 0 ? String(buildings.length) : "—", label: "Signature Buildings" },
-            { value: cottages.length  > 0 ? String(cottages.length)  : "—", label: "Private Cottages"    },
             { value: totalRooms     > 0 ? String(totalRooms)     : "—", label: "Total Rooms"          },
             { value: totalAvailable > 0 ? String(totalAvailable) : "—", label: "Available Now"        },
           ].map((s, i, arr) => (

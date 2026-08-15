@@ -21,7 +21,7 @@ function fmtMethod(method, cardType) {
   return method || "—";
 }
 
-export default function SuccessClient({ booking }) {
+export default function SuccessClient({ booking, docNotice = null }) {
   const [go, setGo] = useState(false);
 
   useEffect(() => {
@@ -274,6 +274,41 @@ export default function SuccessClient({ booking }) {
               </div>
             </div>
           </div>
+
+          {/* ── Documents to bring at check-in ── */}
+          {docNotice && (
+            <div
+              className="mt-2.5 rounded-2xl overflow-hidden"
+              style={{ background: "#FFFBEB", border: "1px solid #FDE68A", ...s(430) }}
+            >
+              <div className="flex items-start gap-2 px-4 py-3">
+                <svg viewBox="0 0 20 20" width="15" height="15" fill="none" className="shrink-0 mt-0.5">
+                  <path d="M8.6 2.8L1.4 15a1.6 1.6 0 0 0 1.4 2.4h14.4A1.6 1.6 0 0 0 18.6 15L11.4 2.8a1.6 1.6 0 0 0-2.8 0z" stroke="#D97706" strokeWidth="1.3" />
+                  <path d="M10 7.5v4M10 14h.01" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+                <div className="flex-1">
+                  <p className={`${josefin.className} text-[11.5px] font-bold`} style={{ color: "#92400E" }}>
+                    Documents to bring at check-in
+                  </p>
+                  <p className={`${josefin.className} text-[10px] font-semibold mt-0.5`} style={{ color: "#B45309" }}>
+                    {docNotice.headline}
+                  </p>
+                  <ul className="mt-2 space-y-1">
+                    {docNotice.lines.map((l, i) => (
+                      <li key={i} className={`${josefin.className} text-[10.5px] leading-relaxed`} style={{ color: "#92400E" }}>
+                        • {l}
+                      </li>
+                    ))}
+                  </ul>
+                  {docNotice.certRooms.length > 0 && (
+                    <p className={`${josefin.className} text-[10px] font-semibold mt-2`} style={{ color: "#92400E" }}>
+                      Applies to room{docNotice.certRooms.length > 1 ? "s" : ""} {docNotice.certRooms.join(", ")}.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ── Savings + email — tiny, below card ── */}
           <div className="flex items-center justify-between px-1 mt-2.5" style={s(460)}>
