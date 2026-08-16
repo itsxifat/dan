@@ -60,18 +60,37 @@ function resolveDayPrice(room, category) {
  * attempt would regenerate an already-taken number and booking creation would
  * fail permanently.
  *
+ * Only the sequential format is considered. Bookings predating this scheme use
+ * `DAN-<Date.now()>`; letting those set the maximum would push every future
+ * number into the 13-digit range permanently.
+ *
+ * The conversion is 64-bit with an onError fallback: $toInt is 32-bit and
+ * overflows on anything past 2147483647 (a legacy timestamp is ~82x that),
+ * which aborts the whole aggregation and blocks ALL booking creation.
+ *
  * Each attempt advances past the collision rather than re-deriving the same
  * candidate, so a concurrent insert costs one retry instead of all of them.
  */
 async function generateBookingNumber(maxRetries = 8) {
   const [highest] = await Booking.aggregate([
-    { $match: { bookingNumber: /^DAN-\d+$/ } },
-    { $project: { num: { $toInt: { $substrBytes: ["$bookingNumber", 4, 12] } } } },
+    { $match: { bookingNumber: /^DAN-\d{1,9}$/ } },
+    {
+      $project: {
+        num: {
+          $convert: {
+            input: { $substrBytes: ["$bookingNumber", 4, 9] },
+            to: "long",
+            onError: 0,
+            onNull: 0,
+          },
+        },
+      },
+    },
     { $sort: { num: -1 } },
     { $limit: 1 },
   ]);
 
-  let nextNum = (highest?.num ?? 0) + 1;
+  let nextNum = Number(highest?.num ?? 0) + 1;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const candidate = `DAN-${String(nextNum).padStart(4, "0")}`;

@@ -76,30 +76,16 @@ const stayLinks = [
   { label: "Private Cottages",   href: "/accommodation?type=cottage" },
 ];
 
-export default function FooterSection({ contactInfo = {}, backgroundImage = "" }) {
+export default function FooterSection({ contactInfo = {} }) {
   const address = [contactInfo.addressLine1, contactInfo.addressLine2, contactInfo.addressNote]
     .filter(Boolean);
   const phone   = contactInfo.phones?.[0]?.number || "";
   const email   = contactInfo.emails?.[0]?.address || "";
   return (
-    <footer className="relative overflow-hidden bg-[#0d0a05] pt-16 md:pt-20">
-      {backgroundImage && (
-        <>
-          <Image
-            src={backgroundImage}
-            alt=""
-            fill
-            sizes="100vw"
-            quality={95}
-            className="object-cover object-center"
-          />
-          <div className="absolute inset-0 bg-[#0d0a05]/82" />
-          <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#0d0a05] to-transparent" />
-        </>
-      )}
+    <footer className="bg-[#0d0a05] pt-16 md:pt-20">
 
       {/* ── Top 4-column grid ─────────────────────────────────────────────── */}
-      <div className="relative z-10 max-w-7xl mx-auto px-5 sm:px-8 lg:px-12
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12
         grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-6 pb-14 md:pb-16">
 
         {/* ── Col 1: Brand ─────────────────────────────────────────────────── */}
@@ -259,7 +245,7 @@ export default function FooterSection({ contactInfo = {}, backgroundImage = "" }
       </div>
 
       {/* ── Payment methods + statutory details ───────────────────────────── */}
-      <div className="relative z-10 border-t border-white/10">
+      <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-8 md:py-9
           flex flex-col items-center gap-7">
 
@@ -299,7 +285,7 @@ export default function FooterSection({ contactInfo = {}, backgroundImage = "" }
       </div>
 
       {/* ── Bottom bar ────────────────────────────────────────────────────── */}
-      <div className="relative z-10 border-t border-white/10">
+      <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-12 py-5
           flex flex-col sm:flex-row items-center justify-between gap-3">
 

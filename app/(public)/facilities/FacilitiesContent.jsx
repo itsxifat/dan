@@ -596,8 +596,8 @@ export default function FacilitiesContent() {
       {/* ══ CTA BANNER ════════════════════════════════════════════════════════ */}
       <section ref={ctaRef} className="relative overflow-hidden min-h-[420px] flex items-center justify-center py-24">
         <Image
-          src="https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/af2c7a6f-e5d4-4510-bc3d-af2620cbf381.jpeg"
-          alt="Swimming pool at Dhali's Amber Nivaas" fill sizes="100vw"
+          src="https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/2619f896-9fd9-4c28-9119-608bac7073b2.webp"
+          alt="Poolside at Dhali's Amber Nivaas" fill sizes="100vw" quality={95}
           className="object-cover object-center"
         />
         <div className="absolute inset-0 bg-gradient-to-br from-[#1a1309]/80 via-[#1a1309]/65 to-[#7A2267]/25" />
