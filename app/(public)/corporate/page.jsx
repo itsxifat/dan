@@ -1,4 +1,6 @@
 import CorporateContent from "./CorporateContent";
+import FooterSection from "@/components/sections/FooterSection";
+import { getContactInfo } from "@/actions/contact/contactActions";
 import {
   getPublishedCorporateEvents,
   getPublishedVenues,
@@ -12,10 +14,16 @@ export const metadata = {
 };
 
 export default async function CorporatePage() {
-  const [events, venues, brands] = await Promise.all([
+  const [events, venues, brands, contactInfo] = await Promise.all([
     getPublishedCorporateEvents({ limit: 12 }),
     getPublishedVenues(),
     getPublishedBrands(),
+    getContactInfo().catch(() => ({})),
   ]);
-  return <CorporateContent events={events} venues={venues} brands={brands} />;
+  return (
+    <>
+      <CorporateContent events={events} venues={venues} brands={brands} />
+      <FooterSection contactInfo={contactInfo} />
+    </>
+  );
 }

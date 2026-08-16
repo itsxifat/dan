@@ -1,5 +1,7 @@
 import GalleryContent from "./GalleryContent";
+import FooterSection from "@/components/sections/FooterSection";
 import { getPublishedGalleryPhotos, getGalleryCategories } from "@/actions/gallery/galleryActions";
+import { getContactInfo } from "@/actions/contact/contactActions";
 
 export const metadata = {
   title: "Gallery — Dhali's Amber Nivaas",
@@ -8,9 +10,15 @@ export const metadata = {
 };
 
 export default async function GalleryPage() {
-  const [photos, cats] = await Promise.all([
+  const [photos, cats, contactInfo] = await Promise.all([
     getPublishedGalleryPhotos({ limit: 100 }),
     getGalleryCategories(),
+    getContactInfo().catch(() => ({})),
   ]);
-  return <GalleryContent photos={photos} categories={cats.map((c) => c.name)} />;
+  return (
+    <>
+      <GalleryContent photos={photos} categories={cats.map((c) => c.name)} />
+      <FooterSection contactInfo={contactInfo} />
+    </>
+  );
 }

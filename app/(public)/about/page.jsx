@@ -1,4 +1,6 @@
 import { getAboutPage } from "@/actions/about/aboutActions";
+import { getContactInfo } from "@/actions/contact/contactActions";
+import FooterSection from "@/components/sections/FooterSection";
 import AboutContent from "./AboutContent";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +12,14 @@ export const metadata = {
 };
 
 export default async function AboutPage() {
-  const aboutData = await getAboutPage();
-  return <AboutContent aboutData={aboutData} />;
+  const [aboutData, contactInfo] = await Promise.all([
+    getAboutPage(),
+    getContactInfo().catch(() => ({})),
+  ]);
+  return (
+    <>
+      <AboutContent aboutData={aboutData} />
+      <FooterSection contactInfo={contactInfo} />
+    </>
+  );
 }

@@ -238,6 +238,25 @@ export async function getAvailableRoomsForBooking({
 
 // ─── Create Pending Booking ───────────────────────────────────────────────────
 
+/**
+ * A booking the guest can still fix — a missing NID, an unticked consent box, a
+ * room that went away while they were filling the form.
+ *
+ * These must be RETURNED, never thrown. Next.js replaces the message of any
+ * error thrown out of a server action in a production build with a generic
+ * "An error occurred in the Server Components render…" digest, so a thrown
+ * validation message reaches the guest as an opaque wall: checkout is blocked
+ * and there is no way to tell what to correct. Genuine faults (a dropped
+ * database connection, a bug) are still allowed to throw — masking those is
+ * exactly what we want.
+ *
+ * @param {string} error   Message shown to the guest verbatim.
+ * @param {object} [opts]  step: wizard step that can fix it; errors: full list.
+ */
+function rejectBooking(error, { step = null, errors = [] } = {}) {
+  return { success: false, error, step, errors: errors.length ? errors : [error] };
+}
+
 export async function createPendingBooking(bookingData) {
   await dbConnect();
 
@@ -281,7 +300,10 @@ export async function createPendingBooking(bookingData) {
   // The guest must tick the consent box before an order can be placed; the UI
   // gates the button, this stops anything that bypasses it.
   if (termsAccepted !== true) {
-    throw new Error("You must accept the Terms & Conditions, Privacy Policy and Return & Refund Policy to place a booking.");
+    return rejectBooking(
+      "You must accept the Terms & Conditions, Privacy Policy and Return & Refund Policy to place a booking.",
+      { step: 5 }
+    );
   }
 
   const taxPercent   = settings.taxPercent ?? 0;
@@ -301,7 +323,7 @@ export async function createPendingBooking(bookingData) {
   // A night stay must name its rooms — otherwise the guest roster (and with it
   // every identification rule below) would have nothing to validate.
   if (bookingMode !== "day_long" && bookingType === "room" && !(roomBookings?.length > 0)) {
-    throw new Error("Please select at least one room to continue.");
+    return rejectBooking("Please select at least one room to continue.", { step: 3 });
   }
 
   if (bookingType === "room" && roomBookings?.length > 0) {
@@ -326,12 +348,19 @@ export async function createPendingBooking(bookingData) {
       },
       docOpts
     );
-    if (docErrors.length > 0) throw new Error(docErrors[0]);
+    if (docErrors.length > 0) {
+      return rejectBooking(docErrors[0], { step: 4, errors: docErrors });
+    }
 
     for (const rb of roomBookings) {
       const room     = roomById.get(String(rb.roomId));
       const category = await RoomCategory.findById(rb.categoryId).lean();
-      if (!room || !category) throw new Error("Invalid room or category.");
+      if (!room || !category) {
+        return rejectBooking(
+          "One of the rooms you selected is no longer available. Please go back and choose again.",
+          { step: 3 }
+        );
+      }
 
       const nightPrice = resolveNightPrice(room, category);
       const dayPrice   = resolveDayPrice(room, category);

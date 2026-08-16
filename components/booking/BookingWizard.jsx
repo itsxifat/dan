@@ -809,13 +809,29 @@ export default function BookingWizard({ settings, preselect }) {
     if (step !== 4 || cartRooms.length === 0) return;
 
     setGuestInfoMap((prev) => {
-      if (cartRooms.some((r) => (prev.get(r._id)?.guests?.length ?? 0) > 0)) return prev;
+      // Seed only the rooms that are still empty, and only with the people who
+      // have not been entered anywhere yet. Bailing out entirely as soon as one
+      // room was filled used to leave a room added later with zero guest rows,
+      // which then blocked checkout with no way to add anyone.
+      const maxFCA  = settings?.maxFreeChildAge ?? 5;
+      const toSeed  = cartRooms.filter((r) => (prev.get(r._id)?.guests?.length ?? 0) === 0);
+      if (toSeed.length === 0) return prev;
 
       let adultsLeft   = adults;
       let childrenLeft = children;
+      for (const room of cartRooms) {
+        for (const g of prev.get(room._id)?.guests || []) {
+          if (g._intent === "child" || (g._intent !== "adult" && guestIsChild(g, maxFCA))) childrenLeft -= 1;
+          else adultsLeft -= 1;
+        }
+      }
+      adultsLeft   = Math.max(0, adultsLeft);
+      childrenLeft = Math.max(0, childrenLeft);
+      if (adultsLeft === 0 && childrenLeft === 0) return prev;
+
       const next = new Map(prev);
 
-      for (const room of cartRooms) {
+      for (const room of toSeed) {
         const capAdults   = room.maxAdults   > 0 ? room.maxAdults   : 1;
         const capChildren = room.maxChildren > 0 ? room.maxChildren : 0;
         const takeAdults   = Math.min(adultsLeft,   capAdults);
@@ -836,7 +852,7 @@ export default function BookingWizard({ settings, preselect }) {
       }
       return next;
     });
-  }, [step, cartRooms, adults, children]);
+  }, [step, cartRooms, adults, children, settings?.maxFreeChildAge]);
 
   // ── Room hold lifecycle ──────────────────────────────────────────────────────
 
@@ -1276,7 +1292,10 @@ export default function BookingWizard({ settings, preselect }) {
         });
 
         if (!result.success) {
-          setError("Failed to create booking. Please try again.");
+          // The server tells us what is wrong and which step can fix it — show
+          // that instead of a generic failure, and take the guest back there.
+          setError(result.error || "Failed to create booking. Please try again.");
+          if (result.step && result.step < step) setStep(result.step);
           return;
         }
 
@@ -1332,6 +1351,13 @@ export default function BookingWizard({ settings, preselect }) {
         orderTotal: subtotal + taxes - dayLongDiscount,
         userId:     session?.user?.id,
       });
+      // A rejected coupon comes back as { success: false, error } rather than
+      // throwing, so the reason survives a production build.
+      if (!result?.success) {
+        setCouponError(result?.error || "Invalid coupon.");
+        setCouponApplied(null);
+        return;
+      }
       // One discount at a time: coupon overrides auto-offer
       setAutoOffer(null);
       setCouponApplied(result);

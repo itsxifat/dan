@@ -100,12 +100,18 @@ export async function toggleDiscountActive(id) {
 }
 
 // ─── Public: Validate Coupon Code ─────────────────────────────────────────────
-// Returns the discount details if valid, throws a descriptive error if not.
+// Returns the discount details if valid, or { success: false, error } if not.
+//
+// Why the rejections are returned and not thrown: a production build strips the
+// message off anything thrown out of a server action, so a thrown "This coupon
+// has expired." reaches the guest as an opaque "An error occurred in the Server
+// Components render…" digest. Returning keeps the reason readable.
+const rejectCoupon = (error) => ({ success: false, error });
 
 export async function validateCoupon({ code, bookingMode, orderTotal, userId }) {
   await dbConnect();
 
-  if (!code?.trim()) throw new Error("Please enter a coupon code.");
+  if (!code?.trim()) return rejectCoupon("Please enter a coupon code.");
 
   const disc = await Discount.findOne({
     code: code.toUpperCase().trim(),
@@ -113,29 +119,29 @@ export async function validateCoupon({ code, bookingMode, orderTotal, userId }) 
     isActive: true,
   }).lean();
 
-  if (!disc) throw new Error("Invalid coupon code. Please check and try again.");
+  if (!disc) return rejectCoupon("Invalid coupon code. Please check and try again.");
 
   const now = new Date();
-  if (now < new Date(disc.validFrom)) throw new Error("This coupon is not active yet.");
-  if (now > new Date(disc.validTo))   throw new Error("This coupon has expired.");
+  if (now < new Date(disc.validFrom)) return rejectCoupon("This coupon is not active yet.");
+  if (now > new Date(disc.validTo))   return rejectCoupon("This coupon has expired.");
 
   if (disc.usageLimit > 0 && disc.usedCount >= disc.usageLimit) {
-    throw new Error("This coupon has reached its usage limit.");
+    return rejectCoupon("This coupon has reached its usage limit.");
   }
 
   if (disc.isPersonal) {
     if (!userId || disc.assignedUser?.toString() !== userId.toString()) {
-      throw new Error("This coupon is not valid for your account.");
+      return rejectCoupon("This coupon is not valid for your account.");
     }
   }
 
   if (disc.applicableTo !== "all" && disc.applicableTo !== bookingMode) {
     const label = disc.applicableTo === "night_stay" ? "night stays" : "day-long visits";
-    throw new Error(`This coupon is only valid for ${label}.`);
+    return rejectCoupon(`This coupon is only valid for ${label}.`);
   }
 
   if (disc.minOrderAmount > 0 && orderTotal < disc.minOrderAmount) {
-    throw new Error(
+    return rejectCoupon(
       `Minimum order of ৳${disc.minOrderAmount.toLocaleString()} required to use this coupon.`
     );
   }

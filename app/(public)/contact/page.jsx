@@ -1,4 +1,5 @@
 import { getContactInfo } from "@/actions/contact/contactActions";
+import FooterSection from "@/components/sections/FooterSection";
 import ContactContent from "./ContactContent";
 
 export const dynamic = "force-dynamic";
@@ -11,5 +12,10 @@ export const metadata = {
 
 export default async function ContactPage() {
   const info = await getContactInfo();
-  return <ContactContent info={info} mapsApiKey={process.env.GOOGLE_MAPS_EMBED_API_KEY || ""} />;
+  return (
+    <>
+      <ContactContent info={info} mapsApiKey={process.env.GOOGLE_MAPS_EMBED_API_KEY || ""} />
+      <FooterSection contactInfo={info} />
+    </>
+  );
 }
