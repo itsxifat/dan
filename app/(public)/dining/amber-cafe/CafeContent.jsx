@@ -98,7 +98,7 @@ export default function CafeContent({ menuItems = [] }) {
       {/* ── Hero ── */}
       <section className="relative min-h-[55vh] flex flex-col justify-end overflow-hidden">
         <Image
-          src="https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=1920&q=80"
+          src="https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/b564a582-5db2-4451-b417-e141864b7271.jpeg"
           alt="Amber Café" fill priority sizes="100vw"
           className="object-cover object-center"
         />

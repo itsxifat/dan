@@ -100,7 +100,7 @@ export default function RestaurantContent({ menuItems = [] }) {
       {/* ── Hero ── */}
       <section className="relative min-h-[60vh] flex flex-col justify-end overflow-hidden">
         <Image
-          src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1920&q=80"
+          src="https://cdn.enfinito.cloud/d/6a251d4e32301ad14f20869a/99e5b6dd-8eee-432d-a675-bbd2354add81.jpeg"
           alt="Amber Restaurant" fill priority sizes="100vw"
           className="object-cover object-center"
         />
